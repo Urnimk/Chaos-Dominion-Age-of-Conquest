@@ -1,0 +1,28 @@
+{
+  "game": "亂世演算_征佔紀元",
+  "version": "V1_世界地形實驗版",
+  "width": 2000,
+  "height": 2000,
+  "seed": 20260924,
+  "world_style": "BALANCED",
+  "target_ocean_ratio": 0.7,
+  "actual_ocean_ratio": 0.700349,
+  "sea_level": 0.510539,
+  "landmass_count": 9,
+  "largest_landmasses": [
+    373544,
+    234469,
+    168746,
+    150732,
+    141458,
+    129282,
+    205,
+    133,
+    36
+  ],
+  "generation_seconds": 8.429,
+  "files": {
+    "data": "world_map.npz",
+    "preview": "world_map_preview.png"
+  }
+}

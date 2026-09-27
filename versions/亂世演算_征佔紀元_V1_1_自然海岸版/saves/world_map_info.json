@@ -1,0 +1,31 @@
+{
+  "game": "亂世演算_征佔紀元",
+  "version": "V1_1_自然海岸版",
+  "width": 2000,
+  "height": 2000,
+  "seed": 20260924,
+  "world_style": "BALANCED",
+  "target_ocean_ratio": 0.7,
+  "actual_ocean_ratio": 0.700176,
+  "sea_level": 0.462784,
+  "landmass_count": 60,
+  "largest_landmasses": [
+    740249,
+    224764,
+    179542,
+    15288,
+    4980,
+    2822,
+    2633,
+    2323,
+    2135,
+    2096,
+    1997,
+    1751
+  ],
+  "generation_seconds": 12.983,
+  "files": {
+    "data": "world_map.npz",
+    "preview": "world_map_preview.png"
+  }
+}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, asdict
 import json
+import uuid
 import math
 import random
 from pathlib import Path
@@ -15,6 +16,7 @@ import map_config as cfg
 from climate_rules import LAKE, RIVER
 from terrain_rules import HILL, MOUNTAIN, HIGH_MOUNTAIN, TERRAIN_NAMES
 from country_generator import CAPITAL, CITY, PORT, BARRACKS, OUTPOST
+from rl_brain import CountryBrain, PASS_ACTION
 
 
 ALLIANCE_NAME_PREFIXES = [
@@ -125,6 +127,8 @@ class WarEngine:
         self.initial_territory = world.territory.copy()
         self._initialize_local_economy()
         self._initialize_countries()
+        self.rl_brains: dict[int, CountryBrain] = {}
+        self._ensure_all_country_brains()
         self._initialize_geographic_regions()
         self.name_prefix_history: dict[str, list[str]] = {}
         alliance_ids = sorted({int(c.get("alliance", 0)) for c in self.countries if int(c.get("alliance", 0)) > 0})
@@ -242,6 +246,17 @@ class WarEngine:
                 "king_next_year": self.year + int(self.rng.integers(cfg.KING_REIGN_MIN_YEARS, cfg.KING_REIGN_MAX_YEARS + 1)),
                 "colonies": [],
             })
+
+    def _ensure_country_brain(self, cid: int):
+        """每個國家使用自己的 Q 表與亂數狀態；新分裂國也獲得獨立大腦。"""
+        cid = int(cid)
+        if cid not in self.rl_brains:
+            seed = (int(self.world.settings.seed) * 1_000_003 + cid * 97_409) % (2**63 - 1)
+            self.rl_brains[cid] = CountryBrain(seed)
+
+    def _ensure_all_country_brains(self):
+        for country in self.countries:
+            self._ensure_country_brain(int(country["id"]))
 
     def _log(self, cid: int, message: str):
         line = f"第{self.year}年｜{message}"
@@ -516,6 +531,7 @@ class WarEngine:
             country[key] = total_resource - new_country[key]
         # 舊政權雖改國名，但原國王與剩餘任期保持不變。
         self.countries.append(new_country)
+        self._ensure_country_brain(new_id)
         self.country_events[new_id] = []
         self._new_king(new_country, reset=True, reason="國家分裂後建立新王統")
         self._mark_world_changed(old_id, new_id)
@@ -1043,6 +1059,111 @@ class WarEngine:
             if remaining <= 0:
                 break
 
+    def _rl_state_and_actions(self, cid: int):
+        """回傳恰有四個離散維度的策略狀態與合法戰爭選項。"""
+        country = self.country(cid)
+        population = max(1, int(country["population"]))
+        soldier_ratio = float(country["soldiers"]) / population
+        security_bin = 0 if soldier_ratio < 0.05 else 1 if soldier_ratio < 0.10 else 2 if soldier_ratio < 0.20 else 3
+
+        annual_food_need = max(1.0, population * cfg.FOOD_CONSUMPTION_PER_PERSON)
+        food_years = max(0.0, float(country["food"])) / annual_food_need
+        food_bin = 0 if food_years < 1.0 else 1 if food_years < 3.0 else 2 if food_years < 8.0 else 3
+
+        total_cells = max(1, sum(int(c["territory_cells"]) for c in self.countries if c["alive"]))
+        territory_share = float(country["territory_cells"]) / total_cells
+        power_bin = 0 if territory_share < 0.01 else 1 if territory_share < 0.03 else 2 if territory_share < 0.10 else 3
+
+        legal = self.legal_targets(cid)
+        target_ratios = {
+            int(option["id"]): self._country_strength(cid) / max(1.0, self._country_strength(int(option["id"])))
+            for option in legal
+        }
+        best_ratio = max(target_ratios.values(), default=0.0)
+        opportunity_bin = 0 if not legal else 1 if best_ratio < 0.75 else 2 if best_ratio < 1.08 else 3
+        state = (security_bin, food_bin, power_bin, opportunity_bin)
+        actions = [PASS_ACTION]
+        priors = {PASS_ACTION: 0.0}
+        for option in legal:
+            target_id = int(option["id"])
+            ratio = target_ratios[target_id]
+            # 保留原規則的最低勝算安全門檻，讓學習器探索策略而非必敗戰。
+            if ratio < cfg.AI_MIN_POWER_RATIO:
+                continue
+            action = f"ATTACK:{target_id}:{option['mode']}"
+            actions.append(action)
+            priors[action] = float(np.clip((ratio - cfg.AI_MIN_POWER_RATIO) * 0.08, 0.0, 0.12))
+        return state, actions, priors
+
+    @staticmethod
+    def _rl_metrics(country: dict) -> dict:
+        return {
+            "alive": bool(country["alive"]),
+            "territory": int(country["territory_cells"]),
+            "population": int(country["population"]),
+            "food": float(country["food"]),
+            "wars_won": int(country["wars_won"]),
+            "wars_lost": int(country["wars_lost"]),
+        }
+
+    @staticmethod
+    def _rl_reward(before: dict, after: dict) -> float:
+        if not after.get("alive", False):
+            return -4.0
+        area_change = math.log1p(max(0, after["territory"])) - math.log1p(max(0, before["territory"]))
+        population_change = math.log1p(max(0, after["population"])) - math.log1p(max(0, before["population"]))
+        before_food = before["food"] / max(1.0, before["population"] * cfg.FOOD_CONSUMPTION_PER_PERSON)
+        after_food = after["food"] / max(1.0, after["population"] * cfg.FOOD_CONSUMPTION_PER_PERSON)
+        food_change = float(np.clip(after_food - before_food, -5.0, 5.0))
+        war_change = 0.30 * (after["wars_won"] - before["wars_won"]) - 0.40 * (after["wars_lost"] - before["wars_lost"])
+        reward = 1.4 * area_change + 0.35 * population_change + 0.10 * food_change + war_change
+        return float(np.clip(reward, -4.0, 4.0))
+
+    def _rl_epsilon(self, brain: CountryBrain) -> float:
+        fraction = min(1.0, brain.decisions / max(1, cfg.AI_RL_EPSILON_DECAY_DECISIONS))
+        return float(cfg.AI_RL_EPSILON + (cfg.AI_RL_MIN_EPSILON - cfg.AI_RL_EPSILON) * fraction)
+
+    def _rl_war_decisions(self, alive: list[dict]):
+        for country in alive:
+            cid = int(country["id"])
+            brain = self.rl_brains[cid]
+            state, actions, priors = self._rl_state_and_actions(cid)
+            metrics = self._rl_metrics(country)
+            epsilon = self._rl_epsilon(brain)
+            if brain.pending:
+                previous = brain.pending
+                reward = self._rl_reward(previous["metrics"], metrics)
+                brain.update(
+                    previous["state"], previous["action"], reward,
+                    next_state=state, next_actions=actions, epsilon=epsilon,
+                    alpha=cfg.AI_RL_ALPHA, gamma=cfg.AI_RL_GAMMA,
+                    trace_lambda=cfg.AI_RL_TRACE_LAMBDA, next_priors=priors,
+                )
+            action = brain.select_action(state, actions, epsilon, priors)
+            if action != PASS_ACTION:
+                _kind, target_id, mode = action.split(":", 2)
+                campaign = self.launch_campaign(cid, int(target_id), mode)
+                if campaign:
+                    self._dispatch_allied_reinforcements(cid, int(target_id), campaign.id)
+                else:
+                    action = PASS_ACTION
+            brain.pending = {"state": list(state), "action": action, "metrics": metrics}
+
+    def _finalize_extinct_rl_brains(self):
+        for country in self.countries:
+            cid = int(country["id"])
+            brain = self.rl_brains.get(cid)
+            if brain is None or not brain.pending or country["alive"]:
+                continue
+            previous = brain.pending
+            brain.update(
+                previous["state"], previous["action"],
+                self._rl_reward(previous["metrics"], self._rl_metrics(country)),
+                alpha=cfg.AI_RL_ALPHA, gamma=cfg.AI_RL_GAMMA,
+                trace_lambda=cfg.AI_RL_TRACE_LAMBDA, terminal=True,
+            )
+            brain.pending = None
+
     def _ai_decisions(self):
         if self.year % cfg.AI_WAR_CHECK_INTERVAL:
             return
@@ -1058,6 +1179,9 @@ class WarEngine:
                 self.next_coalition_id += 1
                 for member in sorted(candidates, key=lambda c: self._country_strength(c["id"]), reverse=True)[:cfg.COALITION_MAX_MEMBERS]:
                     self.launch_campaign(member["id"], hegemon["id"], coalition_id=coalition)
+        if str(cfg.AI_MODE).upper() == "SARSA_LAMBDA":
+            self._rl_war_decisions(alive)
+            return
         for c in alive:
             if self.rng.random() > cfg.AI_BASE_WAR_CHANCE:
                 continue
@@ -1227,6 +1351,9 @@ class WarEngine:
             self.year += 1
             self.alerts.clear()
             self._economic_year()
+            self._ensure_all_country_brains()
+            if str(cfg.AI_MODE).upper() == "SARSA_LAMBDA":
+                self._finalize_extinct_rl_brains()
             self._update_monarchs()
             self._ai_decisions()
             self._advance_campaigns()
@@ -1240,6 +1367,10 @@ class WarEngine:
         alive = sum(1 for c in self.countries if c["alive"])
         marching = sum(1 for c in self.campaigns if c.status == "marching")
         return {"year": self.year, "alive": alive, "campaigns": marching, "battles": self.battles}
+
+    @staticmethod
+    def _rl_brains_path(path: Path) -> Path:
+        return path.with_name(f"{path.stem}_rl_brains.json")
 
     def save(self, path: Path | None = None):
         selected = path or self.state_path
@@ -1255,8 +1386,10 @@ class WarEngine:
             local_population=self.local_population,
             geographic_region_id=self.geographic_region_id,
         )
+        snapshot_id = uuid.uuid4().hex
         payload = {
-            "version": "V8_4_海外登陸戰版",
+            "version": "V10_國家Q表獨立JSON版",
+            "rl_brains_snapshot_id": snapshot_id,
             "seed": self.world.settings.seed,
             "year": self.year,
             "next_campaign_id": self.next_campaign_id,
@@ -1274,14 +1407,29 @@ class WarEngine:
             "visual_revision": self.visual_revision,
             "geographic_regions": self.geographic_regions,
             "name_prefix_history": self.name_prefix_history,
+            "rl_brains": {str(cid): brain.to_dict() for cid, brain in self.rl_brains.items()},
         }
         path.with_suffix(".json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        brain_path = self._rl_brains_path(path)
+        brain_payload = {
+            "format_version": 1,
+            "game_version": "V10_國家Q表獨立JSON版",
+            "snapshot_id": snapshot_id,
+            "seed": int(self.world.settings.seed),
+            "year": int(self.year),
+            "brains": {str(cid): brain.to_dict() for cid, brain in self.rl_brains.items()},
+        }
+        temporary_brain_path = brain_path.with_suffix(brain_path.suffix + ".tmp")
+        temporary_brain_path.write_text(
+            json.dumps(brain_payload, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        temporary_brain_path.replace(brain_path)
 
     @classmethod
     def load(cls, world, path: Path):
         path = Path(path)
         payload = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
-        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版"):
+        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版"):
             raise ValueError("不支援此版本的戰爭存檔")
         if int(payload.get("seed", -1)) != int(world.settings.seed):
             raise ValueError("戰爭存檔與目前世界Seed不一致")
@@ -1333,6 +1481,28 @@ class WarEngine:
         for region in engine.geographic_regions:
             region["name"] = "".join(ch for ch in str(region.get("name", "")) if not ch.isdigit())
         engine.name_prefix_history = {str(k): list(v) for k, v in payload.get("name_prefix_history", {}).items()}
+        engine._ensure_all_country_brains()
+        saved_brains = payload.get("rl_brains", {})
+        brain_path = cls._rl_brains_path(path)
+        if payload.get("rl_brains_snapshot_id") and brain_path.exists():
+            try:
+                brain_payload = json.loads(brain_path.read_text(encoding="utf-8"))
+                if (
+                    isinstance(brain_payload, dict)
+                    and brain_payload.get("format_version") == 1
+                    and brain_payload.get("snapshot_id") == payload["rl_brains_snapshot_id"]
+                    and int(brain_payload.get("seed", -1)) == int(payload["seed"])
+                    and int(brain_payload.get("year", -1)) == int(payload["year"])
+                    and isinstance(brain_payload.get("brains"), dict)
+                ):
+                    saved_brains = brain_payload.get("brains", {})
+            except (OSError, ValueError, TypeError, AttributeError):
+                # Sidecar 異常時回退到主戰局 JSON 內的相容副本。
+                pass
+        for cid_text, brain_data in saved_brains.items():
+            cid = int(cid_text)
+            engine._ensure_country_brain(cid)
+            engine.rl_brains[cid].load_dict(brain_data)
         if payload.get("rng_state"):
             engine.rng.bit_generator.state = payload["rng_state"]
         engine._build_geography()

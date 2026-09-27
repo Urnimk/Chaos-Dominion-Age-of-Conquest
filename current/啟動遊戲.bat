@@ -3,9 +3,9 @@ chcp 65001 >nul
 cd /d "%~dp0"
 where py >nul 2>nul
 if %errorlevel%==0 (
-    py -3 "亂世演算_征佔紀元_V8_4_啟動.py"
+    py -3 "亂世演算_征佔紀元_V10_啟動.py"
 ) else (
-    python "亂世演算_征佔紀元_V8_4_啟動.py"
+    python "亂世演算_征佔紀元_V10_啟動.py"
 )
 if errorlevel 1 (
     echo.

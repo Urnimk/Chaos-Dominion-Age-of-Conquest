@@ -2,7 +2,7 @@
 
 《亂世演算：征佔紀元》（Chaos Dominion: Age of Conquest）是以 Python 製作的地圖戰略模擬遊戲。世界由 Seed 驅動生成，涵蓋地形、氣候、可居住性、國家、經濟、拓荒、殖民、外交與戰爭。國家從小型核心領土起步，逐步建設、擴張，並可能分裂、遷都或滅亡。
 
-目前 `current/` 的版本為 **V8.4｜海外登陸戰版**。本 Repository 是地圖戰爭模擬支線；各版本的原始說明集中於 `notes/`，歷代程式快照保存於 `versions/`。
+目前 `current/` 為 **V10｜國家 Q 表獨立 JSON 版**。各國學習資料另存 JSON，並新增相容載入流程；AI 模式仍可切換，預設使用原本規則 AI。本 Repository 是地圖戰爭模擬支線；各版本的原始說明集中於 `notes/`，歷代程式快照保存於 `versions/`。
 
 ## 功能概覽
 
@@ -19,19 +19,19 @@
 ```text
 Chaos-Dominion-Age-of-Conquest/
 ├─ current/              # 目前可執行版本的程式與啟動檔
-├─ notes/                # V1.0 至 V8.4 的版本說明原文
-├─ versions/             # 歷代完整程式快照；請勿以新版覆蓋舊版
+├─ notes/                # V1.0 至 V10 的版本說明原文
+├─ versions/             # 合併至既有 Repository 後保留的歷代程式快照
 ├─ CHANGELOG.md           # 歷代版本重點索引
 ├─ README.md              # 專案介紹與執行方式
 ├─ requirements.txt       # Python 套件清單
 └─ .gitignore             # 排除存檔、快取與暫存資料
 ```
 
-### V8.4 `current/` 模組
+### V10 `current/` 模組
 
 | 檔案 | 用途 |
 | --- | --- |
-| `亂世演算_征佔紀元_啟動.py` | 啟動遊戲介面 |
+| `亂世演算_征佔紀元_V10_啟動.py` | 啟動遊戲介面 |
 | `map_viewer.py` | Tkinter 介面、地圖互動、時間推進及存檔操作 |
 | `war_engine.py` | 國家年度更新、AI 決策、拓荒、殖民、外交、遠征及戰鬥規則 |
 | `map_generator.py` | 依設定建立或載入世界資料 |
@@ -56,7 +56,7 @@ python -m pip install -r requirements.txt
 
 ```bat
 cd current
-python "亂世演算_征佔紀元_V8_4_啟動.py"
+python "亂世演算_征佔紀元_V10_啟動.py"
 ```
 
 Windows 也可在 `current/` 內執行 `啟動遊戲.bat`。一般請由啟動檔開啟，不要直接執行 `war_engine.py`。
@@ -82,17 +82,43 @@ Windows 也可在 `current/` 內執行 `啟動遊戲.bat`。一般請由啟動�
 
 預設地圖為 2000×2000 格，對記憶體與運算能力需求較高。初次測試或效能有限時，可先降低 `MAP_WIDTH`、`MAP_HEIGHT` 再啟動。
 
-> **速度設定提醒：** V8.4 的程式碼目前在 `map_viewer.py` 將 `SECONDS_PER_YEAR` 設為 `0.01` 秒，`map_config.py` 也有同名參數；介面實際採用 `map_viewer.py` 的值，目標約為每秒 100 年。部分版本說明仍寫每年 2 秒，與程式預設值不一致。若要調整實際速度，請先修改介面使用的常數。
+> **速度設定提醒：** V10 的程式碼目前在 `map_viewer.py` 將 `SECONDS_PER_YEAR` 設為 `0.01` 秒，`map_config.py` 也有同名參數；介面實際採用 `map_viewer.py` 的值，目標約為每秒 100 年。部分版本說明仍寫每年 2 秒，與程式預設值不一致。若要調整實際速度，請先修改介面使用的常數。
+
+## 可切換 AI 模式
+
+在 `current/map_config.py` 設定全域變數：
+
+```python
+AI_MODE = "RULE"          # 目前既有規則 AI，預設值
+AI_MODE = "SARSA_LAMBDA"  # 各國獨立的 Expected SARSA(λ) 模式
+```
+
+每個國家各有一個 `CountryBrain`，其 Q 表、探索亂數與 eligibility trace 都獨立保存；新分裂政權會建立全新的大腦，不複製母國的學習資料。學習器的狀態固定為四個離散維度：
+
+1. 軍隊／人口比例（安全狀態）
+2. 糧食可支應年數（經濟狀態）
+3. 本國領土占比（相對國力）
+4. 可合法攻擊目標中的最佳戰力比（進攻機會）
+
+每維四個級距，狀態最多 4 維、256 種組合；行動是「暫不開戰」或「選擇一個符合原有最低勝算門檻的合法戰爭目標」。這個模式只替換一般 AI 的開戰／目標選擇；經濟、建築、拓荒與自動反霸權圍剿仍沿用原有規則。`AI_MODE = "RULE"` 時不執行強化學習更新，保留原有玩法；學習資料另存為 `saves/war_state_rl_brains.json`，以國家 ID 區分並包含完整學習狀態。載入時優先使用與當前戰局快照相符的獨立 JSON；若沒有該檔，會回退讀取主戰局 JSON 內嵌的 Q 表，因此 V9 舊存檔可續載。V8.4 舊存檔缺少學習資料時則建立空白大腦。這次改動存檔架構，依版本規則升為整數大版本 V10。
+
+在 `current/` 目錄執行回歸測試：
+
+```bat
+python -m unittest discover -s tests -v
+```
+
+**目前驗證結果：** 固定 Seed 的 512×512 長跑 1,000 年，地圖實際生成 24 國，期間分裂至 27 國；所有 27 國都有獨立大腦並產生更新。16 國存活，資源皆非負、士兵不超過人口。這是功能與穩定性測試，不代表強化學習策略已比既有 AI 更強。
 
 ## 存檔與重開新世界
 
-程式會在 `current/saves/` 建立執行資料，例如地圖資料、預覽圖、世界資訊與戰局存檔。請定期備份此資料夾。若要重新生成全新世界，先關閉遊戲，再將 `current/saves/` 移出或清空後重新啟動；這會一併移除目前的世界和戰局進度。
+程式會在 `current/saves/` 建立執行資料，例如地圖資料、預覽圖、世界資訊、戰局存檔及 `war_state_rl_brains.json`。請定期備份此資料夾。若要重新生成全新世界，先關閉遊戲，再將 `current/saves/` 移出或清空後重新啟動；這會一併移除目前的世界和戰局進度。
 
 `saves/`、Python 快取及暫存檔不屬於原始碼，已由 `.gitignore` 排除，不應提交到 GitHub。
 
 ## 版本資料
 
-- [CHANGELOG.md](CHANGELOG.md)：快速查閱 V1.0 至 V8.4 的版本重點。
+- [CHANGELOG.md](CHANGELOG.md)：快速查閱 V1.0 至 V10 的版本重點。
 - `notes/`：逐版原始說明；各檔記載當時功能、參數與測試紀錄。
 - `versions/`：歷代完整程式快照，用於回溯與比較。執行最新版請使用 `current/`。
 

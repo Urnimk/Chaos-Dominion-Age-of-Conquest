@@ -1,0 +1,12 @@
+V10 各國獨立 Q 表 JSON 存取說明
+
+切換方式：在 map_config.py 設定 AI_MODE。
+- RULE：預設模式，沿用既有規則 AI，不更新 Q 表。
+- SARSA_LAMBDA：各國以獨立 Expected SARSA(lambda) 大腦決定是否開戰及選擇合法目標。
+
+狀態最多四個離散維度（每維四級）：軍隊／人口比、糧食可支應年數、領土相對占比、最佳合法目標戰力比。每國獨立保存 Q 表、探索亂數與 eligibility trace。分裂新增的國家會建立空白大腦。
+
+強化學習模式只控制一般戰爭決策。經濟、建築、拓荒及自動反霸權圍剿沿用既有規則。學習資料另外寫入 saves/war_state_rl_brains.json，依國家 ID 保存完整大腦資料（Q 表、探索亂數、資格跡線與學習進度）。載入時優先讀取與當前戰局快照相符的 JSON；若沒有獨立檔，會沿用戰局 JSON 內的資料，因此 V9 舊存檔可續載。V8.4 舊存檔缺少 Q 欄位時會建立各國獨立空白大腦。
+
+在 current 資料夾執行測試：
+python -m unittest discover -s tests -v

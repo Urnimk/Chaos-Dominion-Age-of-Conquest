@@ -495,7 +495,7 @@ def save_world(world: GeneratedMap, save_dir=SAVES_DIR):
     )
     info = {
         "game": "亂世演算_征佔紀元",
-        "version": "V6_拓荒戰爭UI版",
+        "version": "V10_國家Q表獨立JSON版",
         "width": world.settings.width,
         "height": world.settings.height,
         "seed": world.settings.seed,

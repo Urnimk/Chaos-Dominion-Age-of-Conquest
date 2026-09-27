@@ -1,0 +1,36 @@
+{
+  "game": "亂世演算_征佔紀元",
+  "version": "V2_氣候與自然環境版",
+  "width": 2000,
+  "height": 2000,
+  "seed": 20260924,
+  "world_style": "BALANCED",
+  "target_ocean_ratio": 0.7,
+  "actual_ocean_ratio": 0.700147,
+  "sea_level": 0.47266,
+  "landmass_count": 59,
+  "largest_landmasses": [
+    321361,
+    320247,
+    314526,
+    186357,
+    12703,
+    9580,
+    6512,
+    3691,
+    3622,
+    2646,
+    1970,
+    1228
+  ],
+  "generation_seconds": 11.903,
+  "average_land_temperature_c": 8.171,
+  "average_land_humidity": 0.6446,
+  "average_land_rainfall_mm": 1066.88,
+  "lake_cells": 5846,
+  "river_cells": 3473,
+  "files": {
+    "data": "world_map.npz",
+    "preview": "world_map_preview.png"
+  }
+}
