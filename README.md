@@ -1,0 +1,101 @@
+# 亂世演算：征佔紀元
+
+《亂世演算：征佔紀元》（Chaos Dominion: Age of Conquest）是以 Python 製作的地圖戰略模擬遊戲。世界由 Seed 驅動生成，涵蓋地形、氣候、可居住性、國家、經濟、拓荒、殖民、外交與戰爭。國家從小型核心領土起步，逐步建設、擴張，並可能分裂、遷都或滅亡。
+
+目前 `current/` 的版本為 **V8.4｜海外登陸戰版**。本 Repository 是地圖戰爭模擬支線；各版本的原始說明集中於 `notes/`，歷代程式快照保存於 `versions/`。
+
+## 功能概覽
+
+- 以固定 Seed 生成世界地圖，可調整尺寸與世界風格。
+- 生成氣候、水文、生態、農業、木材、礦產、淡水、建城與防禦等格子資料。
+- 模擬國家人口、資源、城市、港口、軍隊、聯盟與 AI 決策。
+- 以拓荒、遠征、補給、地形防禦和逐格占領推進領土變化。
+- 支援海外殖民、殖民地獨立及跨海登陸；V8.4 的殖民港也能成為後續遠征據點。
+- 提供可縮放、拖曳及點擊查詢的地圖介面，並顯示國家資訊、歷史事件及戰鬥紀錄。
+- 可儲存與讀取地圖及戰局。
+
+## 專案結構
+
+```text
+Chaos-Dominion-Age-of-Conquest/
+├─ current/              # 目前可執行版本的程式與啟動檔
+├─ notes/                # V1.0 至 V8.4 的版本說明原文
+├─ versions/             # 歷代完整程式快照；請勿以新版覆蓋舊版
+├─ CHANGELOG.md           # 歷代版本重點索引
+├─ README.md              # 專案介紹與執行方式
+├─ requirements.txt       # Python 套件清單
+└─ .gitignore             # 排除存檔、快取與暫存資料
+```
+
+### V8.4 `current/` 模組
+
+| 檔案 | 用途 |
+| --- | --- |
+| `亂世演算_征佔紀元_啟動.py` | 啟動遊戲介面 |
+| `map_viewer.py` | Tkinter 介面、地圖互動、時間推進及存檔操作 |
+| `war_engine.py` | 國家年度更新、AI 決策、拓荒、殖民、外交、遠征及戰鬥規則 |
+| `map_generator.py` | 依設定建立或載入世界資料 |
+| `environment_generator.py` | 氣候與水文等自然環境資料 |
+| `habitability_generator.py` | 農業、木材、礦產、淡水及建城等適居性資料 |
+| `country_generator.py` | 國家、首都與初始領土資料 |
+| `map_renderer.py` | 將地形、領土及地圖圖層繪製成畫面 |
+| `map_config.py` | 地圖、拓荒、殖民、戰爭及介面參數 |
+| `terrain_rules.py`、`climate_rules.py` | 地形與氣候規則 |
+
+## 安裝與啟動
+
+建議使用 **Python 3.10 以上版本**。Windows 使用者請確認 Python 安裝時包含 `tkinter`。
+
+在 Repository 根目錄安裝相依套件：
+
+```bat
+python -m pip install -r requirements.txt
+```
+
+切換到 `current/` 後啟動：
+
+```bat
+cd current
+python "亂世演算_征佔紀元_V8_4_啟動.py"
+```
+
+Windows 也可在 `current/` 內執行 `啟動遊戲.bat`。一般請由啟動檔開啟，不要直接執行 `war_engine.py`。
+
+## 基本操作
+
+- 用滑鼠拖曳平移地圖，滾輪縮放；點選格子或國家可查看資料。
+- 從介面控制模擬暫停、逐年／逐批推進及執行速度。
+- 左側查看選定國家的狀態、領土、人口、軍隊、資源、建築與殖民地；排名可切換查詢對象。
+- 事件區可查看國家歷史與戰鬥紀錄；殖民地或歷史地名可用介面提供的連結定位地圖。
+
+## 參數與世界生成
+
+`current/map_config.py` 集中放置地圖與模擬參數。常見設定包括：
+
+- `MAP_WIDTH`、`MAP_HEIGHT`、`MAP_SEED`、`WORLD_STYLE`：地圖尺寸、Seed 與世界風格。
+- `COUNTRY_COUNT`：開局國家數量。
+- `INITIAL_TERRITORY_RADIUS`、`INITIAL_TERRITORY_MAX_CELLS`：新國家初始核心領土。
+- `EXPANSION_*`、`BUILDING_*`：拓荒與建築節奏及成本。
+- `COLONY_*`：殖民條件、成本、殖民港與獨立設定。
+- `NAVAL_*`、`AI_NAVAL_TARGET_BONUS`：海上作戰與 AI 目標評估。
+- `COUNTRY_NAME_FONT_SIZE`、`COUNTRY_NAME_FONT_BOLD`、`COUNTRY_NAME_OUTLINE_WIDTH`：地圖國名樣式。
+
+預設地圖為 2000×2000 格，對記憶體與運算能力需求較高。初次測試或效能有限時，可先降低 `MAP_WIDTH`、`MAP_HEIGHT` 再啟動。
+
+> **速度設定提醒：** V8.4 的程式碼目前在 `map_viewer.py` 將 `SECONDS_PER_YEAR` 設為 `0.01` 秒，`map_config.py` 也有同名參數；介面實際採用 `map_viewer.py` 的值，目標約為每秒 100 年。部分版本說明仍寫每年 2 秒，與程式預設值不一致。若要調整實際速度，請先修改介面使用的常數。
+
+## 存檔與重開新世界
+
+程式會在 `current/saves/` 建立執行資料，例如地圖資料、預覽圖、世界資訊與戰局存檔。請定期備份此資料夾。若要重新生成全新世界，先關閉遊戲，再將 `current/saves/` 移出或清空後重新啟動；這會一併移除目前的世界和戰局進度。
+
+`saves/`、Python 快取及暫存檔不屬於原始碼，已由 `.gitignore` 排除，不應提交到 GitHub。
+
+## 版本資料
+
+- [CHANGELOG.md](CHANGELOG.md)：快速查閱 V1.0 至 V8.4 的版本重點。
+- `notes/`：逐版原始說明；各檔記載當時功能、參數與測試紀錄。
+- `versions/`：歷代完整程式快照，用於回溯與比較。執行最新版請使用 `current/`。
+
+## 開發與測試範圍
+
+版本說明中的長期模擬與功能測試，是各版本說明所記錄的結果；不代表每次上傳 GitHub 前都重新執行過相同測試。若修改戰爭、人口或存檔邏輯，建議固定 Seed，並檢查資源非負、存檔重載與 GUI 操作。
