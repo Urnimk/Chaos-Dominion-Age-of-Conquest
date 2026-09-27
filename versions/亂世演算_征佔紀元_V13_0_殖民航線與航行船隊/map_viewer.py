@@ -111,7 +111,7 @@ STYLE_CODES = {v: k for k, v in STYLE_LABELS.items()}
 class MapViewer:
     def __init__(self, root):
         self.root = root
-        self.root.title("亂世演算_征佔紀元 V13_2｜靜態航線與抵達日誌版")
+        self.root.title("亂世演算_征佔紀元 V13｜殖民航線與航行船隊版")
         self.root.geometry(WINDOW_SIZE)
         self.root.configure(bg="#161616")
         self.world = self.war = self.full_image = self.tk_image = None
@@ -414,19 +414,13 @@ class MapViewer:
         if voyage:
             ax, ay = map(int, voyage["anchor"])
             destination = self.war.geographic_name_at(ay, ax)
-            arrival_year = self._voyage_arrival_year(voyage)
+            distance_left = max(0.0, float(voyage["route_distance_km"]) - float(voyage["travelled_km"]))
+            speed = float(voyage.get("speed_km_per_year", cfg.COLONY_SHIP_SPEED_KM_PER_YEAR))
+            eta = int(np.ceil(distance_left / max(0.1, speed)))
             if colonies:
                 widget.insert("end", "\n")
-            widget.insert("end", f"航線：前往{destination}海岸｜預計第 {arrival_year} 年抵達")
+            widget.insert("end", f"⛵ 航行中：{destination}｜剩餘 {distance_left:,.0f} 公里，約 {eta} 年")
         widget.configure(state="disabled")
-
-    def _voyage_arrival_year(self, voyage):
-        saved_year = voyage.get("estimated_arrival_year")
-        if saved_year is not None:
-            return int(saved_year)
-        speed = float(voyage.get("speed_km_per_year", cfg.COLONY_SHIP_SPEED_KM_PER_YEAR))
-        years = max(1, int(np.ceil(float(voyage.get("route_distance_km", 0.0)) / max(0.1, speed))))
-        return int(voyage.get("launched_year", self.war.year)) + years - 1
 
     def focus_colony_on_map(self, x, y, name):
         self.center_x, self.center_y = float(x), float(y)
@@ -580,19 +574,12 @@ class MapViewer:
             ("領土規模", f"{c['territory_cells']:,} 格"),
             ("戰略狀態", "交戰中" if active else "和平"),
         )
-        voyage = c.get("colonization_voyage")
-        if voyage:
-            voyage_anchor = list(map(int, voyage["anchor"]))
-            voyage_destination = self.war.geographic_name_at(voyage_anchor[1], voyage_anchor[0])
-            voyage_status = f"航線前往{voyage_destination}海岸｜預計第{self._voyage_arrival_year(voyage)}年抵達"
-        else:
-            voyage_status = "無"
         economy_rows = (
             ("人口", f"{c['population']:,} 人"),
             ("士兵", f"{c['soldiers']:,} 人"),
             ("艦隊", f"{c['fleet']:,}"),
             ("海外殖民地", f"{len(c.get('colonies', [])):,}"),
-            ("殖民航線", voyage_status),
+            ("殖民船航行", (f"前往{self.war.geographic_name_at(*reversed(c['colonization_voyage']['anchor']))}｜{max(0.0, float(c['colonization_voyage']['route_distance_km'])-float(c['colonization_voyage']['travelled_km'])):,.0f}公里" if c.get("colonization_voyage") else "無")),
             ("城市／兵營", f"{c['cities']}／{c['barracks']}"),
             ("拓荒站／港口", f"{c['outposts']}／{c['ports']}"),
             ("糧食", f"{c['food']:,.0f}"),
@@ -1073,15 +1060,32 @@ class MapViewer:
                             and -12 <= sy0 <= ch+12 and -12 <= sy1 <= ch+12):
                         self.canvas.create_line(sx0, sy0, sx1, sy1, fill="#f4c95d",
                                                 width=max(2, min(4, self.zoom*1.4)), dash=(6, 4))
-                if route:
-                    for x, y, color in (
-                        (*map(float, route[0]), "#4ade80"),
-                        (*map(float, route[-1]), "#fb7185"),
-                    ):
-                        sx, sy = ox+(x-left)*self.zoom, oy+(y-top)*self.zoom
-                        if -8 <= sx <= cw+8 and -8 <= sy <= ch+8:
-                            self.canvas.create_oval(sx-4, sy-4, sx+4, sy+4,
-                                                    fill=color, outline="#10253b", width=1)
+                position = voyage.get("position") or route[0]
+                px, py = map(float, position)
+                sx, sy = ox+(px-left)*self.zoom, oy+(py-top)*self.zoom
+                if not (-28 <= sx <= cw+28 and -30 <= sy <= ch+30):
+                    continue
+                # A large, map-native sailboat marker remains legible at ordinary zoom levels.
+                self.canvas.create_oval(sx-13, sy-13, sx+13, sy+13,
+                                        fill="#ffe082", outline="#172b4d", width=2)
+                self.canvas.create_line(sx, sy-8, sx, sy+4, fill="#172b4d", width=2)
+                self.canvas.create_polygon(sx+1, sy-7, sx+8, sy+1, sx+1, sy+1,
+                                           fill="#f05b45", outline="#172b4d")
+                self.canvas.create_polygon(sx-1, sy-5, sx-7, sy+1, sx-1, sy+1,
+                                           fill="#ffffff", outline="#172b4d")
+                self.canvas.create_polygon(sx-8, sy+5, sx+9, sy+5, sx+5, sy+9,
+                                           sx-5, sy+9, fill="#172b4d", outline="#172b4d")
+                label = str(country["name"])
+                label_x, label_y = sx+17, sy-17
+                label_width = max(54, len(label)*12+16)
+                if label_x+label_width > cw-3:
+                    label_x = sx-label_width-17
+                self.canvas.create_rectangle(label_x, label_y, label_x+label_width,
+                                             label_y+25, fill="#10253b",
+                                             outline="#f4c95d", width=1)
+                self.canvas.create_text(label_x+label_width/2, label_y+12,
+                                        text=label, fill="white",
+                                        font=(UI_FONT_FAMILY, 10, "bold"))
         font = (UI_FONT_FAMILY, UI_COUNTRY_NAME_FONT_SIZE, "bold" if cfg.COUNTRY_NAME_FONT_BOLD else "normal")
         for country in self.world.countries:
             cid=int(country["id"]); cx,cy=country["capital"]

@@ -111,7 +111,7 @@ STYLE_CODES = {v: k for k, v in STYLE_LABELS.items()}
 class MapViewer:
     def __init__(self, root):
         self.root = root
-        self.root.title("亂世演算_征佔紀元 V13_2｜靜態航線與抵達日誌版")
+        self.root.title("亂世演算_征佔紀元 V12.1｜本島定位與殖民節奏版")
         self.root.geometry(WINDOW_SIZE)
         self.root.configure(bg="#161616")
         self.world = self.war = self.full_image = self.tk_image = None
@@ -410,23 +410,7 @@ class MapViewer:
                 widget.tag_bind(tag, "<Enter>", lambda _e, w=widget: w.configure(cursor="hand2"))
                 widget.tag_bind(tag, "<Leave>", lambda _e, w=widget: w.configure(cursor="arrow"))
                 widget.tag_bind(tag, "<Button-1>", lambda _e, x=ax, y=ay, n=name: self.focus_colony_on_map(x, y, n))
-        voyage = country.get("colonization_voyage")
-        if voyage:
-            ax, ay = map(int, voyage["anchor"])
-            destination = self.war.geographic_name_at(ay, ax)
-            arrival_year = self._voyage_arrival_year(voyage)
-            if colonies:
-                widget.insert("end", "\n")
-            widget.insert("end", f"航線：前往{destination}海岸｜預計第 {arrival_year} 年抵達")
         widget.configure(state="disabled")
-
-    def _voyage_arrival_year(self, voyage):
-        saved_year = voyage.get("estimated_arrival_year")
-        if saved_year is not None:
-            return int(saved_year)
-        speed = float(voyage.get("speed_km_per_year", cfg.COLONY_SHIP_SPEED_KM_PER_YEAR))
-        years = max(1, int(np.ceil(float(voyage.get("route_distance_km", 0.0)) / max(0.1, speed))))
-        return int(voyage.get("launched_year", self.war.year)) + years - 1
 
     def focus_colony_on_map(self, x, y, name):
         self.center_x, self.center_y = float(x), float(y)
@@ -551,7 +535,7 @@ class MapViewer:
     def refresh_panels(self):
         if not self.war: return
         summary = self.war.summary()
-        self.year_var.set(f"🌍 世界第 {summary['year']} 年｜存活 {summary['alive']} 國｜行軍 {summary['campaigns']} 支｜殖民船 {summary.get('colonizing_voyages',0)} 艘｜戰役 {summary['battles']} 場")
+        self.year_var.set(f"🌍 世界第 {summary['year']} 年｜存活 {summary['alive']} 國｜行軍 {summary['campaigns']} 支｜戰役 {summary['battles']} 場")
         names = [c["name"] for c in self.war.countries]
         self.country_combo.configure(values=names)
         cid = min(max(1, self.selected_country_id), len(names)); self.selected_country_id = cid
@@ -580,19 +564,11 @@ class MapViewer:
             ("領土規模", f"{c['territory_cells']:,} 格"),
             ("戰略狀態", "交戰中" if active else "和平"),
         )
-        voyage = c.get("colonization_voyage")
-        if voyage:
-            voyage_anchor = list(map(int, voyage["anchor"]))
-            voyage_destination = self.war.geographic_name_at(voyage_anchor[1], voyage_anchor[0])
-            voyage_status = f"航線前往{voyage_destination}海岸｜預計第{self._voyage_arrival_year(voyage)}年抵達"
-        else:
-            voyage_status = "無"
         economy_rows = (
             ("人口", f"{c['population']:,} 人"),
             ("士兵", f"{c['soldiers']:,} 人"),
             ("艦隊", f"{c['fleet']:,}"),
             ("海外殖民地", f"{len(c.get('colonies', [])):,}"),
-            ("殖民航線", voyage_status),
             ("城市／兵營", f"{c['cities']}／{c['barracks']}"),
             ("拓荒站／港口", f"{c['outposts']}／{c['ports']}"),
             ("糧食", f"{c['food']:,.0f}"),
@@ -1057,31 +1033,6 @@ class MapViewer:
                 y0,x0=campaign.origin; y1,x1=campaign.objective
                 color="#59e6f2" if campaign.mode=="naval" else "#ff5c57"
                 self.canvas.create_line(ox+(x0-left)*self.zoom, oy+(y0-top)*self.zoom, ox+(x1-left)*self.zoom, oy+(y1-top)*self.zoom, fill=color, width=2, arrow="last", dash=(5,3))
-            for country in self.war.countries:
-                voyage = country.get("colonization_voyage")
-                if not voyage:
-                    continue
-                route = voyage.get("route", [])
-                world_width = self.world.settings.width
-                for first, second in zip(route, route[1:]):
-                    x0, y0 = map(float, first); x1, y1 = map(float, second)
-                    if abs(x1 - x0) > world_width / 2:
-                        continue  # 地圖左右相接處不畫跨整張圖的長線。
-                    sx0, sy0 = ox+(x0-left)*self.zoom, oy+(y0-top)*self.zoom
-                    sx1, sy1 = ox+(x1-left)*self.zoom, oy+(y1-top)*self.zoom
-                    if (-12 <= sx0 <= cw+12 and -12 <= sx1 <= cw+12
-                            and -12 <= sy0 <= ch+12 and -12 <= sy1 <= ch+12):
-                        self.canvas.create_line(sx0, sy0, sx1, sy1, fill="#f4c95d",
-                                                width=max(2, min(4, self.zoom*1.4)), dash=(6, 4))
-                if route:
-                    for x, y, color in (
-                        (*map(float, route[0]), "#4ade80"),
-                        (*map(float, route[-1]), "#fb7185"),
-                    ):
-                        sx, sy = ox+(x-left)*self.zoom, oy+(y-top)*self.zoom
-                        if -8 <= sx <= cw+8 and -8 <= sy <= ch+8:
-                            self.canvas.create_oval(sx-4, sy-4, sx+4, sy+4,
-                                                    fill=color, outline="#10253b", width=1)
         font = (UI_FONT_FAMILY, UI_COUNTRY_NAME_FONT_SIZE, "bold" if cfg.COUNTRY_NAME_FONT_BOLD else "normal")
         for country in self.world.countries:
             cid=int(country["id"]); cx,cy=country["capital"]

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict
-import heapq
 import json
 import uuid
 import math
@@ -245,8 +244,7 @@ class WarEngine:
                 "king_number": 1,
                 "king_since_year": self.year,
                 "king_next_year": self.year + int(self.rng.integers(cfg.KING_REIGN_MIN_YEARS, cfg.KING_REIGN_MAX_YEARS + 1)),
-            "colonies": [],
-            "colonization_voyage": None,
+                "colonies": [],
             })
 
     def _ensure_country_brain(self, cid: int):
@@ -526,8 +524,7 @@ class WarEngine:
                             "soldiers": int(round(original_soldiers * share)),
                             "fleet": int(round(original_fleet * share)), "alliance": 0,
                             "wars_won": 0, "wars_lost": 0, "territory_cells": int(separated.sum()),
-                            "extinction_year": 0, "ever_extinct": False, "colonies": new_colonies,
-                            "colonization_voyage": None})
+                            "extinction_year": 0, "ever_extinct": False, "colonies": new_colonies})
         for key in ("food", "timber", "minerals"):
             total_resource = float(country[key])
             new_country[key] = total_resource * share
@@ -580,8 +577,7 @@ class WarEngine:
         if (not country["alive"] or country.get("ports", 0) <= 0
                 or country["fleet"] < cfg.COLONY_MIN_FLEET
                 or country["food"] < cfg.COLONY_FOOD_COST
-                or country["timber"] < cfg.COLONY_TIMBER_COST
-                or country.get("colonization_voyage")):
+                or country["timber"] < cfg.COLONY_TIMBER_COST):
             return False
         cid = int(country["id"])
         colonies = []
@@ -597,141 +593,6 @@ class WarEngine:
             max((int(colony.get("founded_year", 0)) for colony in colonies), default=-10**9),
         )
         return self.year - latest_founding >= cfg.COLONY_COOLDOWN_YEARS
-
-    @staticmethod
-    def _wrapped_distance_cells(first, second, width):
-        x0, y0 = first
-        x1, y1 = second
-        dx = abs(int(x1) - int(x0))
-        dx = min(dx, int(width) - dx)
-        return math.hypot(dx, int(y1) - int(y0))
-
-    def _water_neighbors(self, x, y):
-        height, width = self.world.terrain.shape
-        neighbors = []
-        for dy in (-1, 0, 1):
-            ny = y + dy
-            if not 0 <= ny < height:
-                continue
-            for dx in (-1, 0, 1):
-                if dx == 0 and dy == 0:
-                    continue
-                nx = (x + dx) % width
-                if self.world.terrain[ny, nx] > 1:
-                    continue
-                if dx and dy:
-                    # 船隻不能斜切陸角。
-                    if (self.world.terrain[y, nx] > 1
-                            or self.world.terrain[ny, x] > 1):
-                        continue
-                neighbors.append((nx, ny, math.sqrt(2.0) if dx and dy else 1.0))
-        return neighbors
-
-    def _sea_route(self, origin_port, target_land):
-        """Find a water-only route from a coastal port to the destination island."""
-        width, height = self.world.settings.width, self.world.settings.height
-        ox, oy = map(int, origin_port)
-        tx, ty = map(int, target_land)
-
-        def adjacent_water(point):
-            px, py = point
-            values = []
-            for dy in (-1, 0, 1):
-                ny = py + dy
-                if not 0 <= ny < height:
-                    continue
-                for dx in (-1, 0, 1):
-                    if dx == 0 and dy == 0:
-                        continue
-                    nx = (px + dx) % width
-                    if self.world.terrain[ny, nx] <= 1:
-                        values.append((nx, ny))
-            return values
-
-        starts, goals = adjacent_water((ox, oy)), set(adjacent_water((tx, ty)))
-        if not starts or not goals:
-            return None
-
-        def heuristic(point):
-            return min(self._wrapped_distance_cells(point, goal, width) for goal in goals)
-
-        frontier = []
-        came_from = {}
-        cost_so_far = {}
-        for start in starts:
-            cost_so_far[start] = 1.0
-            came_from[start] = None
-            heapq.heappush(frontier, (1.0 + heuristic(start), 1.0, start))
-        end = None
-        max_expansions = 150_000
-        expansions = 0
-        while frontier and expansions < max_expansions:
-            _score, current_cost, current = heapq.heappop(frontier)
-            if current_cost != cost_so_far.get(current):
-                continue
-            if current in goals:
-                end = current
-                break
-            expansions += 1
-            for nx, ny, step_cost in self._water_neighbors(*current):
-                neighbor = (nx, ny)
-                new_cost = current_cost + step_cost
-                if new_cost >= cost_so_far.get(neighbor, float("inf")):
-                    continue
-                cost_so_far[neighbor] = new_cost
-                came_from[neighbor] = current
-                heapq.heappush(frontier, (new_cost + heuristic(neighbor), new_cost, neighbor))
-        if end is None:
-            return None
-
-        sea_path = []
-        current = end
-        while current is not None:
-            sea_path.append(current)
-            current = came_from[current]
-        sea_path.reverse()
-        route = [(ox, oy)] + sea_path + [(tx, ty)]
-        compact = []
-        for point in route:
-            if not compact or point != compact[-1]:
-                compact.append(point)
-        return [[int(x), int(y)] for x, y in compact]
-
-    def _route_distance_km(self, route):
-        if len(route) < 2:
-            return 0.0
-        width = self.world.settings.width
-        cell_km = float(cfg.MAP_CELL_SIZE_KM)
-        total_cells = 0.0
-        for first, second in zip(route, route[1:]):
-            total_cells += self._wrapped_distance_cells(first, second, width)
-        return total_cells * cell_km
-
-    def _route_position(self, route, travelled_km, cell_size_km=None):
-        if not route:
-            return None
-        if len(route) == 1 or travelled_km <= 0:
-            return float(route[0][0]), float(route[0][1])
-        remaining = float(travelled_km) / float(cell_size_km or cfg.MAP_CELL_SIZE_KM)
-        width = self.world.settings.width
-        for first, second in zip(route, route[1:]):
-            x0, y0 = map(float, first)
-            x1, y1 = map(float, second)
-            dx = x1 - x0
-            if dx > width / 2:
-                dx -= width
-            elif dx < -width / 2:
-                dx += width
-            dy = y1 - y0
-            length = math.hypot(dx, dy)
-            if length <= 0:
-                continue
-            if remaining <= length:
-                ratio = remaining / length
-                return (x0 + dx * ratio) % width, y0 + dy * ratio
-            remaining -= length
-        x, y = route[-1]
-        return float(x), float(y)
 
     def _colony_candidates(self, country: dict, context: dict) -> np.ndarray:
         if not self._colony_country_eligible(country):
@@ -762,7 +623,8 @@ class WarEngine:
         context = context or self._colony_context()
         neutral = context["neutral"]
         coastal = context["coastal"]
-        launched = set()
+        changed = False
+        founded = set()
         for country in list(self.countries):
             cid = int(country["id"])
             if selected_country_ids is not None and cid not in selected_country_ids:
@@ -781,130 +643,42 @@ class WarEngine:
                 ay, ax = map(int, top[int(np.argmax(top_values))])
             else:
                 ay, ax = map(int, top[int(self.rng.integers(0, len(top)))])
-            # Use an existing coastal port as the departure point; never teleport to the island.
-            port_mask = ((self.world.territory == cid)
-                         & (self.world.settlement == PORT))
-            py, px = np.where(port_mask)
-            if not len(px):
+            yy, xx = np.where(neutral)
+            ddx = np.minimum(abs(xx - ax), self.world.settings.width - abs(xx - ax))
+            dist = (yy - ay) ** 2 + ddx ** 2
+            order = np.argsort(dist)
+            max_cells = min(cfg.COLONY_INITIAL_CELLS,
+                            cfg.COLONY_SETTLER_POPULATION // max(1, cfg.SETTLER_POPULATION_PER_CELL))
+            chosen = np.column_stack((yy[order[:max_cells]], xx[order[:max_cells]])).astype(np.int32)
+            moved = self._move_settlers(country["id"], chosen)
+            if moved <= 0:
                 continue
-            ports = sorted(
-                ((int(x), int(y)) for y, x in zip(py, px)),
-                key=lambda point: self._wrapped_distance_cells(
-                    point, (ax, ay), self.world.settings.width
-                ),
-            )
-            route = None
-            for port in ports[:12]:
-                route = self._sea_route(port, (ax, ay))
-                if route:
-                    break
-            if not route:
-                continue
-            route_distance_km = self._route_distance_km(route)
-            if route_distance_km <= 0:
-                continue
-            if (country["food"] < cfg.COLONY_FOOD_COST
-                    or country["timber"] < cfg.COLONY_TIMBER_COST
-                    or country["fleet"] < max(cfg.COLONY_MIN_FLEET, cfg.COLONY_TRANSPORT_FLEET)):
-                continue
+            chosen = chosen[:moved]
+            self.world.territory[chosen[:, 0], chosen[:, 1]] = country["id"]
+            neutral[chosen[:, 0], chosen[:, 1]] = False
+            coastal[chosen[:, 0], chosen[:, 1]] = False
             country["food"] -= cfg.COLONY_FOOD_COST
             country["timber"] -= cfg.COLONY_TIMBER_COST
             country["fleet"] -= cfg.COLONY_TRANSPORT_FLEET
-            eta = max(1, math.ceil(route_distance_km / max(0.1, cfg.COLONY_SHIP_SPEED_KM_PER_YEAR)))
-            estimated_arrival_year = int(self.year + eta - 1)
-            country["colonization_voyage"] = {
-                "anchor": [ax, ay],
-                "route": route,
-                "route_distance_km": route_distance_km,
-                "travelled_km": 0.0,
-                "position": list(route[0]),
-                "launched_year": int(self.year),
-                "estimated_arrival_year": estimated_arrival_year,
-                "transport_fleet": int(cfg.COLONY_TRANSPORT_FLEET),
-                "cell_size_km": float(cfg.MAP_CELL_SIZE_KM),
-                "speed_km_per_year": float(cfg.COLONY_SHIP_SPEED_KM_PER_YEAR),
-            }
-            self.visual_revision += 1
+            colony = {"id": len(country.get("colonies", [])) + 1, "anchor": [ax, ay],
+                      "founded_year": self.year, "fleet": cfg.COLONY_TRANSPORT_FLEET}
+            country.setdefault("colonies", []).append(colony)
+            country["last_colony_founded_year"] = self.year
+            if cfg.COLONY_AUTO_PORT:
+                self.world.settlement[ay, ax] = PORT
+                country["ports"] = int(country.get("ports", 0)) + 1
+                self.world.countries[country["id"] - 1].setdefault("ports", []).append([ax, ay])
+            self._mark_world_changed(country["id"])
+            changed = True
+            founded.add(cid)
+            context["occupied_continents"].add(int(self.world.continent[ay, ax]))
             region = self.geographic_name_at(ay, ax)
-            self._log(cid, f"殖民船隊自港口啟航，沿航線前往{region}海岸；航程約{route_distance_km:,.0f}公里，預計於第{estimated_arrival_year}年抵達。")
-            launched.add(cid)
-        return launched
-
-    def _cancel_colony_voyage(self, country, voyage, reason):
-        if country["alive"]:
-            country["food"] += float(cfg.COLONY_FOOD_COST)
-            country["timber"] += float(cfg.COLONY_TIMBER_COST)
-            country["fleet"] += int(voyage.get("transport_fleet", cfg.COLONY_TRANSPORT_FLEET))
-        country["colonization_voyage"] = None
-        self._log(country["id"], f"殖民船隊航行中止：{reason}；船隊與遠征物資已返還。")
-        self.visual_revision += 1
-
-    def _complete_colony_voyage(self, country, voyage):
-        cid = int(country["id"])
-        ax, ay = map(int, voyage["anchor"])
-        if (not country["alive"] or self.world.territory[ay, ax] != 0
-                or self.world.terrain[ay, ax] < 2):
-            self._cancel_colony_voyage(country, voyage, "目的地已無法登陸")
-            return False
-        continent_id = int(self.world.continent[ay, ax])
-        island_neutral = ((self.world.territory == 0) & (self.world.terrain >= 2)
-                          & (self.world.continent == continent_id))
-        yy, xx = np.where(island_neutral)
-        if not len(xx):
-            self._cancel_colony_voyage(country, voyage, "島上已沒有可登陸土地")
-            return False
-        dx = np.minimum(abs(xx - ax), self.world.settings.width - abs(xx - ax))
-        order = np.argsort((yy - ay) ** 2 + dx ** 2)
-        max_cells = min(cfg.COLONY_INITIAL_CELLS,
-                        cfg.COLONY_SETTLER_POPULATION // max(1, cfg.SETTLER_POPULATION_PER_CELL))
-        chosen = np.column_stack((yy[order[:max_cells]], xx[order[:max_cells]])).astype(np.int32)
-        moved = self._move_settlers(cid, chosen)
-        if moved <= 0:
-            self._cancel_colony_voyage(country, voyage, "沒有足夠移民可登陸")
-            return False
-        chosen = chosen[:moved]
-        self.world.territory[chosen[:, 0], chosen[:, 1]] = cid
-        country["colonies"].append({
-            "id": len(country.get("colonies", [])) + 1,
-            "anchor": [ax, ay],
-            "founded_year": int(self.year),
-            "fleet": int(voyage.get("transport_fleet", cfg.COLONY_TRANSPORT_FLEET)),
-        })
-        country["last_colony_founded_year"] = int(self.year)
-        country["colonization_voyage"] = None
-        if cfg.COLONY_AUTO_PORT:
-            self.world.settlement[ay, ax] = PORT
-            country["ports"] = int(country.get("ports", 0)) + 1
-            self.world.countries[cid - 1].setdefault("ports", []).append([ax, ay])
-        self._mark_world_changed(cid)
-        self.world.border = _border_mask(self.world.territory)
-        self._build_geography()
-        region = self.geographic_name_at(ay, ax)
-        travel_years = max(1, int(self.year) - int(voyage.get("launched_year", self.year)) + 1)
-        self._log(cid, f"殖民船隊航行{voyage['route_distance_km']:,.0f}公里、歷時{travel_years}年，抵達{region}海岸並建立殖民地。")
-        self._history("殖民", f"{country['name']}的殖民船隊航行至{region}並建立海外殖民地。")
-        self.visual_revision += 1
-        return True
-
-    def _advance_colony_voyages(self):
-        for country in list(self.countries):
-            voyage = country.get("colonization_voyage")
-            if not voyage:
-                continue
-            if not country["alive"]:
-                self._cancel_colony_voyage(country, voyage, "出航國已滅亡")
-                continue
-            speed = max(0.0, float(voyage.get("speed_km_per_year", cfg.COLONY_SHIP_SPEED_KM_PER_YEAR)))
-            if speed <= 0:
-                continue
-            voyage.setdefault("cell_size_km", float(cfg.MAP_CELL_SIZE_KM))
-            voyage["travelled_km"] = min(
-                float(voyage["route_distance_km"]),
-                float(voyage.get("travelled_km", 0.0)) + speed,
-            )
-            # 航程只更新模擬資料；地圖上的航線固定顯示，不逐年重畫移動船標。
-            if voyage["travelled_km"] >= float(voyage["route_distance_km"]):
-                self._complete_colony_voyage(country, voyage)
+            self._log(country["id"], f"艦隊運送{moved}名移民至{region}，建立海外殖民地。")
+            self._history("殖民", f"{country['name']}的艦隊抵達{region}並建立海外殖民地。")
+        if changed:
+            self.world.border = _border_mask(self.world.territory)
+            self._build_geography()
+        return founded
 
     def _check_colony_independence(self):
         if self.year % max(1, cfg.COLONY_INDEPENDENCE_CHECK_INTERVAL):
@@ -1723,21 +1497,18 @@ class WarEngine:
                 self._finalize_extinct_rl_brains()
             self._update_monarchs()
             self._ai_decisions()
-            if str(cfg.AI_MODE).upper() != "SARSA_LAMBDA":
-                self._found_overseas_colonies()
             self._advance_campaigns()
-            self._advance_colony_voyages()
             self._check_territorial_splits()
             self._check_power_splits()
+            if str(cfg.AI_MODE).upper() != "SARSA_LAMBDA":
+                self._found_overseas_colonies()
             self._check_colony_independence()
         return self.summary()
 
     def summary(self):
         alive = sum(1 for c in self.countries if c["alive"])
         marching = sum(1 for c in self.campaigns if c.status == "marching")
-        colonizing = sum(bool(c.get("colonization_voyage")) for c in self.countries)
-        return {"year": self.year, "alive": alive, "campaigns": marching,
-                "colonizing_voyages": colonizing, "battles": self.battles}
+        return {"year": self.year, "alive": alive, "campaigns": marching, "battles": self.battles}
 
     @staticmethod
     def _rl_brains_path(path: Path) -> Path:
@@ -1759,7 +1530,7 @@ class WarEngine:
         )
         snapshot_id = uuid.uuid4().hex
         payload = {
-            "version": "V13_2_靜態航線與抵達日誌版",
+            "version": "V12_1_本島定位與殖民節奏版",
             "rl_brains_snapshot_id": snapshot_id,
             "seed": self.world.settings.seed,
             "year": self.year,
@@ -1783,7 +1554,7 @@ class WarEngine:
         brain_path = self._rl_brains_path(path)
         brain_payload = {
             "format_version": 1,
-            "game_version": "V13_2_靜態航線與抵達日誌版",
+            "game_version": "V12_1_本島定位與殖民節奏版",
             "snapshot_id": snapshot_id,
             "seed": int(self.world.settings.seed),
             "year": int(self.year),
@@ -1799,7 +1570,7 @@ class WarEngine:
     def load(cls, world, path: Path):
         path = Path(path)
         payload = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
-        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_靜態航線與抵達日誌版"):
+        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版"):
             raise ValueError("不支援此版本的戰爭存檔")
         if int(payload.get("seed", -1)) != int(world.settings.seed):
             raise ValueError("戰爭存檔與目前世界Seed不一致")
@@ -1830,7 +1601,6 @@ class WarEngine:
             c.setdefault("king_since_year", defaults.get("king_since_year", engine.year))
             c.setdefault("king_next_year", defaults.get("king_next_year", engine.year + 80))
             c.setdefault("colonies", [])
-            c.setdefault("colonization_voyage", None)
             if "．" not in str(c.get("king_name", "")):
                 c["royal_surname"] = str(engine.rng.choice(ROYAL_SURNAMES))
                 c["king_name"] = str(engine.rng.choice(ROYAL_GIVEN_NAMES)) + "．" + c["royal_surname"]

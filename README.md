@@ -2,7 +2,6 @@
 
 《亂世演算：征佔紀元》（Chaos Dominion: Age of Conquest）是以 Python 製作的地圖戰略模擬遊戲。世界由 Seed 驅動生成，涵蓋地形、氣候、可居住性、國家、經濟、拓荒、殖民、外交與戰爭。國家從小型核心領土起步，逐步建設、擴張，並可能分裂、遷都或滅亡。
 
-目前 `current/` 為 **V12｜海權與戰區防禦版**。沿海國會優先建立港口並補充艦隊，RULE／SARSA 模式都能更積極發展殖民；戰鬥會考量當地人口、兵營、地形與隨機戰況。各國 Q table 僅由獨立 JSON 存取，規則 AI 仍為預設模式。本 Repository 是地圖戰爭模擬支線；各版本的原始說明集中於 `notes/`，歷代程式快照保存於 `versions/`。
 
 ## 功能概覽
 
@@ -19,19 +18,18 @@
 ```text
 Chaos-Dominion-Age-of-Conquest/
 ├─ current/              # 目前可執行版本的程式與啟動檔
-├─ notes/                # V1.0 至 V12 的版本說明原文
-├─ versions/             # 合併至既有 Repository 後保留的歷代程式快照
+├─ notes/                # 保留的版本說明文件
 ├─ CHANGELOG.md           # 歷代版本重點索引
 ├─ README.md              # 專案介紹與執行方式
 ├─ requirements.txt       # Python 套件清單
 └─ .gitignore             # 排除存檔、快取與暫存資料
 ```
 
-### V12 `current/` 模組
+### V13_3 `current/` 模組
 
 | 檔案 | 用途 |
 | --- | --- |
-| `亂世演算_征佔紀元_V12_啟動.py` | 啟動遊戲介面 |
+| `亂世演算_征佔紀元_VX_啟動.py` | 啟動遊戲介面 |
 | `map_viewer.py` | Tkinter 介面、地圖互動、時間推進及存檔操作 |
 | `war_engine.py` | 國家年度更新、AI 決策、拓荒、殖民、外交、遠征及戰鬥規則 |
 | `map_generator.py` | 依設定建立或載入世界資料 |
@@ -56,7 +54,7 @@ python -m pip install -r requirements.txt
 
 ```bat
 cd current
-python "亂世演算_征佔紀元_V12_啟動.py"
+python "亂世演算_征佔紀元_VX_啟動.py"
 ```
 
 Windows 也可在 `current/` 內執行 `啟動遊戲.bat`。一般請由啟動檔開啟，不要直接執行 `war_engine.py`。
@@ -72,21 +70,21 @@ Windows 也可在 `current/` 內執行 `啟動遊戲.bat`。一般請由啟動�
 
 `current/map_config.py` 集中放置地圖與模擬參數。常見設定包括：
 
-- `MAP_WIDTH`、`MAP_HEIGHT`、`MAP_SEED`、`WORLD_STYLE`：地圖尺寸、Seed 與世界風格。
+- `MAP_WIDTH`、`MAP_HEIGHT`、`MAP_CELL_SIZE_KM`、`MAP_SEED`、`WORLD_STYLE`：地圖尺寸、每格公里數、Seed 與世界風格。
 - `COUNTRY_COUNT`：開局國家數量。
 - `INITIAL_TERRITORY_RADIUS`、`INITIAL_TERRITORY_MAX_CELLS`：新國家初始核心領土。
 - `EXPANSION_*`、`BUILDING_*`：拓荒與建築節奏及成本。
 - `COLONY_*`：殖民條件、成本、殖民港與獨立設定。
 - `NAVAL_*`、`AI_NAVAL_TARGET_BONUS`：海上作戰與規則 AI 目標評估。
 - `AI_RL_NAVAL_ACTION_BIAS`、`AI_RL_COLONY_ACTION_BIAS`：SARSA 模式中新海上攻擊與殖民行動的初始偏好。
-- `AI_RL_COLONY_COOLDOWN_YEARS`：SARSA 模式同一國家再次殖民的最短間隔。
+- `COLONY_COOLDOWN_YEARS`、`COLONY_MAX_PER_COUNTRY`：所有 AI 模式共用的殖民冷卻（80 年）與每國殖民地上限（6 個）。
 - `PORTS_PER_COUNTRY`、`FLEET_*`：初始港口數、艦隊容量、補充批次與成本。
 - `BATTLE_*`、`BARRACKS_*_BONUS`：戰場隨機波動、區域守軍與兵營防守參數。
 - `COUNTRY_NAME_FONT_SIZE`、`COUNTRY_NAME_FONT_BOLD`、`COUNTRY_NAME_OUTLINE_WIDTH`：地圖國名樣式。
 
 預設地圖為 2000×2000 格，對記憶體與運算能力需求較高。初次測試或效能有限時，可先降低 `MAP_WIDTH`、`MAP_HEIGHT` 再啟動。
 
-> **速度設定提醒：** V12 的程式碼目前在 `map_viewer.py` 將 `SECONDS_PER_YEAR` 設為 `0.01` 秒，`map_config.py` 也有同名參數；介面實際採用 `map_viewer.py` 的值，目標約為每秒 100 年。部分版本說明仍寫每年 2 秒，與程式預設值不一致。若要調整實際速度，請先修改介面使用的常數。
+> **航線顯示：** 船隊仍依每年 10 公里的速度逐年航行，畫面不再逐年重繪船隻位置。出航時地圖繪製靜態航線，各國事件紀錄會列出預計抵達年份與目的海岸；實際殖民地仍要等航程完成後才建立。
 
 ## 可切換 AI 模式
 
@@ -108,7 +106,7 @@ AI_MODE = "SARSA_LAMBDA"  # 各國獨立的 Expected SARSA(λ) 模式
 
 - `PASS`：暫不發動一般戰爭。
 - `ATTACK:<國家ID>:land/naval`：攻擊符合現有合法目標條件、戰力比至少 0.85 的國家，允許承擔適度劣勢。海上行動還需要有效航線、港口、艦隊與可出征兵力；新的 naval 行動有持續選擇偏置，即使既有 Q table 已有該行動紀錄也會生效。
-- `COLONIZE`：只有港口、最低艦隊、糧食、木材及可用海外沿岸地都符合條件時才加入行動清單；同一國家的學習模式殖民行動至少間隔 50 年。AI 選擇殖民後，落點由既有選址規則挑選，優先空白大陸／島嶼與較高建地價值區。
+- `COLONIZE`：只有港口、最低艦隊、糧食、木材及可用海外沿岸地都符合條件時才加入行動清單；RULE 與 SARSA 模式都必須距離上次殖民至少 80 年，且每國最多 6 個殖民地。AI 選擇殖民後，船隊沿可通行海面航線逐年航行，每年 10 公里；抵達前不建立殖民地。路線與航程進度會保存並在載入後接續，各國日誌記錄預計抵達年份。
 
 這個模式只讓 Q table 決定一般戰爭、海上遠征和是否殖民；經濟、建築、陸上拓荒及反霸權圍剿仍依既有規則運作。`AI_MODE = "RULE"` 仍是預設，保留既有規則 AI 與原殖民檢查。
 
@@ -120,7 +118,7 @@ AI_MODE = "SARSA_LAMBDA"  # 各國獨立的 Expected SARSA(λ) 模式
 python -m unittest discover -s tests -v
 ```
 
-**V12 回歸測試：** 9 項測試通過，涵蓋每國大腦獨立、四維上限、獨立 JSON 唯一讀取、港口與艦隊建設、兵營局部守軍、近戰隨機反轉、海上攻擊選項與殖民行動。另有 V9 的 512×512、1,000 年基礎長跑紀錄；它不包含 V11 新增的海上／殖民學習行動，也不代表學習策略已優於規則 AI。
+**V13_3 回歸測試：** 17 項測試涵蓋 V13_2 原有海上尋路與地圖接縫、每年 10 公里推進、抵達後才建立殖民地、途中存檔續跑、移動期間不觸發地圖重繪、各國日誌記錄預計抵達年份、首都主島定位、80 年殖民冷卻與每國 6 個上限，以及既有 AI、港口、艦隊、戰鬥、Q table 和背景地圖快照隔離。另有 V9 的 512×512、1,000 年基礎長跑紀錄；它不包含 V11 新增的海上／殖民學習行動，也不代表學習策略已優於規則 AI。
 
 ## 存檔與重開新世界
 
@@ -130,9 +128,9 @@ python -m unittest discover -s tests -v
 
 ## 版本資料
 
-- [CHANGELOG.md](CHANGELOG.md)：快速查閱 V1.0 至 V12 的版本重點。
-- `notes/`：逐版原始說明；各檔記載當時功能、參數與測試紀錄。
-- `versions/`：歷代完整程式快照，用於回溯與比較。執行最新版請使用 `current/`。
+- [CHANGELOG.md](CHANGELOG.md)：快速查閱 V1.0 至 V13_3 的版本重點。
+- `notes/`：本次保留的版本說明文件。
+執行最新版請使用 `current/`。
 
 ## 開發與測試範圍
 

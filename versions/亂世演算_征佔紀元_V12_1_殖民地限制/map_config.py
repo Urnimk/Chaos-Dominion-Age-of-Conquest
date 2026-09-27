@@ -1,9 +1,8 @@
-"""《亂世演算_征佔紀元》V13_2 世界、拓荒、戰爭、AI 與 UI 全域參數。"""
+"""《亂世演算_征佔紀元》V12.1 世界、拓荒、戰爭、AI 與 UI 全域參數。"""
 import random
 
 MAP_WIDTH = 2000
 MAP_HEIGHT = 2000
-MAP_CELL_SIZE_KM = 1.0               # 每個地圖格代表 1 公里；預設地圖寬度約 2,000 公里。
 
 # 每次啟動都產生新種子；需要重現世界時，改成固定整數即可。
 MAP_SEED = random.SystemRandom().randint(1, 2**31 - 1)
@@ -160,7 +159,6 @@ COLONY_CHECK_INTERVAL = 10              # 每隔幾年檢查海外殖民行動�
 COLONY_FOUND_CHANCE = 0.60              # 有港口、艦隊與資源時，殖民檢查更常轉為實際遠征。
 COLONY_COOLDOWN_YEARS = 80              # 所有 AI 模式共用的殖民間隔。
 COLONY_MAX_PER_COUNTRY = 6              # 每國最多保有的殖民地數量。
-COLONY_SHIP_SPEED_KM_PER_YEAR = 10.0    # 殖民船每模擬年航行 10 公里（預設每年十格）。
 COLONY_MIN_FLEET = 8                    # 發起殖民所需的最低可用艦隊。
 COLONY_TRANSPORT_FLEET = 5              # 每次殖民轉為殖民地駐留艦隊的數量。
 COLONY_SETTLER_POPULATION = 30          # 每次海外殖民預計運送的移民人數。

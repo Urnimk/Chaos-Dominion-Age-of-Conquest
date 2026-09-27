@@ -1,4 +1,4 @@
-"""V12 海權、戰區防禦、殖民行動與獨立 Q 表 JSON 回歸測試。"""
+"""V13 航行殖民、地圖定位、殖民限制與獨立 Q 表 JSON 回歸測試。"""
 
 import tempfile
 import unittest
@@ -13,6 +13,7 @@ from map_generator import MapSettings, generate_world
 from rl_brain import CountryBrain, PASS_ACTION
 from war_engine import Campaign, WarEngine
 from country_generator import BARRACKS, PORT
+from map_viewer import _capital_landmass_mask
 
 
 class CountryBrainTests(unittest.TestCase):
@@ -38,6 +39,19 @@ class CountryBrainTests(unittest.TestCase):
             action_biases={"ATTACK:2:naval": 0.06},
         )
         self.assertEqual(selected, "ATTACK:2:naval")
+
+
+class MapFocusTests(unittest.TestCase):
+    def test_capital_focus_excludes_colony_even_when_same_country_owns_it(self):
+        territory = np.zeros((8, 12), dtype=np.int32)
+        continent = np.zeros_like(territory)
+        territory[1:4, 1:4] = 1
+        continent[1:4, 1:4] = 7
+        territory[1:4, 8:11] = 1
+        continent[1:4, 8:11] = 9
+        focus = _capital_landmass_mask(territory, continent, 1, (2, 2))
+        self.assertEqual(int(focus.sum()), 9)
+        self.assertFalse(focus[:, 8:].any())
 
 
 class RLEngineTests(unittest.TestCase):
@@ -89,12 +103,12 @@ class RLEngineTests(unittest.TestCase):
             save_path = Path(temp) / "rl_smoke"
             engine.save(save_path)
             saved_payload = json.loads(save_path.with_suffix(".json").read_text(encoding="utf-8"))
-            self.assertEqual(saved_payload["version"], "V12_海權與戰區防禦版")
+            self.assertEqual(saved_payload["version"], "V13_殖民航線與航行船隊版")
             self.assertNotIn("rl_brains", saved_payload)
             brains_path = WarEngine._rl_brains_path(save_path)
             self.assertTrue(brains_path.exists())
             brain_payload = json.loads(brains_path.read_text(encoding="utf-8"))
-            self.assertEqual(brain_payload["game_version"], "V12_海權與戰區防禦版")
+            self.assertEqual(brain_payload["game_version"], "V13_殖民航線與航行船隊版")
             self.assertEqual(set(brain_payload["brains"]), {str(cid) for cid in engine.rl_brains})
             saved_payload["rl_brains"] = {}
             save_path.with_suffix(".json").write_text(
@@ -183,16 +197,19 @@ class RLEngineTests(unittest.TestCase):
         country["fleet"] = max(20, int(country["fleet"]))
         country["food"] = max(500.0, float(country["food"]))
         country["timber"] = max(500.0, float(country["timber"]))
+        port_y, port_x = map(int, np.argwhere(engine.world.territory == cid)[0])
+        engine.world.settlement[port_y, port_x] = PORT
         engine.year = cfg.COLONY_CHECK_INTERVAL
         context = {
             "neutral": engine.world.territory == 0,
             "coastal": engine.world.territory == 0,
             "occupied_continents": set(),
         }
-        candidate = np.array([[0, 0]], dtype="int32")
+        target_x, target_y = (port_x + 20) % engine.world.settings.width, port_y
+        candidate = np.array([[target_y, target_x]], dtype="int32")
         with patch.object(engine, "_colony_context", return_value=context), \
                 patch.object(engine, "_colony_candidates", return_value=candidate), \
-                patch.object(engine, "_found_overseas_colonies", return_value={cid}) as found:
+                patch.object(engine, "_sea_route", return_value=[[port_x, port_y], [target_x, target_y]]):
             state, actions, biases = engine._rl_state_and_actions(cid, colony_available=True)
             self.assertIn("COLONIZE", actions)
             self.assertGreater(biases["COLONIZE"], biases[PASS_ACTION])
@@ -200,9 +217,94 @@ class RLEngineTests(unittest.TestCase):
             cfg.AI_MODE = "SARSA_LAMBDA"
             engine._rl_war_decisions([country])
             self.assertEqual(engine.rl_brains[cid].pending["action"], "COLONIZE")
-            found.assert_called_once_with(
-                selected_country_ids={cid}, force=True, deterministic=True, context=context
-            )
+            # The RL colonization action starts a saved voyage; the colony appears only on arrival.
+            self.assertEqual(country["colonization_voyage"]["anchor"], [target_x, target_y])
+
+    def test_sea_route_uses_water_and_wraps_around_the_map_edge(self):
+        engine = self.make_engine(seed=5531)
+        engine.world.terrain[:] = 0
+        engine.world.terrain[10, 2] = 2
+        engine.world.terrain[10, 250] = 2
+        route = engine._sea_route((2, 10), (250, 10))
+        self.assertIsNotNone(route)
+        self.assertEqual(route[0], [2, 10])
+        self.assertEqual(route[-1], [250, 10])
+        self.assertLess(engine._route_distance_km(route), 10.0)
+        for x, y in route[1:-1]:
+            self.assertLessEqual(int(engine.world.terrain[y, x]), 1)
+
+    def test_colony_ship_advances_ten_km_per_year_and_founds_on_arrival(self):
+        engine = self.make_engine(seed=5532)
+        country = engine.countries[0]
+        cid = int(country["id"])
+        country["colonies"] = []
+        country["colonization_voyage"] = {
+            "anchor": [130, 10],
+            "route": [[x, 10] for x in range(100, 131)],
+            "route_distance_km": 30.0,
+            "travelled_km": 0.0,
+            "position": [10.0, 10.0],
+            "launched_year": engine.year,
+            "transport_fleet": cfg.COLONY_TRANSPORT_FLEET,
+        }
+        engine.world.territory[10, 100:133] = 0
+        engine.world.terrain[10, 100:133] = 3
+        engine.world.continent[10, 100:133] = 999
+        for _ in range(2):
+            engine.year += 1
+            engine._advance_colony_voyages()
+            self.assertEqual(len(country["colonies"]), 0)
+            self.assertAlmostEqual(country["colonization_voyage"]["travelled_km"], 10.0 * (engine.year-country["colonization_voyage"]["launched_year"]))
+        engine.year += 1
+        engine._advance_colony_voyages()
+        self.assertEqual(len(country["colonies"]), 1)
+        self.assertIsNone(country["colonization_voyage"])
+        self.assertEqual(country["colonies"][0]["founded_year"], engine.year)
+
+    def test_colony_voyage_is_saved_and_loaded_mid_route(self):
+        engine = self.make_engine(seed=5533)
+        country = engine.countries[0]
+        country["colonization_voyage"] = {
+            "anchor": [80, 90],
+            "route": [[10, 10], [11, 10], [12, 10]],
+            "route_distance_km": 20.0,
+            "travelled_km": 10.0,
+            "position": [11.0, 10.0],
+            "launched_year": engine.year - 1,
+            "transport_fleet": cfg.COLONY_TRANSPORT_FLEET,
+            "cell_size_km": 1.0,
+            "speed_km_per_year": 10.0,
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            save_path = Path(temp) / "voyage_save"
+            engine.save(save_path)
+            loaded = WarEngine.load(engine.world, save_path)
+        self.assertEqual(loaded.country(country["id"])["colonization_voyage"], country["colonization_voyage"])
+
+    def test_colony_cooldown_and_six_colony_cap_apply_to_both_ai_modes(self):
+        engine = self.make_engine(seed=20260930)
+        country = engine.countries[0]
+        cid = int(country["id"])
+        country.update(ports=1, fleet=100, food=1000.0, timber=1000.0)
+        owned_yx = np.argwhere(engine.world.territory == cid)
+        self.assertGreaterEqual(len(owned_yx), cfg.COLONY_MAX_PER_COUNTRY)
+        anchors = []
+        for y, x in owned_yx[:cfg.COLONY_MAX_PER_COUNTRY]:
+            anchors.append({"anchor": [int(x), int(y)], "founded_year": 100})
+        country["colonies"] = anchors[:1]
+        country["last_colony_founded_year"] = 100
+        for mode in ("RULE", "SARSA_LAMBDA"):
+            cfg.AI_MODE = mode
+            country["colonies"] = anchors[:1]
+            engine.year = 179
+            self.assertFalse(engine._colony_country_eligible(country))
+            engine.year = 180
+            self.assertTrue(engine._colony_country_eligible(country))
+            country["colonies"] = []
+            engine.year = 179
+            self.assertFalse(engine._colony_country_eligible(country))
+            country["colonies"] = anchors
+            self.assertFalse(engine._colony_country_eligible(country))
 
     def test_coastal_country_builds_port_before_more_frontier_buildings(self):
         engine = self.make_engine(seed=551)

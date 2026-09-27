@@ -1,4 +1,4 @@
-"""《亂世演算_征佔紀元 V9》啟動檔。"""
+"""《亂世演算_征佔紀元 V12.1》啟動檔。"""
 
 try:
     from map_viewer import main

@@ -810,8 +810,6 @@ class WarEngine:
             country["food"] -= cfg.COLONY_FOOD_COST
             country["timber"] -= cfg.COLONY_TIMBER_COST
             country["fleet"] -= cfg.COLONY_TRANSPORT_FLEET
-            eta = max(1, math.ceil(route_distance_km / max(0.1, cfg.COLONY_SHIP_SPEED_KM_PER_YEAR)))
-            estimated_arrival_year = int(self.year + eta - 1)
             country["colonization_voyage"] = {
                 "anchor": [ax, ay],
                 "route": route,
@@ -819,14 +817,14 @@ class WarEngine:
                 "travelled_km": 0.0,
                 "position": list(route[0]),
                 "launched_year": int(self.year),
-                "estimated_arrival_year": estimated_arrival_year,
                 "transport_fleet": int(cfg.COLONY_TRANSPORT_FLEET),
                 "cell_size_km": float(cfg.MAP_CELL_SIZE_KM),
                 "speed_km_per_year": float(cfg.COLONY_SHIP_SPEED_KM_PER_YEAR),
             }
             self.visual_revision += 1
             region = self.geographic_name_at(ay, ax)
-            self._log(cid, f"殖民船隊自港口啟航，沿航線前往{region}海岸；航程約{route_distance_km:,.0f}公里，預計於第{estimated_arrival_year}年抵達。")
+            eta = max(1, math.ceil(route_distance_km / max(0.1, cfg.COLONY_SHIP_SPEED_KM_PER_YEAR)))
+            self._log(cid, f"殖民船隊自港口啟航，沿航線前往{region}；航程約{route_distance_km:,.0f}公里，預計{eta}年抵達。")
             launched.add(cid)
         return launched
 
@@ -880,8 +878,7 @@ class WarEngine:
         self.world.border = _border_mask(self.world.territory)
         self._build_geography()
         region = self.geographic_name_at(ay, ax)
-        travel_years = max(1, int(self.year) - int(voyage.get("launched_year", self.year)) + 1)
-        self._log(cid, f"殖民船隊航行{voyage['route_distance_km']:,.0f}公里、歷時{travel_years}年，抵達{region}海岸並建立殖民地。")
+        self._log(cid, f"殖民船隊航行{voyage['route_distance_km']:,.0f}公里、歷時{self.year-voyage['launched_year']}年，抵達{region}並建立殖民地。")
         self._history("殖民", f"{country['name']}的殖民船隊航行至{region}並建立海外殖民地。")
         self.visual_revision += 1
         return True
@@ -902,7 +899,11 @@ class WarEngine:
                 float(voyage["route_distance_km"]),
                 float(voyage.get("travelled_km", 0.0)) + speed,
             )
-            # 航程只更新模擬資料；地圖上的航線固定顯示，不逐年重畫移動船標。
+            position = self._route_position(
+                voyage["route"], voyage["travelled_km"], voyage["cell_size_km"]
+            )
+            voyage["position"] = [float(position[0]), float(position[1])]
+            self.visual_revision += 1
             if voyage["travelled_km"] >= float(voyage["route_distance_km"]):
                 self._complete_colony_voyage(country, voyage)
 
@@ -1759,7 +1760,7 @@ class WarEngine:
         )
         snapshot_id = uuid.uuid4().hex
         payload = {
-            "version": "V13_2_靜態航線與抵達日誌版",
+            "version": "V13_殖民航線與航行船隊版",
             "rl_brains_snapshot_id": snapshot_id,
             "seed": self.world.settings.seed,
             "year": self.year,
@@ -1783,7 +1784,7 @@ class WarEngine:
         brain_path = self._rl_brains_path(path)
         brain_payload = {
             "format_version": 1,
-            "game_version": "V13_2_靜態航線與抵達日誌版",
+            "game_version": "V13_殖民航線與航行船隊版",
             "snapshot_id": snapshot_id,
             "seed": int(self.world.settings.seed),
             "year": int(self.year),
@@ -1799,7 +1800,7 @@ class WarEngine:
     def load(cls, world, path: Path):
         path = Path(path)
         payload = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
-        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_靜態航線與抵達日誌版"):
+        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版"):
             raise ValueError("不支援此版本的戰爭存檔")
         if int(payload.get("seed", -1)) != int(world.settings.seed):
             raise ValueError("戰爭存檔與目前世界Seed不一致")
