@@ -1,0 +1,206 @@
+"""《亂世演算_征佔紀元》V13_4 世界、拓荒、戰爭、AI 與 UI 全域參數。"""
+import random
+
+MAP_WIDTH = 2000
+MAP_HEIGHT = 2000
+MAP_CELL_SIZE_KM = 1.0               # 每個地圖格代表 1 公里；預設地圖寬度約 2,000 公里。
+
+# 每次啟動都產生新種子；需要重現世界時，改成固定整數即可。
+MAP_SEED = random.SystemRandom().randint(1, 2**31 - 1)
+
+WORLD_STYLE_OPTIONS = (
+    "BALANCED",        # 均衡世界
+    "SUPERCONTINENT",  # 超級大陸
+    "ARCHIPELAGO",     # 群島世界
+    "FRACTURED",       # 破碎大陸
+    "INLAND_SEAS",     # 內海世界
+    "TWIN_CONTINENTS", # 雙大陸世界
+)
+
+# 相同 Seed 固定抽到相同風格，不影響世界生成器後續的亂數序列。
+WORLD_STYLE = random.Random(MAP_SEED).choice(WORLD_STYLE_OPTIONS)
+
+# 海陸、大陸與島嶼。
+TARGET_OCEAN_RATIO = 0.70
+CONTINENT_CORE_MIN = 4
+CONTINENT_CORE_MAX = 9
+MIN_ISLAND_AREA = 24
+COAST_SMOOTHING_ITERATIONS = 1
+
+# 地形形狀。
+DOMAIN_WARP_STRENGTH = 0.055
+CONTINENT_NOISE_STRENGTH = 0.42
+COAST_DETAIL_STRENGTH = 0.18
+ISLAND_CHAIN_STRENGTH = 0.12
+
+# 板塊與山系。
+TECTONIC_PLATE_MIN = 9
+TECTONIC_PLATE_MAX = 16
+MOUNTAIN_STRENGTH = 0.22
+MOUNTAIN_WIDTH = 9.0
+
+# 地形分類相對海平面的高度。
+DEEP_OCEAN_DEPTH = 0.12
+BEACH_HEIGHT = 0.025
+PLAIN_HEIGHT = 0.16
+HILL_HEIGHT = 0.30
+MOUNTAIN_HEIGHT = 0.34
+
+# 顯示與存檔。
+CHUNK_SIZE = 256
+PREVIEW_FILENAME = "world_map_preview.png"
+DATA_FILENAME = "world_map.npz"
+INFO_FILENAME = "world_map_info.json"
+
+# 第二階段：水文密度（以2000×2000為基準，小地圖會按面積縮放）。
+LAKE_COUNT = 18
+RIVER_SOURCE_COUNT = 85
+
+# 第四階段：國家、領土與交通。
+COUNTRY_COUNT = 32  # 開局國家數量；調高會增加地圖生成、外交、戰爭與UI運算量。
+COUNTRY_MIN_DISTANCE_RATIO = 0.075
+MIN_COUNTRY_LANDMASS_CELLS = 12000
+TERRITORY_RADIUS_RATIO = 0.42
+TERRITORY_ALPHA = 0.34
+TERRITORY_CELLS_PER_CITY = 45000
+MAX_CITIES_PER_COUNTRY = 5
+PORTS_PER_COUNTRY = 2
+
+# 第五階段：時間、人口、資源與軍事。
+WAR_START_YEAR = 1
+INITIAL_POPULATION_PER_CELL = 2.4
+INITIAL_SOLDIER_RATIO = 0.08
+INITIAL_FLEET_PER_PORT = 18
+ANNUAL_POPULATION_GROWTH = 0.006
+ANNUAL_RECRUIT_RATIO = 0.012
+MIN_GARRISON_RATIO = 0.035
+
+# 糧食經濟：所有已控制的可居住格都按農業值生產，人口成長受承載量限制。
+FOOD_PRODUCTION_MULTIPLIER = 1.15
+FOOD_CONSUMPTION_PER_PERSON = 0.18
+FOOD_GROWTH_RESERVE_RATIO = 0.90
+CITY_FOOD_PRODUCTIVITY_BONUS = 0.015
+MAX_CITY_FOOD_PRODUCTIVITY_BONUS = 0.30
+
+# 行軍與補給。距離以地圖格計，1回合等於1年。
+LAND_MARCH_CELLS_PER_YEAR = 38.0
+SEA_MARCH_CELLS_PER_YEAR = 75.0
+NAVAL_OPERATION_RANGE = 620.0
+SUPPLY_PER_SOLDIER_CELL = 0.000018
+SUPPLY_SHORTAGE_ATTRITION = 0.12
+MOUNTAIN_DEFENSE_BONUS = 0.55
+HILL_DEFENSE_BONUS = 0.22
+RIVER_DEFENSE_BONUS = 0.12
+AMPHIBIOUS_ATTACK_PENALTY = 0.28
+
+# AI與戰爭節奏。
+AI_MODE = "RULE"  # RULE 保留目前AI；SARSA_LAMBDA 使用各國獨立 Expected SARSA(lambda) 大腦，納入遠征與殖民選擇。
+AI_RL_ALPHA = 0.12
+AI_RL_GAMMA = 0.92
+AI_RL_TRACE_LAMBDA = 0.65
+AI_RL_EPSILON = 0.12
+AI_RL_MIN_EPSILON = 0.04
+AI_RL_EPSILON_DECAY_DECISIONS = 300
+AI_RL_NAVAL_ACTION_BIAS = 0.06       # 海上攻擊每次選擇時的策略偏置。
+AI_RL_COLONY_ACTION_BIAS = 0.40     # 有可行海外據點時，提高殖民行動優先度。
+AI_WAR_CHECK_INTERVAL = 5
+AI_BASE_WAR_CHANCE = 0.10
+AI_MIN_ATTACK_SOLDIERS = 800
+AI_MIN_POWER_RATIO = 0.85             # AI 允許以低於對手總戰力的兵力開戰，戰果由局部防守與戰場波動決定。
+AI_MAX_ACTIVE_CAMPAIGNS = 2
+COALITION_THREAT_SHARE = 0.16
+COALITION_MAX_MEMBERS = 5
+CAPTURE_RADIUS_MIN = 10
+CAPTURE_RADIUS_MAX = 36
+BATTLE_RANDOMNESS = 0.22             # 優勢兵力仍可能因地形與戰況波動落敗。
+BATTLE_BASE_GARRISON_SHARE = 0.22    # 每場戰鬥至少投入的本土防守兵力比例。
+BATTLE_LOCAL_POPULATION_WEIGHT = 0.35 # 戰區人口占比提高當地可集結的守軍比例。
+BATTLE_MAX_LOCAL_GARRISON_SHARE = 0.75
+BARRACKS_BATTLE_RADIUS = 24          # 戰區附近此距離內的兵營可支援防守。
+BARRACKS_GARRISON_SHARE_BONUS = 0.08 # 每座附近兵營增加的當地守軍比例。
+BARRACKS_GARRISON_MAX_BONUS = 0.24
+BARRACKS_POSITION_DEFENSE_BONUS = 0.06
+OUTPOST_POSITION_DEFENSE_BONUS = 0.10
+CITY_POSITION_DEFENSE_BONUS = 0.06
+
+# 聯盟援軍需要實際行軍；援助比例不會瞬間加到戰場。
+ALLIANCE_COUNT = 6
+ALLIANCE_REINFORCEMENT_RATIO = 0.18
+
+# V6時間與UI：1回合=1年，正常速度每2秒推進1年。
+SECONDS_PER_YEAR = 0.01
+SIM_MAX_BACKLOG_YEARS = 50
+AUTO_RUN_ON_START = True
+COUNTRY_NAME_FONT_SIZE = 12
+COUNTRY_NAME_FONT_BOLD = True
+COUNTRY_NAME_OUTLINE_WIDTH = 2
+LEFT_PANEL_WIDTH = 330
+RIGHT_PANEL_WIDTH = 430
+UI_REFRESH_EVERY_YEARS = 1
+
+# V7 國家延續、遷都、分裂與君主制度（皆為可調整的全域變數）。
+CAPITAL_RELOCATION_MIN_CITIES = 2       # 首都失守後，至少需多少座剩餘城市才能推舉新王。
+CAPITAL_RELOCATION_CITY_RADIUS = 80     # 判斷城市群密集程度的半徑（地圖格）。
+CAPITAL_RELOCATION_MIN_TERRITORY = 50  # 允許遷都的最低剩餘領土格數。
+CAPITAL_RELOCATION_MIN_POPULATION = 80 # 允許遷都的最低剩餘人口。
+TERRITORY_SPLIT_GRACE_YEARS = 20       # 主要領土斷裂持續幾年後才正式分裂。
+TERRITORY_SPLIT_CHECK_INTERVAL = 10    # 每隔幾年檢查一次分裂，避免每年掃描整張世界。
+TERRITORY_SPLIT_MIN_CELLS = 30         # 每個分裂主體至少需要的領土格數。
+TERRITORY_SPLIT_MIN_SHARE = 0.15       # 每個分裂主體至少占原國領土的比例。
+KING_REIGN_MIN_YEARS = 5               # 國王最短在位年數。
+KING_REIGN_MAX_YEARS = 80              # 國王最長在位年數；每任隨機落在5～80年。
+
+# V8 地理命名、強國分裂與海外殖民。
+GEOGRAPHIC_LABEL_MIN_CELLS = 120       # 地圖上直接顯示名稱的最小地理區域；小區域仍可點擊查詢。
+GEOGRAPHIC_MAX_VISIBLE_LABELS = 80      # 同一畫面最多顯示的地理名稱，避免文字淹沒地圖。
+POWER_SPLIT_CHECK_INTERVAL = 25         # 每隔幾年檢查一次強國內部分裂事件。
+POWER_SPLIT_TOP_RANKS = 1               # 只有領土排名前幾名可能發生內部分裂。
+POWER_SPLIT_CHANCE = 0.003              # 每次檢查時每個強國的分裂機率。
+POWER_SPLIT_MIN_TERRITORY = 80000       # 強國至少擁有多少格領土才可能分裂。
+COLONY_CHECK_INTERVAL = 10              # 每隔幾年檢查海外殖民行動。
+COLONY_FOUND_CHANCE = 0.60              # 有港口、艦隊與資源時，殖民檢查更常轉為實際遠征。
+COLONY_COOLDOWN_YEARS = 80              # 所有 AI 模式共用的殖民間隔。
+COLONY_MAX_PER_COUNTRY = 6              # 每國最多保有的殖民地數量。
+COLONY_SHIP_SPEED_KM_PER_YEAR = 10.0    # 殖民船每模擬年航行 10 公里（預設每年十格）。
+COLONY_MIN_FLEET = 8                    # 發起殖民所需的最低可用艦隊。
+COLONY_TRANSPORT_FLEET = 5              # 每次殖民轉為殖民地駐留艦隊的數量。
+COLONY_SETTLER_POPULATION = 30          # 每次海外殖民預計運送的移民人數。
+COLONY_INITIAL_CELLS = 24               # 殖民地開局占領的最大土地格數。
+COLONY_MIN_DISTANCE = 60                # 殖民地與本國首都的最低距離（地圖格）；小型群島世界也能殖民。
+COLONY_PRIORITIZE_EMPTY_ISLANDS = True  # 優先派艦隊前往尚無任何國家落腳的大陸或島嶼。
+COLONY_AUTO_PORT = True                 # 海外殖民地成立時自動建立殖民港，供艦隊補給與敵軍登陸。
+COLONY_FOOD_COST = 80.0                 # 殖民遠征消耗的糧食。
+COLONY_TIMBER_COST = 60.0               # 殖民船隊與據點消耗的木材。
+COLONY_INDEPENDENCE_MIN_YEARS = 1000    # 殖民地成立多久後才可能獨立。
+COLONY_INDEPENDENCE_CHECK_INTERVAL = 20 # 每隔幾年檢查殖民地獨立。
+COLONY_INDEPENDENCE_CHANCE = 0.005      # 成熟殖民地每次檢查的獨立機率。
+
+# V8_4 海外戰爭：有港口的攻方可直接對敵國沿海領土實施登陸。
+NAVAL_COASTAL_LANDING_ENABLED = True    # 守方即使沒有港口，也能被敵方艦隊選為沿海登陸目標。
+AI_NAVAL_TARGET_BONUS = 0.35            # AI評估可跨海目標時的額外分數，避免所有國家長期龜在本土。
+
+# V6拓荒：開局只有首都周圍的小型核心領土。
+INITIAL_TERRITORY_RADIUS = 7
+INITIAL_TERRITORY_MAX_CELLS = 150
+EXPANSION_INTERVAL_YEARS = 5
+BASE_EXPANSION_CELLS = 2
+EXPANSION_CELLS_PER_SOLDIER = 4
+EXPANSION_FOOD_COST_PER_CELL = 0.8
+EXPANSION_TIMBER_COST_PER_CELL = 0.35
+SETTLER_POPULATION_PER_CELL = 1
+
+# 建築會增加影響範圍或軍事拓荒能力。
+BUILDING_CHECK_INTERVAL_YEARS = 10
+CITY_AREA_PER_BUILDING = 180
+BARRACKS_AREA_PER_BUILDING = 130
+OUTPOST_AREA_PER_BUILDING = 90
+CITY_EXPANSION_BONUS = 2
+BARRACKS_EXPANSION_BONUS = 3
+OUTPOST_EXPANSION_BONUS = 2
+CITY_COST = (80.0, 120.0, 45.0)       # 糧食、木材、礦產
+BARRACKS_COST = (55.0, 75.0, 90.0)
+OUTPOST_COST = (35.0, 55.0, 25.0)
+PORT_COST = (60.0, 130.0, 70.0)
+FLEET_CAPACITY_PER_PORT = 36          # 每個港口維持的艦隊上限。
+FLEET_BUILD_BATCH = 6                 # 每次補充的艦艇數量。
+FLEET_BUILD_COST = (12.0, 30.0, 18.0) # 糧食、木材、礦產。

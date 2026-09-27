@@ -1,0 +1,4 @@
+numpy
+pillow
+scipy
+pygame>=2.6,<3
