@@ -296,8 +296,6 @@ class WarEngine:
                 "king_next_year": self.year + int(self.rng.integers(cfg.KING_REIGN_MIN_YEARS, cfg.KING_REIGN_MAX_YEARS + 1)),
                 "colonies": [],
                 "overseas_capital": None,
-                "overseas_capitals": [],
-                "overseas_expeditions_used": 0,
                 "colonization_voyage": None,
                 "war_goal": "UNIFY_WORLD",
                 "war_exhaustion": 0.0,
@@ -457,8 +455,7 @@ class WarEngine:
             "alive": False, "ever_extinct": True, "extinction_year": self.year,
             "territory_cells": 0, "population": 0, "soldiers": 0, "fleet": 0,
             "cities": 0, "barracks": 0, "outposts": 0, "ports": 0,
-            "colonies": [], "overseas_capital": None, "overseas_capitals": [],
-            "colonization_voyage": None,
+            "colonies": [], "colonization_voyage": None,
         })
         if 0 < int(cid) <= len(self.world.countries):
             self.world.countries[int(cid) - 1]["ports"] = []
@@ -599,16 +596,10 @@ class WarEngine:
         for colony in country.get("colonies", []):
             ax, ay = colony["anchor"]
             (new_colonies if separated[ay, ax] else old_colonies).append(dict(colony))
-        old_sites, new_sites = [], []
-        for site in country.get("overseas_capitals", []):
-            ax, ay = site.get("anchor", (-1, -1))
-            if 0 <= int(ay) < separated.shape[0] and 0 <= int(ax) < separated.shape[1]:
-                (new_sites if separated[int(ay), int(ax)] else old_sites).append(dict(site))
         country.update({"name": old_name, "base_name": base, "population": old_pop,
                         "soldiers": original_soldiers - int(round(original_soldiers * share)),
                         "fleet": original_fleet - int(round(original_fleet * share)),
-                        "colonies": old_colonies, "overseas_capitals": old_sites,
-                        "overseas_capital": old_sites[0] if old_sites else None})
+                        "colonies": old_colonies})
         new_base = self._plain_country_name(new_name) if not rename_old else base
         new_country.update({"id": new_id, "name": new_name, "base_name": new_base, "alive": True,
                             "capital": [cx, cy], "population": new_pop,
@@ -616,9 +607,6 @@ class WarEngine:
                             "fleet": int(round(original_fleet * share)), "alliance": 0,
                             "wars_won": 0, "wars_lost": 0, "territory_cells": int(separated.sum()),
                             "extinction_year": 0, "ever_extinct": False, "colonies": new_colonies,
-                            "overseas_capitals": new_sites,
-                            "overseas_capital": new_sites[0] if new_sites else None,
-                            "overseas_expeditions_used": len(new_sites),
                             "colonization_voyage": None})
         for key in ("food", "timber", "minerals"):
             total_resource = float(country[key])
@@ -670,142 +658,13 @@ class WarEngine:
         ) if int(v) > 0)
         return {"neutral": neutral, "coastal": coastal, "occupied_continents": occupied_continents}
 
-    def _home_continent_id(self, country: dict) -> int:
-        """目前本土首都所在大陸；海外據點不以殖民港所在大陸作為母國大陸。"""
-        cid = int(country["id"])
-        x, y = map(int, country.get("capital", self.world.countries[cid - 1]["capital"]))
-        if 0 <= y < self.world.settings.height and 0 <= x < self.world.settings.width:
-            return int(self.world.continent[y, x])
-        return 0
-
-    def _overseas_landmass_ids(self, country: dict) -> set[int]:
-        cid = int(country["id"])
-        owned = self.world.territory == cid
-        landmasses = set(int(v) for v in np.unique(self.world.continent[owned]) if int(v) > 0)
-        home = self._home_continent_id(country)
-        landmasses.discard(home)
-        return landmasses
-
-    def _overseas_site_count(self, country: dict) -> int:
-        """以實際持有的海外大陸數計數，殖民與征服同一大陸只算一處。"""
-        landmasses = self._overseas_landmass_ids(country)
-        registered = set()
-        for site in country.get("overseas_capitals", []):
-            anchor = site.get("anchor", (-1, -1))
-            if len(anchor) != 2:
-                continue
-            x, y = map(int, anchor)
-            if (0 <= y < self.world.settings.height and 0 <= x < self.world.settings.width
-                    and int(self.world.territory[y, x]) == int(country["id"])):
-                continent = int(self.world.continent[y, x])
-                if continent > 0 and continent != self._home_continent_id(country):
-                    registered.add(continent)
-        legacy = country.get("overseas_capital")
-        if legacy and not country.get("overseas_capitals"):
-            x, y = map(int, legacy.get("anchor", (-1, -1)))
-            if (0 <= y < self.world.settings.height and 0 <= x < self.world.settings.width
-                    and int(self.world.territory[y, x]) == int(country["id"])):
-                continent = int(self.world.continent[y, x])
-                if continent > 0 and continent != self._home_continent_id(country):
-                    registered.add(continent)
-        # 舊存檔中已控制、但沒有海外首都紀錄的飛地也占用名額，載入時會補設首都。
-        return max(len(landmasses), len(registered))
-
-    def _sync_overseas_capitals(self, country: dict):
-        """每個受控制的海外大陸恰有一處首都；據點失守時遷移或撤銷標記。"""
-        cid = int(country["id"])
-        home = self._home_continent_id(country)
-        owned = self.world.territory == cid
-        landmasses = self._overseas_landmass_ids(country)
-        sites = list(country.get("overseas_capitals", []))
-        # 舊 V15 的單一征服首都升級為多據點清單。
-        legacy = country.get("overseas_capital")
-        if legacy and not sites:
-            sites.append(dict(legacy))
-        for colony in country.get("colonies", []):
-            anchor = colony.get("anchor", (-1, -1))
-            if len(anchor) == 2:
-                x, y = map(int, anchor)
-                if 0 <= y < self.world.settings.height and 0 <= x < self.world.settings.width:
-                    continent = int(self.world.continent[y, x])
-                    if continent > 0 and continent != home:
-                        sites.append({
-                            "anchor": [x, y], "continent_id": continent,
-                            "founded_year": int(colony.get("founded_year", self.year)),
-                            "type": "殖民",
-                        })
-        valid = {}
-        for site in sites:
-            anchor = site.get("anchor", (-1, -1))
-            if len(anchor) != 2:
-                continue
-            x, y = map(int, anchor)
-            if (not (0 <= y < self.world.settings.height and 0 <= x < self.world.settings.width)
-                    or int(self.world.territory[y, x]) != cid):
-                continue
-            continent = int(self.world.continent[y, x])
-            if continent <= 0 or continent == home or continent not in landmasses:
-                continue
-            site["continent_id"] = continent
-            valid.setdefault(continent, site)
-        for continent in sorted(landmasses):
-            if continent in valid:
-                continue
-            yy, xx = np.where(owned & (self.world.continent == continent))
-            if not len(xx):
-                continue
-            scores = self.world.city_value[yy, xx]
-            index = int(np.argmax(scores))
-            valid[continent] = {
-                "anchor": [int(xx[index]), int(yy[index])],
-                "continent_id": int(continent), "founded_year": int(self.year),
-                "type": "海外領地",
-            }
-        country["overseas_capitals"] = list(valid.values())
-        country["overseas_capital"] = country["overseas_capitals"][0] if valid else None
-        # Keep colony links attached to the actual owned coast if a war takes their old anchor.
-        for colony in country.get("colonies", []):
-            old = colony.get("anchor", (-1, -1))
-            x, y = map(int, old)
-            if (not (0 <= y < self.world.settings.height and 0 <= x < self.world.settings.width)
-                    or int(self.world.territory[y, x]) != cid):
-                continent = int(colony.get("continent_id", -1))
-                coords = np.argwhere(owned & (self.world.continent == continent)) if continent > 0 else np.empty((0, 2), dtype=int)
-                if len(coords):
-                    ny, nx = map(int, coords[0])
-                    colony["anchor"] = [nx, ny]
-                else:
-                    colony["lost"] = True
-        country["colonies"] = [c for c in country.get("colonies", []) if not c.get("lost")]
-
-    def _overseas_expeditions_used(self, country: dict) -> int:
-        if "overseas_expeditions_used" in country:
-            return max(0, int(country.get("overseas_expeditions_used", 0)))
-        # 舊存檔以已存在據點、殖民地及在途船隊推回最低已用次數。
-        known_sites = max(
-            len(country.get("colonies", [])),
-            len(country.get("overseas_capitals", [])),
-            int(bool(country.get("overseas_capital"))),
-        )
-        return min(
-            int(cfg.OVERSEAS_EXPEDITION_LIMIT),
-            known_sites + int(bool(country.get("colonization_voyage"))),
-        )
-
-    def _can_launch_overseas_expedition(self, country: dict) -> bool:
-        return (
-            self._overseas_expeditions_used(country) < int(cfg.OVERSEAS_EXPEDITION_LIMIT)
-            and self._overseas_site_count(country) < int(cfg.OVERSEAS_CAPITAL_MAX_PER_COUNTRY)
-        )
-
     def _colony_country_eligible(self, country: dict) -> bool:
         if (not country["alive"] or country.get("ports", 0) <= 0
                 or self.year < int(country.get("recovery_until_year", 0))
                 or country["fleet"] < max(cfg.OVERSEAS_MIN_FLEET, cfg.COLONY_MIN_FLEET)
                 or country["food"] < cfg.COLONY_FOOD_COST
                 or country["timber"] < cfg.COLONY_TIMBER_COST
-                or country.get("colonization_voyage")
-                or not self._can_launch_overseas_expedition(country)):
+                or country.get("colonization_voyage")):
             return False
         cid = int(country["id"])
         colonies = []
@@ -1035,7 +894,6 @@ class WarEngine:
             country["food"] -= cfg.COLONY_FOOD_COST
             country["timber"] -= cfg.COLONY_TIMBER_COST
             country["fleet"] -= cfg.COLONY_TRANSPORT_FLEET
-            country["overseas_expeditions_used"] = self._overseas_expeditions_used(country) + 1
             country["colonization_voyage"] = {
                 "anchor": [ax, ay],
                 "route": route,
@@ -1093,12 +951,9 @@ class WarEngine:
             "anchor": [ax, ay],
             "founded_year": int(self.year),
             "fleet": int(voyage.get("transport_fleet", cfg.COLONY_TRANSPORT_FLEET)),
-            "overseas_capital": True,
-            "continent_id": continent_id,
         })
         country["last_colony_founded_year"] = int(self.year)
         country["colonization_voyage"] = None
-        self._sync_overseas_capitals(country)
         if cfg.COLONY_AUTO_PORT:
             self.world.settlement[ay, ax] = PORT
             self.building_owner[ay, ax] = cid
@@ -1108,8 +963,8 @@ class WarEngine:
         self.world.border = _border_mask(self.world.territory)
         self._build_geography()
         region = self.geographic_name_at(ay, ax)
-        self._log(cid, f"殖民船隊航行{voyage['route_distance_km']:,.0f}公里、歷時{self.year-voyage['launched_year']}年，抵達{region}並立即建立海外首都與殖民地。")
-        self._history("殖民", f"{country['name']}的殖民船隊航行至{region}並建立海外首都與殖民地。")
+        self._log(cid, f"殖民船隊航行{voyage['route_distance_km']:,.0f}公里、歷時{self.year-voyage['launched_year']}年，抵達{region}並建立殖民地。")
+        self._history("殖民", f"{country['name']}的殖民船隊航行至{region}並建立海外殖民地。")
         self.visual_revision += 1
         return True
 
@@ -1264,8 +1119,7 @@ class WarEngine:
             if land_key in self.land_contacts:
                 result.append({"id": tid, "mode": "land", "distance": 1.0})
             elif (sea_key in self.maritime_links
-                  and source["fleet"] >= cfg.OVERSEAS_MIN_FLEET
-                  and self._can_launch_overseas_expedition(source)):
+                  and source["fleet"] >= cfg.OVERSEAS_MIN_FLEET):
                 result.append({"id": tid, "mode": "naval", "distance": self.maritime_links[sea_key][0]})
         return result
 
@@ -1404,8 +1258,6 @@ class WarEngine:
             return None
         if option["mode"] == "naval" and a["fleet"] < cfg.OVERSEAS_MIN_FLEET:
             return None
-        if option["mode"] == "naval" and not self._can_launch_overseas_expedition(a):
-            return None
         if sum(1 for x in self.campaigns if x.attacker == attacker and x.status == "marching") >= cfg.AI_MAX_ACTIVE_CAMPAIGNS:
             return None
         committed = sum(x.soldiers for x in self.campaigns if x.attacker == attacker and x.status == "marching")
@@ -1435,8 +1287,6 @@ class WarEngine:
                             tactical_state=tactical_state, tactical_action=tactical_action)
         self.next_campaign_id += 1
         self.campaigns.append(campaign)
-        if option["mode"] == "naval":
-            a["overseas_expeditions_used"] = self._overseas_expeditions_used(a) + 1
         self.visual_revision += 1
         self.alerts.append(f"{self.country(defender)['name']}獲報：{a['name']}正集結{soldiers:,}人，預計{years}年抵達。")
         self.events.append(f"第{self.year}年｜{a['name']}向{self.country(defender)['name']}發起{option['mode']}遠征。")
@@ -1484,14 +1334,11 @@ class WarEngine:
             )
             food_capacity = annual_food_output / max(0.0001, cfg.FOOD_CONSUMPTION_PER_PERSON)
             growth_limit = max(0, int(food_capacity * cfg.FOOD_GROWTH_RESERVE_RATIO - populations[cid]))
-            # growth = min(
-            #     max(0, int(populations[cid] * cfg.ANNUAL_POPULATION_GROWTH
-            #                * (cfg.REST_BIRTH_GROWTH_MULTIPLIER if resting else 1.0))),
-            #     growth_limit,
-            # )
-
-            growth = min(cfg.POPULATION_GROWTH,growth_limit)
-
+            growth = min(
+                max(0, int(populations[cid] * cfg.ANNUAL_POPULATION_GROWTH
+                           * (cfg.REST_BIRTH_GROWTH_MULTIPLIER if resting else 1.0))),
+                growth_limit,
+            )
             if growth:
                 cx, cy = self.world.countries[cid - 1]["capital"]
                 if self.world.territory[cy, cx] != cid:
@@ -2118,22 +1965,22 @@ class WarEngine:
             winning_campaign = max(attackers, key=lambda c: c.soldiers)
             winner = winning_campaign.attacker
             captured = self._capture_area(winner, defender["id"], lead.objective, total_attackers)
-            if winning_campaign.mode == "naval" and captured > 0:
+            if (winning_campaign.mode == "naval" and captured > 0
+                    and int(cfg.OVERSEAS_CAPITAL_MAX_PER_COUNTRY) > 0):
                 victor = self.country(winner)
-                by, bx = map(int, lead.objective)
-                conquered_continent = int(self.world.continent[by, bx])
-                if (conquered_continent > 0
-                        and conquered_continent != self._home_continent_id(victor)
-                        and int(self.world.territory[by, bx]) == winner):
-                    self._sync_overseas_capitals(victor)
-                    site = next((site for site in victor.get("overseas_capitals", [])
-                                 if int(site.get("continent_id", -1)) == conquered_continent), None)
-                    if site:
-                        site["anchor"] = [bx, by]
-                        site["founded_year"] = int(self.year)
-                        site["type"] = "征服"
-                        victor["overseas_capital"] = victor["overseas_capitals"][0]
-                    self._log(winner, f"在{self.geographic_name_at(by, bx)}登陸並建立海外首都；目前{self._overseas_site_count(victor)}/{cfg.OVERSEAS_CAPITAL_MAX_PER_COUNTRY}處。")
+                if not victor.get("overseas_capital"):
+                    wx, wy = map(int, victor.get("capital", (0, 0)))
+                    home_continent = int(self.world.continent[wy, wx])
+                    by, bx = map(int, lead.objective)
+                    conquered_continent = int(self.world.continent[by, bx])
+                    if (conquered_continent > 0 and conquered_continent != home_continent
+                            and int(self.world.territory[by, bx]) == winner):
+                        victor["overseas_capital"] = {
+                            "anchor": [bx, by],
+                            "founded_year": int(self.year),
+                            "conquered_from": int(defender["id"]),
+                        }
+                        self._log(winner, f"在海外征服地建立首都據點({bx},{by})；每國僅設一處海外攻佔首都。")
             self.country(winner)["wars_won"] += 1
             defender["wars_lost"] += 1
             outcome = f"{self.country(winner)['name']}勝，奪取{captured:,}格"
@@ -2173,8 +2020,13 @@ class WarEngine:
         self.world.territory[capture] = winner
         if count:
             for country in self.countries:
-                if country.get("alive"):
-                    self._sync_overseas_capitals(country)
+                overseas = country.get("overseas_capital")
+                if not overseas:
+                    continue
+                ax, ay = map(int, overseas.get("anchor", (-1, -1)))
+                if (0 <= ay < self.world.settings.height and 0 <= ax < self.world.settings.width
+                        and int(self.world.territory[ay, ax]) != int(country["id"])):
+                    country["overseas_capital"] = None
             self._mark_world_changed(winner, loser)
         self.world.border = _border_mask(self.world.territory)
         self._build_geography()
@@ -2246,7 +2098,7 @@ class WarEngine:
         )
         snapshot_id = uuid.uuid4().hex
         payload = {
-            "version": "V16_海外首都與遠征上限版",
+            "version": "V15_弱點攻防與休養生息版",
             "rl_brains_snapshot_id": snapshot_id,
             "seed": self.world.settings.seed,
             "year": self.year,
@@ -2270,7 +2122,7 @@ class WarEngine:
         brain_path = self._rl_brains_path(path)
         brain_payload = {
             "format_version": 1,
-            "game_version": "V16_海外首都與遠征上限版",
+            "game_version": "V15_弱點攻防與休養生息版",
             "snapshot_id": snapshot_id,
             "seed": int(self.world.settings.seed),
             "year": int(self.year),
@@ -2286,7 +2138,7 @@ class WarEngine:
     def load(cls, world, path: Path):
         path = Path(path)
         payload = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
-        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_逐年回報修正版", "V13_2_靜態航線與抵達日誌版", "V13_2_1_海外艦隊門檻與SARSA獎勵版", "V14_戰術學習與世界統一版", "V14_1_殖民與海外攻佔上限版", "V15_弱點攻防與休養生息版", "V16_海外首都與遠征上限版"):
+        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_逐年回報修正版", "V13_2_靜態航線與抵達日誌版", "V13_2_1_海外艦隊門檻與SARSA獎勵版", "V14_戰術學習與世界統一版", "V14_1_殖民與海外攻佔上限版", "V15_弱點攻防與休養生息版"):
             raise ValueError("不支援此版本的戰爭存檔")
         if int(payload.get("seed", -1)) != int(world.settings.seed):
             raise ValueError("戰爭存檔與目前世界Seed不一致")
@@ -2321,19 +2173,10 @@ class WarEngine:
             c.setdefault("king_since_year", defaults.get("king_since_year", engine.year))
             c.setdefault("king_next_year", defaults.get("king_next_year", engine.year + 80))
             c.setdefault("colonies", [])
-            c.setdefault("overseas_capital", None)
-            c.setdefault("overseas_capitals", [])
-            c.setdefault("overseas_expeditions_used", 0)
+            # 舊版將殖民地錨點誤存為海外首都；V15只為海外軍事征服地保留此標記。
             for colony in c.get("colonies", []):
-                colony["overseas_capital"] = True
-            engine._sync_overseas_capitals(c)
-            # 舊存檔沒有出海計數時，以目前已持有的海外首都及在途船隊補設最低值。
-            if not c.get("overseas_expeditions_used"):
-                inferred = max(
-                    len(c.get("overseas_capitals", [])),
-                    int(bool(c.get("colonization_voyage"))),
-                )
-                c["overseas_expeditions_used"] = min(int(cfg.OVERSEAS_EXPEDITION_LIMIT), inferred)
+                colony.pop("capital", None)
+            c.setdefault("overseas_capital", None)
             c.setdefault("colonization_voyage", None)
             c.setdefault("war_goal", "UNIFY_WORLD")
             c.setdefault("war_exhaustion", 0.0)

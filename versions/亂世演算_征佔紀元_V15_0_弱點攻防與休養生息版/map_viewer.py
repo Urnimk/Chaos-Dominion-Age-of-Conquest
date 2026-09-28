@@ -113,7 +113,7 @@ STYLE_CODES = {v: k for k, v in STYLE_LABELS.items()}
 class MapViewer:
     def __init__(self, root):
         self.root = root
-        self.root.title("亂世演算_征佔紀元 V16｜海外首都與遠征上限版")
+        self.root.title("亂世演算_征佔紀元 V15｜弱點攻防與休養生息版")
         self.root.geometry(WINDOW_SIZE)
         self.root.configure(bg="#161616")
         self.world = self.war = self.full_image = self.tk_image = None
@@ -257,9 +257,9 @@ class MapViewer:
         basic_upper = ttk.Frame(basic_box, style="Dark.TFrame")
         basic_upper.pack(fill="both", expand=True)
         self.country_basic = self._field_table(
-            basic_upper, ("項目", "內容"), height=11, widths=(120, 260)
+            basic_upper, ("項目", "內容"), height=7, widths=(120, 260)
         )
-        colony_box = ttk.LabelFrame(basic_box, text="⚓ 海外首都／據點（點擊地名定位）", style="Panel.TLabelframe", padding=3)
+        colony_box = ttk.LabelFrame(basic_box, text="⚓ 海外殖民地（點擊地名定位）", style="Panel.TLabelframe", padding=3)
         colony_box.pack(fill="x", pady=(5,0))
         self.colony_links = tk.Text(
             colony_box, height=4, bg="#222", fg="#eee", relief="flat",
@@ -387,33 +387,27 @@ class MapViewer:
         return "break"
 
     def _refresh_colony_links(self, country):
-        """在基本狀態中列出全部海外首都，並提供地圖定位連結。"""
+        """在基本狀態下半部建立可直接定位的殖民地地名連結。"""
         widget = self.colony_links
         widget.configure(state="normal")
         widget.delete("1.0", tk.END)
         for tag in widget.tag_names():
-            if tag.startswith("site_"):
+            if tag.startswith("colony_"):
                 widget.tag_delete(tag)
-        sites = list(country.get("overseas_capitals", []))
-        if not sites and country.get("overseas_capital"):
-            sites = [country["overseas_capital"]]
-        if not sites:
-            widget.insert("end", "尚無海外首都或海外據點")
+        colonies = list(country.get("colonies", []))
+        if not colonies:
+            widget.insert("end", "尚無海外殖民地")
         else:
-            for index, site in enumerate(sites):
-                ax, ay = map(int, site.get("anchor", (-1, -1)))
-                if not (0 <= ay < self.world.settings.height and 0 <= ax < self.world.settings.width):
-                    continue
-                if int(self.world.territory[ay, ax]) != int(country["id"]):
-                    continue
+            for index, colony in enumerate(colonies):
+                ax, ay = map(int, colony["anchor"])
                 name = self.war.geographic_name_at(ay, ax)
-                founded = int(site.get("founded_year", self.war.year))
-                kind = str(site.get("type", "殖民" if any(c.get("anchor") == [ax, ay] for c in country.get("colonies", [])) else "征服"))
-                tag = f"site_{index}"
+                founded = int(colony.get("founded_year", self.war.year))
+                age = max(0, int(self.war.year) - founded)
+                tag = f"colony_{index}"
                 if index:
                     widget.insert("end", "\n")
-                widget.insert("end", f"{kind}首都：{name}", tag)
-                widget.insert("end", f"｜建立於第 {founded} 年｜座標({ax},{ay})")
+                widget.insert("end", name, tag)
+                widget.insert("end", f"｜建立於第 {founded} 年｜已建立 {age} 年")
                 widget.tag_config(tag, foreground="#38bdf8", underline=True)
                 widget.tag_bind(tag, "<Enter>", lambda _e, w=widget: w.configure(cursor="hand2"))
                 widget.tag_bind(tag, "<Leave>", lambda _e, w=widget: w.configure(cursor="arrow"))
@@ -425,7 +419,7 @@ class MapViewer:
             distance_left = max(0.0, float(voyage["route_distance_km"]) - float(voyage["travelled_km"]))
             speed = float(voyage.get("speed_km_per_year", cfg.COLONY_SHIP_SPEED_KM_PER_YEAR))
             eta = int(np.ceil(distance_left / max(0.1, speed)))
-            if sites:
+            if colonies:
                 widget.insert("end", "\n")
             widget.insert("end", f"⛵ 航行中：{destination}｜剩餘 {distance_left:,.0f} 公里，約 {eta} 年")
         widget.configure(state="disabled")
@@ -434,7 +428,7 @@ class MapViewer:
         self.center_x, self.center_y = float(x), float(y)
         self.zoom = max(self.zoom, 3.0)
         self.redraw()
-        self.status.configure(text=f"已定位海外首都／據點：{name}｜座標({x},{y})")
+        self.status.configure(text=f"已定位殖民地：{name}｜座標({x},{y})")
         return "break"
 
     def load_or_generate(self):
@@ -583,15 +577,14 @@ class MapViewer:
                        if c['alive'] else f"末代第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}")),
             ("領土規模", f"{c['territory_cells']:,} 格"),
             ("戰略狀態", "休養生息" if self.war.year < int(c.get("recovery_until_year", 0)) else ("交戰中" if active else "和平")),
-            # ("終極戰爭目標", "統一世界" if c.get("war_goal", "UNIFY_WORLD") == "UNIFY_WORLD" else c.get("war_goal", "統一世界")),
-            ("出海次數", f"{self.war._overseas_expeditions_used(c):,}／{cfg.OVERSEAS_EXPEDITION_LIMIT}"),
-            ("海外首都／領地", f"{self.war._overseas_site_count(c):,}／{cfg.OVERSEAS_CAPITAL_MAX_PER_COUNTRY}"),
-            # ("殖民地數", f"{len(c.get('colonies', [])):,}／{cfg.COLONY_MAX_PER_COUNTRY}"),
+            ("終極戰爭目標", "統一世界" if c.get("war_goal", "UNIFY_WORLD") == "UNIFY_WORLD" else c.get("war_goal", "統一世界")),
         )
         economy_rows = (
             ("人口", f"{c['population']:,} 人"),
             ("士兵", f"{c['soldiers']:,} 人"),
             ("艦隊", f"{c['fleet']:,}"),
+            ("海外征服首都", "已建立" if c.get("overseas_capital") else "尚無（上限1處）"),
+            ("海外殖民地", f"{len(c.get('colonies', [])):,}／{cfg.COLONY_MAX_PER_COUNTRY}"),
             ("殖民船航行", (f"前往{self.war.geographic_name_at(*reversed(c['colonization_voyage']['anchor']))}｜{max(0.0, float(c['colonization_voyage']['route_distance_km'])-float(c['colonization_voyage']['travelled_km'])):,.0f}公里" if c.get("colonization_voyage") else "無")),
             ("城市／兵營", f"{c['cities']}／{c['barracks']}"),
             ("拓荒站／港口", f"{c['outposts']}／{c['ports']}"),
@@ -612,7 +605,7 @@ class MapViewer:
             ("歷史參戰", f"{c['wars_won'] + c['wars_lost']} 場"),
             ("戰績", f"勝 {c['wars_won']}／敗 {c['wars_lost']}"),
             ("勝率", f"{(100*c['wars_won']/max(1,c['wars_won']+c['wars_lost'])):.1f}%"),
-            # ("目前行軍", f"{sum(1 for x in self.war.campaigns if x.attacker == cid and x.status == 'marching')} 支"),
+            ("目前行軍", f"{sum(1 for x in self.war.campaigns if x.attacker == cid and x.status == 'marching')} 支"),
         )
         self._set_field_rows(self.country_basic, basic_rows)
         self._refresh_colony_links(c)
@@ -1100,7 +1093,29 @@ class MapViewer:
                 self.canvas.create_text(label_x+label_width/2, label_y+12,
                                         text=label, fill="white",
                                         font=(UI_FONT_FAMILY, 10, "bold"))
-        
+        font = (UI_FONT_FAMILY, UI_COUNTRY_NAME_FONT_SIZE, "bold" if cfg.COUNTRY_NAME_FONT_BOLD else "normal")
+        for country in self.world.countries:
+            cid=int(country["id"]); cx,cy=country["capital"]
+            if self.world.territory[cy,cx] != cid: continue
+            sx,sy=ox+(cx-left)*self.zoom,oy+(cy-top)*self.zoom
+            if -100 <= sx <= cw+100 and -30 <= sy <= ch+30:
+                # Tkinter Canvas.create_text 不支援 stroke_width/stroke_fill。
+                # 以偏移文字模擬黑色外框，再於中央畫白色國名。
+                outline = max(0, int(cfg.COUNTRY_NAME_OUTLINE_WIDTH))
+                if outline:
+                    for dx in range(-outline, outline + 1):
+                        for dy in range(-outline, outline + 1):
+                            if dx == 0 and dy == 0:
+                                continue
+                            if max(abs(dx), abs(dy)) != outline:
+                                continue
+                            self.canvas.create_text(
+                                sx + dx, sy - 12 + dy, text=country["name"],
+                                font=font, fill="#111"
+                            )
+                self.canvas.create_text(
+                    sx, sy - 12, text=country["name"], font=font, fill="white"
+                )
         # 殖民地只標示為殖民據點；海外首都僅由海外征服地建立。
         if self.war:
             for country in self.war.countries:
@@ -1131,53 +1146,49 @@ class MapViewer:
             crop_right = min(self.world.settings.width, left + int(math.ceil(tw / self.zoom)))
             crop_bottom = min(self.world.settings.height, top + int(math.ceil(th / self.zoom)))
             buildings = self.world.settlement[top:crop_bottom, left:crop_right]
-            # for code, color in ((PORT, "#25c9e8"), (BARRACKS, "#ef765e")):
-            #     yy, xx = np.where(buildings == code)
-            #     if len(xx) > 2500:
-            #         pick = np.linspace(0, len(xx) - 1, 2500, dtype=int)
-            #         yy, xx = yy[pick], xx[pick]
-            #     for by, bx in zip(yy, xx):
-            #         sx, sy = ox + int(bx)*self.zoom, oy + int(by)*self.zoom
-            #         if code == PORT:
-            #             self.canvas.create_oval(sx-half, sy-half, sx+half, sy+half,
-            #                                     fill="#083b66", outline="#b8f5ff", width=2)
-            #             self.canvas.create_line(sx-half*0.55, sy+half*0.15, sx+half*0.55, sy+half*0.15,
-            #                                     fill=color, width=2)
-            #             self.canvas.create_line(sx-half*0.4, sy+half*0.45, sx+half*0.4, sy+half*0.45,
-            #                                     fill="#b8f5ff", width=1)
-            #             self.canvas.create_polygon(sx, sy-half*0.65, sx+half*0.42, sy+half*0.1,
-            #                                        sx-half*0.42, sy+half*0.1,
-            #                                        fill=color, outline="white", width=1)
-            #         else:
-            #             self.canvas.create_rectangle(sx-half, sy-half, sx+half, sy+half,
-            #                                          fill="#762f32", outline="#ffe0c2", width=2)
-            #             self.canvas.create_line(sx-half*0.4, sy+half*0.4, sx+half*0.4, sy-half*0.4,
-            #                                     fill="#fff0d6", width=3)
-            #             self.canvas.create_line(sx-half*0.4, sy-half*0.4, sx+half*0.4, sy+half*0.4,
-            #                                     fill="#fff0d6", width=3)
-
-            # 殖民或征服取得的每一處海外領地，都須有海外首都標記。
-            for country in self.war.countries:
-                if not country.get("alive", True):
-                    continue
-                sites = list(country.get("overseas_capitals", []))
-                if not sites and country.get("overseas_capital"):
-                    sites = [country["overseas_capital"]]
-                for overseas in sites:
-                    ax, ay = map(int, overseas.get("anchor", (0, 0)))
-                    if not (0 <= ay < self.world.settings.height and 0 <= ax < self.world.settings.width):
-                        continue
-                    if int(self.world.territory[ay, ax]) != int(country["id"]):
-                        continue
-                    sx, sy = ox + (ax-left)*self.zoom, oy + (ay-top)*self.zoom
-                    if -half <= sx <= cw+half and -half <= sy <= ch+half:
+            for code, color in ((PORT, "#25c9e8"), (BARRACKS, "#ef765e")):
+                yy, xx = np.where(buildings == code)
+                if len(xx) > 2500:
+                    pick = np.linspace(0, len(xx) - 1, 2500, dtype=int)
+                    yy, xx = yy[pick], xx[pick]
+                for by, bx in zip(yy, xx):
+                    sx, sy = ox + int(bx)*self.zoom, oy + int(by)*self.zoom
+                    if code == PORT:
                         self.canvas.create_oval(sx-half, sy-half, sx+half, sy+half,
-                                                fill="#10555d", outline="#b7f9ff", width=3)
-                        self.canvas.create_text(sx, sy, text="★", fill="#ffffff",
-                                                font=(UI_FONT_FAMILY, max(10, icon_size-4), "bold"))
-                        kind = overseas.get("type", "海外")
-                        self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}・{kind}首都",
-                                                fill="white", anchor="w", font=(UI_FONT_FAMILY, 9, "bold"))
+                                                fill="#083b66", outline="#b8f5ff", width=2)
+                        self.canvas.create_line(sx-half*0.55, sy+half*0.15, sx+half*0.55, sy+half*0.15,
+                                                fill=color, width=2)
+                        self.canvas.create_line(sx-half*0.4, sy+half*0.45, sx+half*0.4, sy+half*0.45,
+                                                fill="#b8f5ff", width=1)
+                        self.canvas.create_polygon(sx, sy-half*0.65, sx+half*0.42, sy+half*0.1,
+                                                   sx-half*0.42, sy+half*0.1,
+                                                   fill=color, outline="white", width=1)
+                    else:
+                        self.canvas.create_rectangle(sx-half, sy-half, sx+half, sy+half,
+                                                     fill="#762f32", outline="#ffe0c2", width=2)
+                        self.canvas.create_line(sx-half*0.4, sy+half*0.4, sx+half*0.4, sy-half*0.4,
+                                                fill="#fff0d6", width=3)
+                        self.canvas.create_line(sx-half*0.4, sy-half*0.4, sx+half*0.4, sy+half*0.4,
+                                                fill="#fff0d6", width=3)
+
+            # 海外征服首都只有一個；殖民據點不會被畫成首都。
+            for country in self.war.countries:
+                overseas = country.get("overseas_capital")
+                if not country.get("alive", True) or not overseas:
+                    continue
+                ax, ay = map(int, overseas.get("anchor", (0, 0)))
+                if not (0 <= ay < self.world.settings.height and 0 <= ax < self.world.settings.width):
+                    continue
+                if int(self.world.territory[ay, ax]) != int(country["id"]):
+                    continue
+                sx, sy = ox + (ax-left)*self.zoom, oy + (ay-top)*self.zoom
+                if -half <= sx <= cw+half and -half <= sy <= ch+half:
+                    self.canvas.create_oval(sx-half, sy-half, sx+half, sy+half,
+                                            fill="#10555d", outline="#b7f9ff", width=3)
+                    self.canvas.create_text(sx, sy, text="★", fill="#ffffff",
+                                            font=(UI_FONT_FAMILY, max(10, icon_size-4), "bold"))
+                    self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}・海外首都",
+                                            fill="white", anchor="w", font=(UI_FONT_FAMILY, 9, "bold"))
 
         # 本土首都圖示最後繪製，確保港口、兵營、地名與航線都不能遮住它。
         for country in self.world.countries:
@@ -1193,30 +1204,6 @@ class MapViewer:
                                         fill="#533c0b", outline="#fff1a8", width=3)
                 self.canvas.create_text(sx, sy, text="★", fill="#ffd54f",
                                         font=(UI_FONT_FAMILY, max(11, icon_size-3), "bold"))
-
-        font = (UI_FONT_FAMILY, UI_COUNTRY_NAME_FONT_SIZE, "bold" if cfg.COUNTRY_NAME_FONT_BOLD else "normal")
-        for country in self.world.countries:
-            cid=int(country["id"]); cx,cy=country["capital"]
-            if self.world.territory[cy,cx] != cid: continue
-            sx,sy=ox+(cx-left)*self.zoom,oy+(cy-top)*self.zoom
-            if -100 <= sx <= cw+100 and -30 <= sy <= ch+30:
-                # Tkinter Canvas.create_text 不支援 stroke_width/stroke_fill。
-                # 以偏移文字模擬黑色外框，再於中央畫白色國名。
-                outline = max(0, int(cfg.COUNTRY_NAME_OUTLINE_WIDTH))
-                if outline:
-                    for dx in range(-outline, outline + 1):
-                        for dy in range(-outline, outline + 1):
-                            if dx == 0 and dy == 0:
-                                continue
-                            if max(abs(dx), abs(dy)) != outline:
-                                continue
-                            self.canvas.create_text(
-                                sx + dx, sy - 12 + dy, text=country["name"],
-                                font=font, fill="#111"
-                            )
-                self.canvas.create_text(
-                    sx, sy - 12, text=country["name"], font=font, fill="white"
-                )
 
     def on_wheel(self, event): self.zoom=max(MAP_MIN_ZOOM,min(MAP_MAX_ZOOM,self.zoom*(MAP_WHEEL_ZOOM_IN if event.delta>0 else MAP_WHEEL_ZOOM_OUT))); self.redraw()
     def on_press(self,event): self.drag_start=(event.x,event.y,self.center_x,self.center_y)

@@ -1,14 +1,10 @@
-"""《亂世演算_征佔紀元》V16 海外首都與遠征上限版全域參數。"""
+"""《亂世演算_征佔紀元》V15 弱點攻防與休養生息版全域參數。"""
 import random
 
 MAP_WIDTH = 1200
 MAP_HEIGHT = 1200
 COUNTRY_COUNT = 24  # 開局國家數量；調高會增加地圖生成、外交、戰爭與UI運算量。
 MAP_CELL_SIZE_KM = 1.0     # 每個地圖格代表 1 公里；預設地圖寬度約 2,000 公里。
-OVERSEAS_EXPEDITION_LIMIT = 100            # 每國一生最多出海遠征次數；殖民與海外征戰共用。
-OVERSEAS_CAPITAL_MAX_PER_COUNTRY = 2     # 每國最多持有兩處海外首都；殖民與征服共用名額。
-# ANNUAL_POPULATION_GROWTH = 0.01         # 基礎人口成長率降為每年0.2%。
-POPULATION_GROWTH = 10                   # 每年生10人
 
 
 
@@ -83,6 +79,7 @@ WAR_START_YEAR = 1
 INITIAL_POPULATION_PER_CELL = 2.4
 INITIAL_SOLDIER_RATIO = 0.08
 INITIAL_FLEET_PER_PORT = 18
+ANNUAL_POPULATION_GROWTH = 0.002          # 基礎人口成長降為每年0.2%。
 REST_BIRTH_GROWTH_MULTIPLIER = 2.5        # 休養生息時提高出生速度，仍受糧食承載量限制。
 REST_DURATION_YEARS = 40                  # 選擇休養後，至少40年不發起新戰爭。
 REST_EXHAUSTION_RECOVERY = 0.025          # 休養時每年恢復的戰爭疲乏。
@@ -165,7 +162,7 @@ AUTO_RUN_ON_START = True
 COUNTRY_NAME_FONT_SIZE = 12
 COUNTRY_NAME_FONT_BOLD = True
 COUNTRY_NAME_OUTLINE_WIDTH = 2
-MAP_BUILDING_ICON_SIZE = 1               # 首都、兵營與港口的地圖圖示尺寸。
+MAP_BUILDING_ICON_SIZE = 18               # 首都、兵營與港口的地圖圖示尺寸。
 LEFT_PANEL_WIDTH = 330
 RIGHT_PANEL_WIDTH = 430
 UI_REFRESH_EVERY_YEARS = 1
@@ -194,6 +191,7 @@ COLONY_CHECK_INTERVAL = 10              # 每隔幾年檢查海外殖民行動�
 COLONY_FOUND_CHANCE = 0.60              # 有港口、艦隊與資源時，殖民檢查更常轉為實際遠征。
 COLONY_COOLDOWN_YEARS = 80              # 所有 AI 模式共用的殖民間隔。
 COLONY_MAX_PER_COUNTRY = 2              # 每國最多保有的殖民地數量。
+OVERSEAS_CAPITAL_MAX_PER_COUNTRY = 1     # 每國最多一處由海外征服取得的海外首都。
 COLONY_SHIP_SPEED_KM_PER_YEAR = 10.0    # 殖民船每模擬年航行 10 公里（預設每年十格）。
 COLONY_MIN_FLEET = 8                    # 發起殖民所需的最低可用艦隊。
 COLONY_TRANSPORT_FLEET = 5              # 每次殖民轉為殖民地駐留艦隊的數量。

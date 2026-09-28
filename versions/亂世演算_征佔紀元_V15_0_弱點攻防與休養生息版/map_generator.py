@@ -495,7 +495,7 @@ def save_world(world: GeneratedMap, save_dir=SAVES_DIR):
     )
     info = {
         "game": "亂世演算_征佔紀元",
-        "version": "V16_海外首都與遠征上限版",
+        "version": "V15_弱點攻防與休養生息版",
         "width": world.settings.width,
         "height": world.settings.height,
         "seed": world.settings.seed,
