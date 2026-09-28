@@ -207,7 +207,7 @@ COLONY_FOOD_COST = 80.0                 # 殖民遠征消耗的糧食。
 COLONY_TIMBER_COST = 60.0               # 殖民船隊與據點消耗的木材。
 COLONY_INDEPENDENCE_MIN_YEARS = 1000    # 殖民地成立多久後才可能獨立。
 COLONY_INDEPENDENCE_CHECK_INTERVAL = 20 # 每隔幾年檢查殖民地獨立。
-COLONY_INDEPENDENCE_CHANCE = 0.008      # 成熟殖民地每次檢查的獨立機率。
+COLONY_INDEPENDENCE_CHANCE = 0.001      # 成熟殖民地每次檢查的獨立機率。
 
 # V8_4 海外戰爭：有港口的攻方可直接對敵國沿海領土實施登陸。
 NAVAL_COASTAL_LANDING_ENABLED = True    # 守方即使沒有港口，也能被敵方艦隊選為沿海登陸目標。
