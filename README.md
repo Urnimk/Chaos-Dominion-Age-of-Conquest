@@ -25,7 +25,7 @@ Chaos-Dominion-Age-of-Conquest/
 └─ .gitignore             # 排除存檔、快取與暫存資料
 ```
 
-### V13_3 `current/` 模組
+### `current/` 模組
 
 | 檔案 | 用途 |
 | --- | --- |
@@ -118,8 +118,6 @@ AI_MODE = "SARSA_LAMBDA"  # 各國獨立的 Expected SARSA(λ) 模式
 python -m unittest discover -s tests -v
 ```
 
-**V13_3 回歸測試：** 17 項測試涵蓋 V13_2 原有海上尋路與地圖接縫、每年 10 公里推進、抵達後才建立殖民地、途中存檔續跑、移動期間不觸發地圖重繪、各國日誌記錄預計抵達年份、首都主島定位、80 年殖民冷卻與每國 6 個上限，以及既有 AI、港口、艦隊、戰鬥、Q table 和背景地圖快照隔離。另有 V9 的 512×512、1,000 年基礎長跑紀錄；它不包含 V11 新增的海上／殖民學習行動，也不代表學習策略已優於規則 AI。
-
 ## 存檔與重開新世界
 
 程式會在 `current/saves/` 建立執行資料，例如地圖資料、預覽圖、世界資訊、戰局存檔及 `war_state_rl_brains.json`。請定期備份此資料夾。若要重新生成全新世界，先關閉遊戲，再將 `current/saves/` 移出或清空後重新啟動；這會一併移除目前的世界和戰局進度。
@@ -128,7 +126,7 @@ python -m unittest discover -s tests -v
 
 ## 版本資料
 
-- [CHANGELOG.md](CHANGELOG.md)：快速查閱 V1.0 至 V13_3 的版本重點。
+- [CHANGELOG.md](CHANGELOG.md)：快速查閱各期版本重點。
 - `notes/`：本次保留的版本說明文件。
 執行最新版請使用 `current/`。
 
