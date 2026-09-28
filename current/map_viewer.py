@@ -124,7 +124,7 @@ class MapViewer:
         self.view_box = None
         self.war_busy = False
         self.running = bool(cfg.AUTO_RUN_ON_START)
-        self.show_geographic_names = True
+        self.show_geographic_names = False
         self.selected_country_id = 1
         self.country_sort_column = "land"
         self.country_sort_reverse = True
@@ -1101,28 +1101,28 @@ class MapViewer:
                                         text=label, fill="white",
                                         font=(UI_FONT_FAMILY, 10, "bold"))
         
-        # 殖民地只標示為殖民據點；海外首都僅由海外征服地建立。
-        if self.war:
-            for country in self.war.countries:
-                if not country.get("alive", True):
-                    continue
-                for colony in country.get("colonies", []):
-                    ax, ay = map(int, colony.get("anchor", (0, 0)))
-                    if not (0 <= ay < self.world.settings.height and 0 <= ax < self.world.settings.width):
-                        continue
-                    if int(self.world.territory[ay, ax]) != int(country["id"]):
-                        continue
-                    sx, sy = ox + (ax-left)*self.zoom, oy + (ay-top)*self.zoom
-                    if not (-100 <= sx <= cw+100 and -35 <= sy <= ch+35):
-                        continue
-                    radius = max(4, min(7, int(4*self.zoom)))
-                    self.canvas.create_oval(sx-radius, sy-radius, sx+radius, sy+radius,
-                                            fill="#65d6a6", outline="#073b32", width=2)
-                    label = f"{country['name']}・殖民地"
-                    self.canvas.create_text(
-                        sx + radius + 4, sy - 10, text=label, font=(UI_FONT_FAMILY, 9, "bold"),
-                        fill="#d9ffec", anchor="w",
-                    )
+        # # 殖民地只標示為殖民據點；海外首都僅由海外征服地建立。
+        # if self.war:
+        #     for country in self.war.countries:
+        #         if not country.get("alive", True):
+        #             continue
+        #         for colony in country.get("colonies", []):
+        #             ax, ay = map(int, colony.get("anchor", (0, 0)))
+        #             if not (0 <= ay < self.world.settings.height and 0 <= ax < self.world.settings.width):
+        #                 continue
+        #             if int(self.world.territory[ay, ax]) != int(country["id"]):
+        #                 continue
+        #             sx, sy = ox + (ax-left)*self.zoom, oy + (ay-top)*self.zoom
+        #             if not (-100 <= sx <= cw+100 and -35 <= sy <= ch+35):
+        #                 continue
+        #             radius = max(4, min(7, int(4*self.zoom)))
+        #             self.canvas.create_oval(sx-radius, sy-radius, sx+radius, sy+radius,
+        #                                     fill="#65d6a6", outline="#073b32", width=2)
+        #             label = f"{country['name']}・殖民地"
+        #             self.canvas.create_text(
+        #                 sx + radius + 4, sy - 10, text=label, font=(UI_FONT_FAMILY, 9, "bold"),
+        #                 fill="#d9ffec", anchor="w",
+        #             )
 
         # 建築圖示以原生幾何圖形繪製，並置於地名、航線等圖層上方。
         icon_size = max(12, min(30, int(cfg.MAP_BUILDING_ICON_SIZE * max(0.75, self.zoom))))
@@ -1176,8 +1176,11 @@ class MapViewer:
                         self.canvas.create_text(sx, sy, text="★", fill="#ffffff",
                                                 font=(UI_FONT_FAMILY, max(10, icon_size-4), "bold"))
                         kind = overseas.get("type", "海外")
-                        self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}・{kind}首都",
-                                                fill="white", anchor="w", font=(UI_FONT_FAMILY, 9, "bold"))
+                        # self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}・{kind}首都",
+                        #                         fill="white", anchor="w", font=(UI_FONT_FAMILY, 9, "bold"))
+
+                        self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}",
+                                                                        fill="white", anchor="w", font=(UI_FONT_FAMILY, 12, "bold"))
 
         # 本土首都圖示最後繪製，確保港口、兵營、地名與航線都不能遮住它。
         for country in self.world.countries:

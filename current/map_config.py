@@ -3,12 +3,13 @@ import random
 
 MAP_WIDTH = 1200
 MAP_HEIGHT = 1200
-COUNTRY_COUNT = 24  # 開局國家數量；調高會增加地圖生成、外交、戰爭與UI運算量。
+COUNTRY_COUNT = 16  # 開局國家數量；調高會增加地圖生成、外交、戰爭與UI運算量。
 MAP_CELL_SIZE_KM = 1.0     # 每個地圖格代表 1 公里；預設地圖寬度約 2,000 公里。
 OVERSEAS_EXPEDITION_LIMIT = 100            # 每國一生最多出海遠征次數；殖民與海外征戰共用。
 OVERSEAS_CAPITAL_MAX_PER_COUNTRY = 2     # 每國最多持有兩處海外首都；殖民與征服共用名額。
 # ANNUAL_POPULATION_GROWTH = 0.01         # 基礎人口成長率降為每年0.2%。
 POPULATION_GROWTH = 10                   # 每年生10人
+REST_BIRTH_GROWTH_MULTIPLIER = 3        # 休養生息時提高出生速度，仍受糧食承載量限制。
 
 
 
@@ -83,7 +84,7 @@ WAR_START_YEAR = 1
 INITIAL_POPULATION_PER_CELL = 2.4
 INITIAL_SOLDIER_RATIO = 0.08
 INITIAL_FLEET_PER_PORT = 18
-REST_BIRTH_GROWTH_MULTIPLIER = 2.5        # 休養生息時提高出生速度，仍受糧食承載量限制。
+
 REST_DURATION_YEARS = 40                  # 選擇休養後，至少40年不發起新戰爭。
 REST_EXHAUSTION_RECOVERY = 0.025          # 休養時每年恢復的戰爭疲乏。
 PASSIVE_EXHAUSTION_RECOVERY = 0.002      # 平時緩慢恢復戰爭疲乏。

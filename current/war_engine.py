@@ -1490,7 +1490,7 @@ class WarEngine:
             #     growth_limit,
             # )
 
-            growth = min(cfg.POPULATION_GROWTH,growth_limit)
+            growth = min(cfg.POPULATION_GROWTH * (cfg.REST_BIRTH_GROWTH_MULTIPLIER if resting else 1.0),growth_limit)
 
             if growth:
                 cx, cy = self.world.countries[cid - 1]["capital"]
