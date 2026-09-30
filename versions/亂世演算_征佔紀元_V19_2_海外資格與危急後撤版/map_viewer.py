@@ -113,7 +113,7 @@ STYLE_CODES = {v: k for k, v in STYLE_LABELS.items()}
 class MapViewer:
     def __init__(self, root):
         self.root = root
-        self.root.title("亂世演算_征佔紀元 V20｜海外分帳與艦隊運輸")
+        self.root.title("亂世演算_征佔紀元 V19_2｜海外資格與危急後撤")
         self.root.geometry(WINDOW_SIZE)
         self.root.configure(bg="#161616")
         self.world = self.war = self.full_image = self.tk_image = None
@@ -416,19 +416,19 @@ class MapViewer:
         home_id = int(self.world.continent[cy, cx]) if 0 <= cy < self.world.settings.height and 0 <= cx < self.world.settings.width else 0
         rows = []
         owned = self.world.territory == int(country["id"])
+        total_population = max(1, int(country.get("population", 0)))
         for continent_id in sorted(int(v) for v in np.unique(self.world.continent[owned]) if int(v) > 0):
             continent_mask = (self.world.continent == continent_id) & owned
             area = int(continent_mask.sum())
             population = int(self.war.local_population[continent_mask].sum())
-            soldiers = int(self.war.local_soldiers[continent_mask].sum())
+            soldiers = int(round(int(country.get("soldiers", 0)) * population / total_population))
             site = next((s for s in sites if int(s.get("continent_id", -1)) == continent_id), None)
             if continent_id == home_id:
                 anchor = (cx, cy)
-                kind = str(country.get("capital_type", "本島首都"))
-                founded = int(site.get("founded_year", self.war.year)) if site else 0
+                kind, founded = str(country.get("capital_type", "本島")), 0
             elif site:
                 anchor = tuple(map(int, site.get("anchor", (-1, -1))))
-                kind, founded = str(site.get("type", "海外征戰首都")), int(site.get("founded_year", self.war.year))
+                kind, founded = str(site.get("type", "征服")), int(site.get("founded_year", self.war.year))
             else:
                 continue
             ax, ay = anchor
@@ -443,9 +443,9 @@ class MapViewer:
                 tag = f"site_{index}"
                 if index:
                     widget.insert("end", "\n")
-                founded_text = "開局" if kind in ("本島", "本島首都") else f"第 {founded} 年建立"
+                founded_text = "開局" if kind == "本島首都" else f"第 {founded} 年建立"
                 widget.insert("end", f"{kind}｜{name}", tag)
-                widget.insert("end", f"｜{area:,} 格｜{founded_text}｜人口 {population:,}｜駐軍 {soldiers:,}")
+                widget.insert("end", f"｜{area:,} 格｜{founded_text}｜人口 {population:,}｜兵力估算 {soldiers:,}")
                 widget.tag_config(tag, foreground="#38bdf8", underline=True)
                 widget.tag_bind(tag, "<Enter>", lambda _e, w=widget: w.configure(cursor="hand2"))
                 widget.tag_bind(tag, "<Leave>", lambda _e, w=widget: w.configure(cursor="arrow"))
@@ -461,13 +461,6 @@ class MapViewer:
             if sites:
                 widget.insert("end", "\n")
             widget.insert("end", f"⛵ 航行中：{destination}｜剩餘 {distance_left:,.0f} 公里，約 {eta} 年")
-        reinforcement = country.get("reinforcement_voyage")
-        if reinforcement:
-            anchor = tuple(map(int, reinforcement.get("anchor", (0, 0))))
-            destination = self.war.geographic_name_at(anchor[1], anchor[0])
-            if sites or voyage:
-                widget.insert("end", "\n")
-            widget.insert("end", f"⚓ 海外增援：前往{destination}｜{int(reinforcement.get('soldiers', 0)):,}人｜約 {int(reinforcement.get('years_left', 0))} 年抵達")
         widget.configure(state="disabled")
 
     def focus_colony_on_map(self, x, y, name):

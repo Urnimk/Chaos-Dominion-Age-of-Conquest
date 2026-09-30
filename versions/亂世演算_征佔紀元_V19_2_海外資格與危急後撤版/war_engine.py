@@ -1,4 +1,4 @@
-"""V20 空間戰爭核心：分區人口與駐軍、艦隊運輸、行軍、占領與增援。"""
+"""V5 空間戰爭核心：合法目標、行軍、補給、戰鬥、占領與聯盟援軍。"""
 
 from __future__ import annotations
 
@@ -128,9 +128,6 @@ class Campaign:
     supply: float
     coalition_id: int = 0
     reinforcement_for: int = 0
-    origin_landmass: int = 0
-    casualties: int = 0
-    transported_population: int = 0
     status: str = "marching"
     tactical_state: tuple[int, ...] | None = None
     tactical_action: str = ""
@@ -211,8 +208,6 @@ class WarEngine:
             np.maximum(1, np.rint(base * cfg.INITIAL_POPULATION_PER_CELL)),
             0,
         ).astype(np.int32)
-        # 軍隊同樣按格網與陸塊分帳；國家總兵力只是這些駐軍加行軍部隊的合計。
-        self.local_soldiers = np.zeros_like(self.local_population, dtype=np.int32)
         # 產能屬於土地本身；拓荒後藉 territory 歸屬立即計入該國。
         self.food_yield = np.where(productive_land, self.world.agriculture / 100.0, 0).astype(np.float32)
         self.timber_yield = np.where(productive_land, self.world.timber / 100.0, 0).astype(np.float32)
@@ -276,13 +271,12 @@ class WarEngine:
             ports = len(country.get("ports", []))
             surname = str(self.rng.choice(ROYAL_SURNAMES))
             given = str(self.rng.choice(ROYAL_GIVEN_NAMES))
-            initial_soldiers = min(population, max(20, int(population * cfg.INITIAL_SOLDIER_RATIO)))
             self.countries.append({
                 "id": cid,
                 "name": country["name"],
                 "alive": bool(mask.any()),
                 "population": population,
-                "soldiers": initial_soldiers,
+                "soldiers": min(population, max(20, int(population * cfg.INITIAL_SOLDIER_RATIO))),
                 "fleet": ports * cfg.INITIAL_FLEET_PER_PORT,
                 "food": food,
                 "timber": timber,
@@ -311,20 +305,11 @@ class WarEngine:
                 "overseas_capitals": [],
                 "overseas_expeditions_used": 0,
                 "colonization_voyage": None,
-                "reinforcement_voyage": None,
                 "retreat_voyage_used": False,
                 "war_goal": "UNIFY_WORLD",
                 "war_exhaustion": 0.0,
                 "recovery_until_year": 0,
             })
-            coords = np.argwhere(mask & (self.local_population > 0))
-            if len(coords) and initial_soldiers:
-                weights = self.local_population[coords[:, 0], coords[:, 1]].astype(np.float64)
-                allocation = np.floor(weights / max(1.0, weights.sum()) * initial_soldiers).astype(np.int32)
-                remainder = initial_soldiers - int(allocation.sum())
-                if remainder:
-                    allocation[np.argsort(weights)[-remainder:]] += 1
-                self.local_soldiers[coords[:, 0], coords[:, 1]] = allocation
 
     def _ensure_country_brain(self, cid: int):
         """每個國家使用自己的 Q 表與亂數狀態；新分裂國也獲得獨立大腦。"""
@@ -524,7 +509,6 @@ class WarEngine:
         self.world.settlement[built_by_country] = 0
         self.building_owner[built_by_country] = 0
         self.local_population[remaining] = 0
-        self.local_soldiers[remaining] = 0
         self._mark_world_changed(cid)
         country.update({
             "alive": False, "ever_extinct": True, "extinction_year": self.year,
@@ -532,7 +516,6 @@ class WarEngine:
             "cities": 0, "barracks": 0, "frontier_level": 0, "ports": 0,
             "colonies": [], "overseas_capital": None, "overseas_capitals": [],
             "colonization_voyage": None,
-            "reinforcement_voyage": None,
         })
         if 0 < int(cid) <= len(self.world.countries):
             self.world.countries[int(cid) - 1]["ports"] = []
@@ -604,7 +587,6 @@ class WarEngine:
         self.world.settlement[fragment] = 0
         self.building_owner[fragment] = 0
         self.local_population[fragment] = 0
-        self.local_soldiers[fragment] = 0
         country["colonies"] = [
             colony for colony in country.get("colonies", [])
             if not (0 <= int(colony.get("anchor", (-1, -1))[1]) < fragment.shape[0]
@@ -787,8 +769,7 @@ class WarEngine:
                             "overseas_capitals": new_sites,
                             "overseas_capital": new_sites[0] if new_sites else None,
                             "overseas_expeditions_used": len(new_sites),
-                            "colonization_voyage": None,
-                            "reinforcement_voyage": None})
+                            "colonization_voyage": None})
         for key in ("food", "timber", "minerals"):
             total_resource = float(country[key])
             new_country[key] = total_resource * share
@@ -870,7 +851,6 @@ class WarEngine:
         self.world.settlement[small] = 0
         self.building_owner[small] = 0
         self.local_population[small] = 0
-        self.local_soldiers[small] = 0
         self._mark_world_changed(*affected)
         self.world.border = _border_mask(self.world.territory)
         self._build_geography()
@@ -928,7 +908,6 @@ class WarEngine:
             self.world.settlement[clearing] = 0
             self.building_owner[clearing] = 0
             self.local_population[clearing] = 0
-            self.local_soldiers[clearing] = 0
             def anchor_survives(record):
                 anchor = record.get("anchor", (-1, -1))
                 if len(anchor) != 2:
@@ -947,7 +926,6 @@ class WarEngine:
         self._build_geography()
         for cid in changed_ids:
             self._sync_overseas_capitals(self.country(cid))
-        self._refresh_survival()
         # This housekeeping is deliberately omitted from history_events.
         self.events.append(f"第{self.year}年｜定期清理無海外首都飛地。")
         return True
@@ -1121,7 +1099,7 @@ class WarEngine:
                         sites.append({
                             "anchor": [x, y], "continent_id": continent,
                             "founded_year": int(colony.get("founded_year", self.year)),
-                            "type": "海外殖民首都",
+                            "type": "殖民",
                         })
         valid = {}
         for site in sites:
@@ -1133,19 +1111,9 @@ class WarEngine:
                     or int(self.world.territory[y, x]) != cid):
                 continue
             continent = int(self.world.continent[y, x])
-            retreat_base = str(site.get("type", "")) in ("後撤基地", "撤退", "緊急後撤")
-            if (continent <= 0 or (continent not in landmasses and not retreat_base)
-                    or (continent == home and not retreat_base)
-                    or (continent != home and retreat_base)):
+            if continent <= 0 or continent == home or continent not in landmasses:
                 continue
             site["continent_id"] = continent
-            legacy_type = str(site.get("type", ""))
-            if legacy_type in ("征服", "征服首都", "海外"):
-                site["type"] = "海外征戰首都"
-            elif legacy_type in ("殖民", "殖民首都"):
-                site["type"] = "海外殖民首都"
-            elif legacy_type in ("撤退", "緊急後撤"):
-                site["type"] = "後撤基地"
             valid.setdefault(continent, site)
         country["overseas_capitals"] = list(valid.values())
         country["overseas_capital"] = country["overseas_capitals"][0] if valid else None
@@ -1489,28 +1457,14 @@ class WarEngine:
             route_distance_km = self._route_distance_km(route)
             if route_distance_km <= 0:
                 continue
-            retreat = self._homeland_is_critical(country)
-            home = self._home_continent_id(country)
-            home_population = int(self.local_population[
-                (self.world.territory == cid) & (self.world.continent == home)
-            ].sum())
-            transported_population = (int(home_population * 0.80) if retreat
-                                     else int(home_population * 0.25))
-            transported_soldiers = (int(self._home_soldiers(cid) * 0.80) if retreat else 0)
-            transport_fleet = max(
-                int(cfg.COLONY_TRANSPORT_FLEET),
-                int(math.ceil(transported_population / max(1, int(cfg.OVERSEAS_POPULATION_PER_SHIP)))),
-                int(math.ceil(transported_soldiers / max(1, int(cfg.OVERSEAS_SOLDIERS_PER_SHIP)))),
-            )
             if (country["fleet"] < cfg.OVERSEAS_MIN_FLEET
                     or country["food"] < cfg.COLONY_FOOD_COST
                     or country["timber"] < cfg.COLONY_TIMBER_COST
-                    or country["fleet"] < max(cfg.COLONY_MIN_FLEET, transport_fleet)
-                    or (not retreat and self._transport_population_capacity(transport_fleet) < transported_population)):
+                    or country["fleet"] < max(cfg.COLONY_MIN_FLEET, cfg.COLONY_TRANSPORT_FLEET)):
                 continue
             country["food"] -= cfg.COLONY_FOOD_COST
             country["timber"] -= cfg.COLONY_TIMBER_COST
-            country["fleet"] -= transport_fleet
+            country["fleet"] -= cfg.COLONY_TRANSPORT_FLEET
             if not retreat:
                 country["overseas_expeditions_used"] = self._overseas_expeditions_used(country) + 1
             else:
@@ -1522,9 +1476,7 @@ class WarEngine:
                 "travelled_km": 0.0,
                 "position": list(route[0]),
                 "launched_year": int(self.year),
-                "transport_fleet": int(transport_fleet),
-                "transported_population": int(transported_population),
-                "transported_soldiers": int(transported_soldiers),
+                "transport_fleet": int(cfg.COLONY_TRANSPORT_FLEET),
                 "cell_size_km": float(cfg.MAP_CELL_SIZE_KM),
                 "speed_km_per_year": float(cfg.COLONY_SHIP_SPEED_KM_PER_YEAR),
                 "retreat": bool(retreat),
@@ -1570,54 +1522,26 @@ class WarEngine:
                 country["retreat_voyage_used"] = False
                 self._cancel_colony_voyage(country, voyage, "本島危局已解除")
                 return False
-            transported = int(voyage.get("transported_population", 0))
+            transported = int(country.get("population", 0) * 0.80)
             max_cells = min(len(order), max(1, int(math.ceil(transported / max(1, cfg.SETTLER_POPULATION_PER_CELL)))))
             chosen = np.column_stack((yy[order[:max_cells]], xx[order[:max_cells]])).astype(np.int32)
-            old_x, old_y = map(int, country.get("capital", self.world.countries[cid - 1]["capital"]))
-            old_home = int(self.world.continent[old_y, old_x])
-            home_mask = ((self.world.territory == cid) & (self.world.continent == old_home))
-            removed = self._remove_population_in_mask(home_mask, transported)
-            if removed != transported:
-                if removed and self.world.territory[old_y, old_x] == cid:
-                    self.local_population[old_y, old_x] += removed
-                country["retreat_voyage_used"] = False
-                self._cancel_colony_voyage(country, voyage, "本島可後撤人口不足運輸計畫數量")
-                return False
+            self._remove_population(cid, transported)
             base, remainder = divmod(transported, max(1, len(chosen)))
             self.local_population[chosen[:, 0], chosen[:, 1]] = base
             if remainder:
                 self.local_population[chosen[:remainder, 0], chosen[:remainder, 1]] += 1
+            country["population"] = int(country.get("population", 0)) + transported
             moved = len(chosen)
         else:
-            transported = int(voyage.get("transported_population", 0))
-            if transported <= 0:
-                self._cancel_colony_voyage(country, voyage, "人口運輸量不足，無法建立海外據點")
-                return False
-            max_cells = min(
-                len(order), int(cfg.COLONY_INITIAL_CELLS),
-                max(1, int(math.ceil(transported / max(1, cfg.SETTLER_POPULATION_PER_CELL)))),
-            )
+            max_cells = min(cfg.COLONY_INITIAL_CELLS,
+                            cfg.COLONY_SETTLER_POPULATION // max(1, cfg.SETTLER_POPULATION_PER_CELL))
             chosen = np.column_stack((yy[order[:max_cells]], xx[order[:max_cells]])).astype(np.int32)
-            moved = len(chosen)
-        self.world.territory[chosen[:, 0], chosen[:, 1]] = cid
-        if not retreat:
-            transported = int(voyage.get("transported_population", 0))
-            home = self._home_continent_id(country)
-            source = ((self.world.territory == cid) & (self.world.continent == home))
-            removed = self._remove_population_in_mask(source, transported)
-            if removed != transported:
-                if removed:
-                    home_cells = np.argwhere(source)
-                    if len(home_cells):
-                        hy, hx = map(int, home_cells[0])
-                        self.local_population[hy, hx] += removed
-                self.world.territory[chosen[:, 0], chosen[:, 1]] = 0
-                self._cancel_colony_voyage(country, voyage, "本島可運送人口不足四分之一")
+            moved = self._move_settlers(cid, chosen)
+            if moved <= 0:
+                self._cancel_colony_voyage(country, voyage, "沒有足夠移民可登陸")
                 return False
-            base, remainder = divmod(transported, max(1, len(chosen)))
-            self.local_population[chosen[:, 0], chosen[:, 1]] = base
-            if remainder:
-                self.local_population[chosen[:remainder, 0], chosen[:remainder, 1]] += 1
+            chosen = chosen[:moved]
+        self.world.territory[chosen[:, 0], chosen[:, 1]] = cid
         if not retreat:
             country["colonies"].append({
             "id": len(country.get("colonies", [])) + 1,
@@ -1634,11 +1558,8 @@ class WarEngine:
             old_home = int(self.world.continent[old_y, old_x])
             old_land = (self.world.continent == old_home)
             old_owned = old_land & (self.world.territory == cid)
-            transported_soldiers = int(voyage.get("transported_soldiers", 0))
-            troops = self._take_local_soldiers(cid, old_home, transported_soldiers)
             self.world.territory[old_owned] = 0
             self.local_population[old_owned] = 0
-            self.local_soldiers[old_owned] = 0
             self.world.settlement[old_land] = 0
             self.building_owner[old_land] = 0
             self.world.settlement[ay, ax] = CAPITAL
@@ -1647,7 +1568,6 @@ class WarEngine:
             country["capital_type"] = "後撤基地"
             self.world.countries[cid - 1]["capital"] = [ax, ay]
             country["fleet"] += int(voyage.get("transport_fleet", cfg.COLONY_TRANSPORT_FLEET))
-            self._add_local_soldiers(cid, continent_id, troops, near=(ay, ax))
             if cfg.COLONY_AUTO_PORT:
                 coast = ((self.world.territory == cid)
                          & (self.world.continent == continent_id)
@@ -1669,13 +1589,9 @@ class WarEngine:
                                    if int(c.get("continent_id", -1)) != old_home]
             country["overseas_capitals"] = [s for s in country.get("overseas_capitals", [])
                                             if int(s.get("continent_id", -1)) not in (old_home, continent_id)]
-            country["overseas_capitals"].append({
-                "anchor": [ax, ay], "continent_id": continent_id,
-                "founded_year": int(self.year), "type": "後撤基地",
-            })
             country["overseas_capital"] = country["overseas_capitals"][0] if country["overseas_capitals"] else None
             country["population"] = int(self.local_population[self.world.territory == cid].sum())
-            self._sync_army_totals(cid)
+            country["soldiers"] = min(int(country.get("soldiers", 0)), int(country["population"]))
             self.world.countries[cid - 1]["ports"] = [
                 [int(x), int(y)] for x, y in self.world.countries[cid - 1].get("ports", [])
                 if int(self.world.continent[int(y), int(x)]) != old_home
@@ -1696,10 +1612,9 @@ class WarEngine:
             self._log(cid, f"後撤船隊抵達{region}；{transported:,}名人口轉移至後撤基地，政權遷都並清除原本島建築。")
             self._history("後撤", f"{country['name']}將首都遷至{region}後撤基地，轉移八成人口並放棄原本島。")
         else:
-            self._log(cid, f"殖民船隊航行{voyage['route_distance_km']:,.0f}公里、歷時{self.year-voyage['launched_year']}年，運送{transported:,}名人口抵達{region}並建立海外殖民首都。")
+            self._log(cid, f"殖民船隊航行{voyage['route_distance_km']:,.0f}公里、歷時{self.year-voyage['launched_year']}年，抵達{region}並立即建立海外首都與殖民地。")
             self._history("殖民", f"{country['name']}的殖民船隊航行至{region}並建立海外首都與殖民地。")
         self.visual_revision += 1
-        self._refresh_survival()
         return True
 
     def _advance_colony_voyages(self):
@@ -1838,195 +1753,6 @@ class WarEngine:
     def country(self, cid: int) -> dict:
         return self.countries[cid - 1]
 
-    def _army_total(self, cid: int) -> int:
-        local = int(self.local_soldiers[self.world.territory == int(cid)].sum())
-        at_sea = sum(int(x.soldiers) for x in self.campaigns
-                     if x.attacker == int(cid) and x.status == "marching")
-        transport = int((self.country(int(cid)).get("reinforcement_voyage") or {}).get("soldiers", 0))
-        return local + at_sea + transport
-
-    def _sync_army_totals(self, *country_ids):
-        ids = country_ids or tuple(int(c["id"]) for c in self.countries)
-        for cid in ids:
-            if 0 < int(cid) <= len(self.countries):
-                country = self.country(int(cid))
-                country["soldiers"] = min(int(country.get("population", 0)), self._army_total(int(cid)))
-
-    def _landmass_soldiers(self, cid: int, landmass_id: int) -> int:
-        mask = ((self.world.territory == int(cid))
-                & (self.world.continent == int(landmass_id)))
-        return int(self.local_soldiers[mask].sum())
-
-    def _take_local_soldiers(self, cid: int, landmass_id: int, amount: int) -> int:
-        """Embark troops only from the selected landmass; no cross-island teleporting."""
-        amount = max(0, int(amount))
-        mask = ((self.world.territory == int(cid))
-                & (self.world.continent == int(landmass_id))
-                & (self.local_soldiers > 0))
-        coords = np.argwhere(mask)
-        available = int(self.local_soldiers[mask].sum())
-        take = min(amount, available)
-        remaining = take
-        if len(coords):
-            order = np.argsort(self.local_soldiers[coords[:, 0], coords[:, 1]])[::-1]
-            for index in order:
-                y, x = map(int, coords[index])
-                part = min(remaining, int(self.local_soldiers[y, x]))
-                self.local_soldiers[y, x] -= part
-                remaining -= part
-                if remaining <= 0:
-                    break
-        return take - remaining
-
-    def _add_local_soldiers(self, cid: int, landmass_id: int, amount: int, near=None):
-        amount = max(0, int(amount))
-        if not amount:
-            return
-        owned = ((self.world.territory == int(cid))
-                 & (self.world.continent == int(landmass_id)))
-        coords = np.argwhere(owned)
-        if not len(coords):
-            return
-        if near is not None:
-            y, x = map(int, near)
-            dx = np.minimum(np.abs(coords[:, 1] - x), self.world.settings.width - np.abs(coords[:, 1] - x))
-            order = np.argsort((coords[:, 0] - y) ** 2 + dx ** 2)
-            coords = coords[order]
-        room = (self.local_population[coords[:, 0], coords[:, 1]]
-                - self.local_soldiers[coords[:, 0], coords[:, 1]])
-        amount = min(amount, int(np.maximum(0, room).sum()))
-        if not amount:
-            return
-        weights = np.maximum(0, room).astype(np.float64)
-        if weights.sum() <= 0:
-            return
-        allocation = np.minimum(
-            room,
-            np.floor(weights / weights.sum() * amount).astype(np.int32),
-        )
-        remainder = amount - int(allocation.sum())
-        while remainder > 0:
-            available = np.flatnonzero(allocation < room)
-            if not len(available):
-                break
-            order = available[np.argsort(-weights[available])]
-            for index in order:
-                allocation[index] += 1
-                remainder -= 1
-                if remainder <= 0:
-                    break
-        self.local_soldiers[coords[:, 0], coords[:, 1]] += allocation
-
-    def _remove_population_in_mask(self, mask: np.ndarray, amount: int) -> int:
-        amount = max(0, int(amount))
-        coords = np.argwhere(mask & (self.local_population > 0))
-        if not len(coords):
-            return 0
-        left = min(amount, int(self.local_population[mask].sum()))
-        removed = left
-        order = np.argsort(self.local_population[coords[:, 0], coords[:, 1]])[::-1]
-        for index in order:
-            y, x = map(int, coords[index])
-            loss = min(left, int(self.local_population[y, x]))
-            self.local_population[y, x] -= loss
-            left -= loss
-            if left <= 0:
-                break
-        affected = mask
-        self.local_soldiers[affected] = np.minimum(
-            self.local_soldiers[affected], self.local_population[affected]
-        )
-        return removed - left
-
-    def _transport_population_capacity(self, fleet: int) -> int:
-        return max(0, int(fleet)) * max(0, int(cfg.OVERSEAS_POPULATION_PER_SHIP))
-
-    def _transport_soldier_capacity(self, fleet: int) -> int:
-        return max(0, int(fleet)) * max(0, int(cfg.OVERSEAS_SOLDIERS_PER_SHIP))
-
-    def _send_overseas_reinforcements(self):
-        interval = max(1, int(getattr(cfg, "OVERSEAS_REINFORCEMENT_CHECK_YEARS", 20)))
-        if self.year % interval:
-            return
-        for country in self.countries:
-            if (not country.get("alive") or country.get("reinforcement_voyage")
-                    or not country.get("overseas_capitals") or int(country.get("fleet", 0)) <= 0):
-                continue
-            cid = int(country["id"])
-            home = self._home_continent_id(country)
-            home_pop = int(self.local_population[(self.world.territory == cid)
-                                                 & (self.world.continent == home)].sum())
-            home_army = self._home_soldiers(cid, home)
-            home_reserve = max(0, home_army - int(home_pop * cfg.MIN_GARRISON_RATIO))
-            if home_reserve < cfg.AI_MIN_ATTACK_SOLDIERS:
-                continue
-            targets = []
-            for site in country.get("overseas_capitals", []):
-                landmass = int(site.get("continent_id", -1))
-                if landmass <= 0 or landmass == home:
-                    continue
-                mask = ((self.world.territory == cid) & (self.world.continent == landmass))
-                population = int(self.local_population[mask].sum())
-                stationed = int(self.local_soldiers[mask].sum())
-                target = max(int(cfg.AI_MIN_ATTACK_SOLDIERS),
-                             int(population * float(cfg.OVERSEAS_GARRISON_TARGET_RATIO)))
-                if stationed < target:
-                    targets.append((stationed / max(1, target), site, landmass, target - stationed))
-            if not targets:
-                continue
-            # AI優先補足兵力比例最低的海外領地；運量與留守需求共同限制批次大小。
-            _ratio, site, landmass, gap = min(targets, key=lambda row: (row[0], row[2]))
-            amount = min(gap, home_reserve, self._transport_soldier_capacity(country["fleet"]))
-            if amount < int(cfg.AI_MIN_ATTACK_SOLDIERS):
-                continue
-            ships = max(1, int(math.ceil(amount / max(1, int(cfg.OVERSEAS_SOLDIERS_PER_SHIP)))))
-            anchor = tuple(map(int, site.get("anchor", (0, 0))))
-            capital = tuple(map(int, country.get("capital", (0, 0))))
-            distance = self._wrapped_distance_cells(capital, anchor, self.world.settings.width)
-            years = max(1, int(math.ceil(distance / max(1.0, float(cfg.SEA_MARCH_CELLS_PER_YEAR)))))
-            embarked = self._take_local_soldiers(cid, home, amount)
-            if embarked < int(cfg.AI_MIN_ATTACK_SOLDIERS):
-                self._add_local_soldiers(cid, home, embarked)
-                continue
-            country["fleet"] -= ships
-            country["reinforcement_voyage"] = {
-                "continent_id": landmass, "anchor": list(anchor),
-                "origin_landmass": int(home), "soldiers": int(embarked),
-                "fleet": int(ships), "years_left": int(years),
-                "launched_year": int(self.year),
-            }
-            self._sync_army_totals(cid)
-            self._log(cid, f"AI判定{self.geographic_name_at(anchor[1], anchor[0])}駐軍不足，派遣{embarked:,}名士兵、{ships:,}艘艦艇增援，預計{years}年抵達。")
-
-    def _advance_overseas_reinforcements(self):
-        for country in self.countries:
-            voyage = country.get("reinforcement_voyage")
-            if not voyage:
-                continue
-            if not country.get("alive"):
-                country["reinforcement_voyage"] = None
-                continue
-            voyage["years_left"] = max(0, int(voyage.get("years_left", 1)) - 1)
-            if voyage["years_left"] > 0:
-                continue
-            cid = int(country["id"])
-            x, y = map(int, voyage.get("anchor", (0, 0)))
-            landmass = int(voyage.get("continent_id", -1))
-            if (0 <= y < self.world.settings.height and 0 <= x < self.world.settings.width
-                    and int(self.world.territory[y, x]) == cid
-                    and int(self.world.continent[y, x]) == landmass):
-                self._add_local_soldiers(cid, landmass, int(voyage.get("soldiers", 0)), near=(y, x))
-                self._log(cid, f"海外增援抵達{self.geographic_name_at(y, x)}，增加駐軍{int(voyage.get('soldiers', 0)):,}人。")
-            else:
-                self._add_local_soldiers(
-                    cid, int(voyage.get("origin_landmass", self._home_continent_id(country))),
-                    int(voyage.get("soldiers", 0)), near=country.get("capital", (0, 0)),
-                )
-                self._log(cid, "海外增援目的地失守，部隊改道返回本島。")
-            country["fleet"] += int(voyage.get("fleet", 0))
-            country["reinforcement_voyage"] = None
-            self._sync_army_totals(cid)
-
     def legal_targets(self, attacker: int) -> list[dict]:
         source = self.country(attacker)
         if not source["alive"]:
@@ -2089,11 +1815,13 @@ class WarEngine:
         active = sum(x.soldiers for x in self.campaigns if x.attacker == cid and x.status == "marching")
         return max(0.0, c["soldiers"] - active) * c["morale"] + c["fleet"] * 18.0
 
-    def _home_soldiers(self, cid: int, landmass_id: int | None = None) -> int:
-        """Return soldiers physically stationed on one landmass, defaulting to the homeland."""
-        if landmass_id is None:
-            landmass_id = self._home_continent_id(self.country(int(cid)))
-        return self._landmass_soldiers(int(cid), int(landmass_id)) if int(landmass_id) > 0 else 0
+    def _home_soldiers(self, cid: int) -> int:
+        """軍隊已在外行軍時，從本土可用兵力中扣除。"""
+        committed = sum(
+            x.soldiers for x in self.campaigns
+            if x.attacker == int(cid) and x.status == "marching"
+        )
+        return max(0, int(self.country(cid)["soldiers"]) - int(committed))
 
     def _objective(self, attacker: int, defender: int, mode: str, landmass_id: int | None = None):
         if mode == "land":
@@ -2108,8 +1836,7 @@ class WarEngine:
             # 評估接壤戰區的可用守軍，而非只比較兩國全國兵力；AI會找當地薄弱處。
             def local_defense(point):
                 share = self._local_garrison_share(defending, point)
-                landmass = int(self.world.continent[point])
-                local_soldiers = min(self._home_soldiers(defender["id"], landmass), max(200, int(defending["soldiers"] * share)))
+                local_soldiers = min(self._home_soldiers(defender), max(200, int(defending["soldiers"] * share)))
                 defense = local_soldiers * float(defending.get("morale", 1.0)) * self._terrain_defense(point)
                 city_value = float(self.world.city_value[point]) / 100.0
                 port_priority = (0.35 if self._homeland_is_critical(defending)
@@ -2147,8 +1874,7 @@ class WarEngine:
         for (y, x), distance in zip(candidates, distances):
             point = (int(y), int(x))
             share = self._local_garrison_share(defending, point)
-            landmass = int(self.world.continent[point])
-            soldiers = min(self._home_soldiers(defender["id"], landmass), max(200, int(defending["soldiers"] * share)))
+            soldiers = min(self._home_soldiers(defender), max(200, int(defending["soldiers"] * share)))
             defense = soldiers * float(defending.get("morale", 1.0)) * self._terrain_defense(point)
             value = float(self.world.city_value[point]) / 100.0
             port_priority = (0.35 if self._homeland_is_critical(defending)
@@ -2183,8 +1909,7 @@ class WarEngine:
         terrain = int(np.clip(self.world.terrain[y, x], 0, 6))
         defender = self.country(opponent_id)
         local_share = self._local_garrison_share(defender, point)
-        landmass = int(self.world.continent[y, x])
-        local_defense_soldiers = min(self._home_soldiers(opponent_id, landmass), max(200, int(defender["soldiers"] * local_share)))
+        local_defense_soldiers = min(self._home_soldiers(opponent_id), max(200, int(defender["soldiers"] * local_share)))
         local_defense = local_defense_soldiers * float(defender.get("morale", 1.0)) * self._terrain_defense(point)
         opponent_pressure = local_defense / max(1.0, self._country_strength(owner_id))
         pressure_bin = 0 if opponent_pressure < 0.45 else 1 if opponent_pressure < 0.8 else 2 if opponent_pressure < 1.2 else 3
@@ -2234,36 +1959,10 @@ class WarEngine:
             return None
         if sum(1 for x in self.campaigns if x.attacker == attacker and x.status == "marching") >= cfg.AI_MAX_ACTIVE_CAMPAIGNS:
             return None
+        committed = sum(x.soldiers for x in self.campaigns if x.attacker == attacker and x.status == "marching")
+        available = max(0, a["soldiers"] - int(a["population"] * cfg.MIN_GARRISON_RATIO) - committed)
         objective = self._objective(attacker, defender, option["mode"], option.get("landmass_id"))
         if objective is None:
-            return None
-        target_landmass = int(self.world.continent[int(objective[0]), int(objective[1])])
-        home_landmass = self._home_continent_id(a)
-        existing_sites = {
-            int(site.get("continent_id", -1)) for site in a.get("overseas_capitals", [])
-        }
-        transported_population = 0
-        # 已在目標外島駐軍時，直接由該島出兵；否則必須從本島裝船遠征。
-        source_landmass = (target_landmass if target_landmass != home_landmass
-                           and self._home_soldiers(attacker, target_landmass) > 0
-                           else home_landmass)
-        if option["mode"] == "naval" and target_landmass != home_landmass and target_landmass not in existing_sites:
-            source_population = int(self.local_population[
-                (self.world.territory == int(attacker))
-                & (self.world.continent == source_landmass)
-            ].sum())
-            transported_population = int(source_population * 0.25)
-            if self._transport_population_capacity(a["fleet"]) < transported_population:
-                return None
-        local_available = self._home_soldiers(attacker, source_landmass)
-        local_population = int(self.local_population[
-            (self.world.territory == int(attacker))
-            & (self.world.continent == int(source_landmass))
-        ].sum())
-        available = max(0, local_available - int(local_population * cfg.MIN_GARRISON_RATIO))
-        if option["mode"] == "naval":
-            available = min(available, self._transport_soldier_capacity(a["fleet"]))
-        if available < cfg.AI_MIN_ATTACK_SOLDIERS:
             return None
         tactical_state = self._tactical_region_state(attacker, defender, objective, option["mode"])
         tactical_actions = [f"ATTACK:{int(round(fraction * 100))}" for fraction in cfg.TACTICAL_ATTACK_FRACTIONS]
@@ -2280,27 +1979,13 @@ class WarEngine:
         speed = cfg.SEA_MARCH_CELLS_PER_YEAR if option["mode"] == "naval" else cfg.LAND_MARCH_CELLS_PER_YEAR
         years = max(1, int(math.ceil(distance / speed)))
         supply = soldiers * distance * cfg.SUPPLY_PER_SOLDIER_CELL
-        fleet = (min(int(a["fleet"]), max(
-            1,
-            int(math.ceil(soldiers / max(1, int(cfg.OVERSEAS_SOLDIERS_PER_SHIP)))),
-            int(math.ceil(transported_population / max(1, int(cfg.OVERSEAS_POPULATION_PER_SHIP)))),
-        )) if option["mode"] == "naval" else 0)
-        embarked = self._take_local_soldiers(attacker, source_landmass, soldiers)
-        if embarked < cfg.AI_MIN_ATTACK_SOLDIERS:
-            self._add_local_soldiers(attacker, source_landmass, embarked)
-            return None
-        soldiers = embarked
-        if option["mode"] == "naval":
-            a["fleet"] -= fleet
+        fleet = max(5, int(a["fleet"] * 0.35)) if option["mode"] == "naval" else 0
         campaign = Campaign(self.next_campaign_id, attacker, defender, option["mode"], origin,
                             objective, soldiers, fleet, distance, years, supply,
                             coalition_id, reinforcement_for,
-                            origin_landmass=int(source_landmass),
-                            transported_population=int(transported_population),
                             tactical_state=tactical_state, tactical_action=tactical_action)
         self.next_campaign_id += 1
         self.campaigns.append(campaign)
-        self._sync_army_totals(attacker)
         if option["mode"] == "naval":
             a["overseas_expeditions_used"] = self._overseas_expeditions_used(a) + 1
         self.visual_revision += 1
@@ -2331,7 +2016,6 @@ class WarEngine:
                 self.world.settlement[built_by_country] = 0
                 self.building_owner[built_by_country] = 0
                 self.local_population[stray] = 0
-                self.local_soldiers[stray] = 0
                 if stray.any():
                     self._mark_world_changed(c["id"])
                 continue
@@ -2373,7 +2057,6 @@ class WarEngine:
                     cy, cx = map(int, owned[len(owned) // 2])
                 self.local_population[cy, cx] += growth
             c["population"] = int(populations[cid] + growth)
-            self._sync_army_totals(cid)
             c["soldiers"] = min(c["soldiers"], c["population"])
             desired_army = int(c["population"] * 0.18)
             slowdown_span = max(1, int(cfg.RECRUIT_SLOWDOWN_FULL_YEAR) - int(cfg.RECRUIT_SLOWDOWN_START_YEAR))
@@ -2388,14 +2071,7 @@ class WarEngine:
                     * (1.15 if resting else 1.0)),
                 max(0, desired_army - c["soldiers"]),
             )
-            capital_x, capital_y = map(int, c.get("capital", self.world.countries[cid - 1]["capital"]))
-            if int(self.world.territory[capital_y, capital_x]) != cid:
-                owned = np.argwhere(self.world.territory == cid)
-                if len(owned):
-                    capital_y, capital_x = map(int, owned[len(owned) // 2])
-            home = int(self.world.continent[capital_y, capital_x])
-            self._add_local_soldiers(cid, home, int(recruits), near=(capital_y, capital_x))
-            self._sync_army_totals(cid)
+            c["soldiers"] += recruits
             annual_food_consumption = float(c["population"] * cfg.FOOD_CONSUMPTION_PER_PERSON)
             annual_food_balance = annual_food_output - annual_food_consumption
             c["last_food_production"] = annual_food_output
@@ -2527,7 +2203,11 @@ class WarEngine:
             frontier = list(candidates.get(cid, ()))
             if not frontier:
                 continue
+            area = int((territory == cid).sum())
+            capacity = cfg.INITIAL_TERRITORY_MAX_CELLS + country["soldiers"] * cfg.EXPANSION_CELLS_PER_SOLDIER
+            room = max(0, capacity - area)
             amount = min(
+                room,
                 cfg.BASE_EXPANSION_CELLS + country["cities"] * cfg.CITY_EXPANSION_BONUS
                 + country["barracks"] * cfg.BARRACKS_EXPANSION_BONUS
                 + country["frontier_level"] * cfg.FRONTIER_LEVEL_EXPANSION_BONUS,
@@ -2543,18 +2223,10 @@ class WarEngine:
                      + self.world.freshwater[coords[:, 0], coords[:, 1]] * 0.18
                      - np.minimum(self.world.movement_cost[coords[:, 0], coords[:, 1]], 20) * 0.8)
             chosen = coords[np.argsort(score)[-amount:]]
-            settlers = 0
-            claimed = []
-            destination_landmasses = self.world.continent[chosen[:, 0], chosen[:, 1]]
-            for landmass in np.unique(destination_landmasses):
-                group = chosen[destination_landmasses == landmass]
-                moved_here = self._move_settlers(cid, group)
-                if moved_here:
-                    claimed.append(group[:moved_here])
-                    settlers += moved_here
+            settlers = self._move_settlers(cid, chosen)
             if settlers <= 0:
                 continue
-            chosen = np.concatenate(claimed, axis=0)
+            chosen = chosen[:settlers]
             territory[chosen[:, 0], chosen[:, 1]] = cid
             self._mark_world_changed(cid)
             country["food"] -= settlers * cfg.EXPANSION_FOOD_COST_PER_CELL
@@ -2567,33 +2239,24 @@ class WarEngine:
             self._build_geography()
 
     def _move_settlers(self, cid: int, destinations: np.ndarray) -> int:
-        # 每一批移民只能從目的地所在陸塊出發，海外人口不會憑空搬回本島。
-        moved_cells = 0
-        if not len(destinations):
+        needed = len(destinations) * cfg.SETTLER_POPULATION_PER_CELL
+        mask = (self.world.territory == cid) & (self.local_population > 1)
+        sources = np.argwhere(mask)
+        if not len(sources):
             return 0
-        landmasses = self.world.continent[destinations[:, 0], destinations[:, 1]]
-        for landmass in np.unique(landmasses):
-            group = destinations[landmasses == landmass]
-            needed = len(group) * int(cfg.SETTLER_POPULATION_PER_CELL)
-            mask = ((self.world.territory == int(cid))
-                    & (self.world.continent == int(landmass))
-                    & (self.local_population > 1))
-            sources = np.argwhere(mask)
-            moved = 0
-            if len(sources):
-                order = np.argsort(self.local_population[sources[:, 0], sources[:, 1]])[::-1]
-                for idx in order:
-                    y, x = map(int, sources[idx])
-                    take = min(int(self.local_population[y, x] - 1), needed - moved)
-                    self.local_population[y, x] -= take
-                    moved += take
-                    if moved >= needed:
-                        break
-            cells = min(len(group), moved // max(1, int(cfg.SETTLER_POPULATION_PER_CELL)))
-            for y, x in group[:cells]:
-                self.local_population[int(y), int(x)] = int(cfg.SETTLER_POPULATION_PER_CELL)
-            moved_cells += cells
-        return moved_cells
+        order = np.argsort(self.local_population[sources[:, 0], sources[:, 1]])[::-1]
+        moved = 0
+        for idx in order:
+            y, x = map(int, sources[idx])
+            take = min(int(self.local_population[y, x] - 1), needed - moved)
+            self.local_population[y, x] -= take
+            moved += take
+            if moved >= needed:
+                break
+        cells = min(len(destinations), moved // cfg.SETTLER_POPULATION_PER_CELL)
+        for y, x in destinations[:cells]:
+            self.local_population[int(y), int(x)] = cfg.SETTLER_POPULATION_PER_CELL
+        return cells
 
     def _remove_population(self, cid: int, amount: int):
         if amount <= 0:
@@ -2658,16 +2321,15 @@ class WarEngine:
             1 for campaign in self.campaigns
             if campaign.attacker == cid and campaign.status == "marching"
         )
-        owned_landmasses = [int(v) for v in np.unique(
-            self.world.continent[self.world.territory == cid]
-        ) if int(v) > 0]
-        available_soldiers = max((
-            max(0, self._home_soldiers(cid, landmass) - int(
-                self.local_population[(self.world.territory == cid)
-                                      & (self.world.continent == landmass)].sum()
-                * cfg.MIN_GARRISON_RATIO
-            )) for landmass in owned_landmasses
-        ), default=0)
+        committed_soldiers = sum(
+            campaign.soldiers for campaign in self.campaigns
+            if campaign.attacker == cid and campaign.status == "marching"
+        )
+        available_soldiers = max(
+            0, int(country["soldiers"])
+            - int(country["population"] * cfg.MIN_GARRISON_RATIO)
+            - committed_soldiers
+        )
         can_launch = (
             active_campaigns < cfg.AI_MAX_ACTIVE_CAMPAIGNS
             and available_soldiers >= cfg.AI_MIN_ATTACK_SOLDIERS
@@ -2944,15 +2606,7 @@ class WarEngine:
             if any(t["id"] == defender for t in self.legal_targets(ally["id"])):
                 sent = self.launch_campaign(ally["id"], defender, reinforcement_for=campaign_id)
                 if sent:
-                    keep = min(sent.soldiers, int(ally["soldiers"] * cfg.ALLIANCE_REINFORCEMENT_RATIO))
-                    returned = sent.soldiers - keep
-                    sent.soldiers = keep
-                    sent.supply = sent.soldiers * sent.distance * cfg.SUPPLY_PER_SOLDIER_CELL
-                    self._add_local_soldiers(
-                        int(ally["id"]), int(sent.origin_landmass or self._home_continent_id(ally)),
-                        returned, near=sent.origin,
-                    )
-                    self._sync_army_totals(int(ally["id"]))
+                    sent.soldiers = min(sent.soldiers, int(ally["soldiers"] * cfg.ALLIANCE_REINFORCEMENT_RATIO))
                     sent.supply = sent.soldiers * sent.distance * cfg.SUPPLY_PER_SOLDIER_CELL
 
     def _advance_campaigns(self):
@@ -3022,11 +2676,7 @@ class WarEngine:
         owned = (self.world.territory[region] == int(defender["id"])) & disk
         local_population = int(self.local_population[region][owned].sum())
         barracks = int(((self.world.settlement[region] == BARRACKS) & owned).sum())
-        local_landmass_population = int(self.local_population[
-            (self.world.territory == int(defender["id"]))
-            & (self.world.continent == int(self.world.continent[y, x]))
-        ].sum())
-        population_share = local_population / max(1, local_landmass_population)
+        population_share = local_population / max(1, int(defender.get("population", 0)))
         barracks_bonus = min(
             float(cfg.BARRACKS_GARRISON_MAX_BONUS),
             barracks * float(cfg.BARRACKS_GARRISON_SHARE_BONUS),
@@ -3042,14 +2692,7 @@ class WarEngine:
         lead = attackers[0]
         defender = self.country(lead.defender)
         if not defender["alive"]:
-            for c in attackers:
-                c.status = "cancelled"
-                self._add_local_soldiers(
-                    int(c.attacker), int(c.origin_landmass or self._home_continent_id(self.country(c.attacker))),
-                    int(c.soldiers), near=c.origin,
-                )
-                self.country(int(c.attacker))["fleet"] += int(c.fleet)
-                self._sync_army_totals(int(c.attacker))
+            for c in attackers: c.status = "cancelled"
             return
         attack_power = 0.0
         for c in attackers:
@@ -3058,13 +2701,13 @@ class WarEngine:
             if c.mode == "naval":
                 modifier *= 1.0 - cfg.AMPHIBIOUS_ATTACK_PENALTY
             attack_power += c.soldiers * modifier
+        away = sum(x.soldiers for x in self.campaigns if x.attacker == defender["id"] and x.status == "marching")
+        home_soldiers = max(0, defender["soldiers"] - away)
         y, x = map(int, lead.objective)
-        battle_landmass = int(self.world.continent[y, x])
-        local_defender_soldiers = self._home_soldiers(int(defender["id"]), battle_landmass)
         terrain_bin = int(np.clip(self.world.terrain[y, x], 0, 6))
         estimated_local_share = self._local_garrison_share(defender, lead.objective)
         local_bin = 0 if estimated_local_share < 0.25 else 1 if estimated_local_share < 0.40 else 2 if estimated_local_share < 0.60 else 3
-        incoming_ratio = sum(c.soldiers for c in attackers) / max(1, local_defender_soldiers)
+        incoming_ratio = sum(c.soldiers for c in attackers) / max(1, home_soldiers)
         pressure_bin = 0 if incoming_ratio < 0.15 else 1 if incoming_ratio < 0.35 else 2 if incoming_ratio < 0.65 else 3
         value = int(self.world.city_value[y, x])
         value_bin = 0 if value < 25 else 1 if value < 50 else 2 if value < 75 else 3
@@ -3086,7 +2729,7 @@ class WarEngine:
             max(learned_share, self._local_garrison_share(defender, lead.objective))
             + max(0, len(attackers) - 1) * 0.04,
         )
-        defending_soldiers = min(local_defender_soldiers, max(200, int(local_defender_soldiers * local_share)))
+        defending_soldiers = min(home_soldiers, max(200, int(home_soldiers * local_share)))
         defense_power = defending_soldiers * defender["morale"] * self._terrain_defense(lead.objective)
         attack_power *= self.rng.uniform(1.0 - cfg.BATTLE_RANDOMNESS, 1.0 + cfg.BATTLE_RANDOMNESS)
         defense_power *= self.rng.uniform(1.0 - cfg.BATTLE_RANDOMNESS, 1.0 + cfg.BATTLE_RANDOMNESS)
@@ -3098,18 +2741,16 @@ class WarEngine:
         for c in attackers:
             loss = min(c.soldiers, int(c.soldiers * attack_loss_rate))
             attacker_country = self.country(c.attacker)
-            c.soldiers = max(0, int(c.soldiers) - loss)
-            c.casualties = int(c.casualties) + loss
+            attacker_country["soldiers"] = max(0, attacker_country["soldiers"] - loss)
+            self._remove_population(c.attacker, loss)
             shock = float(cfg.WAR_EXHAUSTION_PER_BATTLE) + float(cfg.WAR_EXHAUSTION_CASUALTY_WEIGHT) * loss / max(1, int(attacker_country["population"]))
             attacker_country["war_exhaustion"] = float(np.clip(attacker_country.get("war_exhaustion", 0.0) + shock, 0.0, 1.0))
             attacker_country["morale"] = max(0.50, float(attacker_country.get("morale", 1.0)) - min(0.16, 0.035 + attack_loss_rate * 0.18))
             attack_losses += loss
             c.status = "won" if attacker_wins else "lost"
         defense_losses = min(defending_soldiers, int(defending_soldiers * defense_loss_rate))
-        self._take_local_soldiers(int(defender["id"]), battle_landmass, defense_losses)
-        defender_land = ((self.world.territory == int(defender["id"]))
-                         & (self.world.continent == battle_landmass))
-        self._remove_population_in_mask(defender_land, defense_losses)
+        defender["soldiers"] = max(0, defender["soldiers"] - defense_losses)
+        self._remove_population(defender["id"], defense_losses)
         defense_shock = float(cfg.WAR_EXHAUSTION_PER_BATTLE) + float(cfg.WAR_EXHAUSTION_CASUALTY_WEIGHT) * defense_losses / max(1, int(defender["population"]))
         defender["war_exhaustion"] = float(np.clip(defender.get("war_exhaustion", 0.0) + defense_shock, 0.0, 1.0))
         defender["morale"] = max(0.50, float(defender.get("morale", 1.0)) - min(0.16, 0.035 + defense_loss_rate * 0.18))
@@ -3130,34 +2771,6 @@ class WarEngine:
         captured = self._capture_area(winner, loser_id, capture_center, total_attackers, naval_landing)
         if captured <= 0:
             captured = self._capture_nearest_loser_cell(winner, loser_id, capture_center, naval_landing)
-        # 戰役結束後，存活遠征軍留駐於戰區；敗軍撤回原出發陸塊。
-        for campaign in attackers:
-            attacker_country = self.country(campaign.attacker)
-            destination_landmass = (battle_landmass if attacker_wins
-                                    else int(campaign.origin_landmass or self._home_continent_id(attacker_country)))
-            if attacker_wins and int(campaign.transported_population) > 0:
-                home = self._home_continent_id(attacker_country)
-                source = ((self.world.territory == int(campaign.attacker))
-                          & (self.world.continent == home))
-                transported = self._remove_population_in_mask(source, int(campaign.transported_population))
-                destination = ((self.world.territory == int(campaign.attacker))
-                               & (self.world.continent == destination_landmass))
-                cells = np.argwhere(destination)
-                if transported and len(cells):
-                    base, remainder = divmod(transported, len(cells))
-                    self.local_population[destination] += base
-                    if remainder:
-                        self.local_population[cells[:remainder, 0], cells[:remainder, 1]] += 1
-                    self._log(campaign.attacker, f"遠征勝利後由本島運送{transported:,}名人口至海外陸塊發展。")
-            population_mask = ((self.world.territory == int(campaign.attacker))
-                               & (self.world.continent == destination_landmass))
-            self._remove_population_in_mask(population_mask, int(campaign.casualties))
-            self._add_local_soldiers(
-                campaign.attacker, destination_landmass, int(campaign.soldiers),
-                near=(campaign.objective if attacker_wins else campaign.origin),
-            )
-            attacker_country["fleet"] += int(campaign.fleet)
-        self._sync_army_totals(*(int(c.attacker) for c in attackers), int(defender["id"]))
         if attacker_wins and winning_campaign.mode == "naval" and captured > 0:
             victor = self.country(winner)
             by, bx = map(int, lead.objective)
@@ -3170,10 +2783,10 @@ class WarEngine:
                              if int(site.get("continent_id", -1)) == conquered_continent), None)
                 if site is None:
                     site = {"anchor": [bx, by], "continent_id": conquered_continent,
-                            "founded_year": int(self.year), "type": "海外征戰首都"}
+                            "founded_year": int(self.year), "type": "征服"}
                     sites.append(site)
                 else:
-                    site.update({"anchor": [bx, by], "founded_year": int(self.year), "type": "海外征戰首都"})
+                    site.update({"anchor": [bx, by], "founded_year": int(self.year), "type": "征服"})
                 victor["overseas_capital"] = sites[0] if sites else None
                 self._log(winner, f"在{self.geographic_name_at(by, bx)}登陸並建立海外首都；目前持有{self._overseas_site_count(victor)}處，下一階段名額上限{self._overseas_expansion_capacity(victor)}處。")
         winner_country = self.country(winner)
@@ -3243,7 +2856,6 @@ class WarEngine:
         capture = reached
         count = int(capture.sum())
         self.world.territory[capture] = winner
-        self.local_soldiers[capture] = 0
         if count:
             for country in self.countries:
                 if country.get("alive"):
@@ -3257,7 +2869,6 @@ class WarEngine:
                 self.world.settlement[orphaned] = 0
                 self.building_owner[orphaned] = 0
                 self.local_population[orphaned] = 0
-                self.local_soldiers[orphaned] = 0
             self._mark_world_changed(winner, loser)
         if count:
             self.world.border = _border_mask(self.world.territory)
@@ -3290,7 +2901,6 @@ class WarEngine:
         dx = np.minimum(np.abs(coords[:, 1] - x), width - np.abs(coords[:, 1] - x))
         iy, ix = map(int, coords[int(np.argmin(dy * dy + dx * dx))])
         self.world.territory[iy, ix] = int(winner)
-        self.local_soldiers[iy, ix] = 0
         self._mark_world_changed(winner, loser)
         self.world.border = _border_mask(self.world.territory)
         self._build_geography()
@@ -3314,11 +2924,7 @@ class WarEngine:
                 continue
             c["territory_cells"] = int(areas[cid])
             c["population"] = int(populations[cid])
-            owned = self.world.territory == cid
-            self.local_soldiers[owned] = np.minimum(
-                self.local_soldiers[owned], self.local_population[owned]
-            )
-            self._sync_army_totals(cid)
+            c["soldiers"] = min(c["soldiers"], c["population"])
             if areas[cid] <= 0 or c["population"] <= 0:
                 self._extinguish_country(c, None, "領土或人口歸零")
 
@@ -3337,13 +2943,9 @@ class WarEngine:
                 self._found_overseas_colonies()
             self._advance_campaigns()
             self._advance_colony_voyages()
-            self._advance_overseas_reinforcements()
-            self._send_overseas_reinforcements()
-            self._cleanup_overseas_exclaves()
             self._check_territorial_splits()
             self._check_power_splits()
             self._check_colony_independence()
-            self._refresh_survival()
         return self.summary()
 
     def summary(self):
@@ -3364,18 +2966,17 @@ class WarEngine:
         path = Path(selected)
         path.parent.mkdir(parents=True, exist_ok=True)
         np.savez_compressed(
-        path.with_suffix(".npz"),
+            path.with_suffix(".npz"),
             territory=self.world.territory,
             border=self.world.border,
             settlement=self.world.settlement,
             building_owner=self.building_owner,
             local_population=self.local_population,
-            local_soldiers=self.local_soldiers,
             geographic_region_id=self.geographic_region_id,
         )
         snapshot_id = uuid.uuid4().hex
         payload = {
-            "version": "V20_海外分帳與艦隊運輸版",
+            "version": "V19_2_海外資格與危急後撤版",
             "rl_brains_snapshot_id": snapshot_id,
             "seed": self.world.settings.seed,
             "year": self.year,
@@ -3399,7 +3000,7 @@ class WarEngine:
         brain_path = self._rl_brains_path(path)
         brain_payload = {
             "format_version": 1,
-            "game_version": "V20_海外分帳與艦隊運輸版",
+            "game_version": "V19_2_海外資格與危急後撤版",
             "snapshot_id": snapshot_id,
             "seed": int(self.world.settings.seed),
             "year": int(self.year),
@@ -3415,7 +3016,7 @@ class WarEngine:
     def load(cls, world, path: Path):
         path = Path(path)
         payload = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
-        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_逐年回報修正版", "V13_2_靜態航線與抵達日誌版", "V13_2_1_海外艦隊門檻與SARSA獎勵版", "V14_戰術學習與世界統一版", "V14_1_殖民與海外攻佔上限版", "V15_弱點攻防與休養生息版", "V17_大島優先與危急後撤版", "V17_1_本島統一與海外首都守則版", "V17_2_分裂小領土清空版", "V17_3_本土小飛地清空版", "V17_4_積極拓荒與勝者得地版", "V18_本島統一與首都存續版", "V18_逐階海外拓展與撤退版", "V19_逐階海外拓展與撤退版", "V19_地球地圖與海外撤退規則版", "V19_1_拓荒等級版", "V19_2_海外資格與危急後撤版", "V20_海外分帳與艦隊運輸版"):
+        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_逐年回報修正版", "V13_2_靜態航線與抵達日誌版", "V13_2_1_海外艦隊門檻與SARSA獎勵版", "V14_戰術學習與世界統一版", "V14_1_殖民與海外攻佔上限版", "V15_弱點攻防與休養生息版", "V17_大島優先與危急後撤版", "V17_1_本島統一與海外首都守則版", "V17_2_分裂小領土清空版", "V17_3_本土小飛地清空版", "V17_4_積極拓荒與勝者得地版", "V18_本島統一與首都存續版", "V18_逐階海外拓展與撤退版", "V19_逐階海外拓展與撤退版", "V19_地球地圖與海外撤退規則版", "V19_1_拓荒等級版", "V19_2_海外資格與危急後撤版"):
             raise ValueError("不支援此版本的戰爭存檔")
         if int(payload.get("seed", -1)) != int(world.settings.seed):
             raise ValueError("戰爭存檔與目前世界Seed不一致")
@@ -3429,9 +3030,6 @@ class WarEngine:
             else:
                 engine.building_owner = np.where(world.settlement > 0, world.territory, 0).astype(np.int32)
             engine.local_population = data["local_population"].copy()
-            has_local_soldiers = "local_soldiers" in data.files
-            if has_local_soldiers:
-                engine.local_soldiers = data["local_soldiers"].copy().astype(np.int32)
             if "geographic_region_id" in data.files:
                 engine.geographic_region_id = data["geographic_region_id"].copy()
         engine.year = int(payload["year"])
@@ -3479,7 +3077,6 @@ class WarEngine:
                 )
                 c["overseas_expeditions_used"] = min(int(cfg.OVERSEAS_EXPEDITION_LIMIT), inferred)
             c.setdefault("colonization_voyage", None)
-            c.setdefault("reinforcement_voyage", None)
             c.setdefault("war_goal", "UNIFY_WORLD")
             c.setdefault("war_exhaustion", 0.0)
             c.setdefault("recovery_until_year", 0)
@@ -3491,22 +3088,6 @@ class WarEngine:
             raw["origin"] = tuple(raw["origin"])
             raw["objective"] = tuple(raw["objective"])
             engine.campaigns.append(Campaign(**raw))
-        if not has_local_soldiers:
-            engine.local_soldiers = np.zeros_like(engine.local_population, dtype=np.int32)
-            for c in engine.countries:
-                cid = int(c["id"])
-                at_sea = sum(int(x.soldiers) for x in engine.campaigns
-                             if x.attacker == cid and x.status == "marching")
-                stationed = max(0, int(c.get("soldiers", 0)) - at_sea)
-                coords = np.argwhere((world.territory == cid) & (engine.local_population > 0))
-                if not len(coords) or not stationed:
-                    continue
-                weights = engine.local_population[coords[:, 0], coords[:, 1]].astype(np.float64)
-                allocation = np.floor(weights / max(1.0, weights.sum()) * stationed).astype(np.int32)
-                remainder = stationed - int(allocation.sum())
-                if remainder:
-                    allocation[np.argsort(weights)[-remainder:]] += 1
-                engine.local_soldiers[coords[:, 0], coords[:, 1]] = allocation
         engine.events = list(payload.get("events", []))
         engine.history_events = list(payload.get("history_events", []))
         engine.country_events = {int(k): list(v) for k, v in payload.get("country_events", {}).items()}
@@ -3549,6 +3130,5 @@ class WarEngine:
             engine.rl_brains[cid].load_dict(brain_data)
         if payload.get("rng_state"):
             engine.rng.bit_generator.state = payload["rng_state"]
-        engine._sync_army_totals()
         engine._build_geography()
         return engine

@@ -1,4 +1,4 @@
-"""《亂世演算_征佔紀元》V20 海外分帳、艦隊運輸與被動拓荒參數。"""
+"""《亂世演算_征佔紀元》V19_2 海外資格、危急後撤與地球地圖全域參數。"""
 import random
 
 MAP_WIDTH = 1200
@@ -234,7 +234,7 @@ AI_NAVAL_TARGET_BONUS = 0.35            # AI評估可跨海目標時的額外分
 # V6拓荒：開局只有首都周圍的小型核心領土。
 INITIAL_TERRITORY_RADIUS = 7
 INITIAL_TERRITORY_MAX_CELLS = 150
-EXPANSION_INTERVAL_YEARS = 1            # 每年被動檢查；國土鄰接空地且有資源即自動拓荒。
+EXPANSION_INTERVAL_YEARS = 3            # 陸地拓荒檢查頻率；較短間隔讓邊境空地更快納入。
 BASE_EXPANSION_CELLS = 6                # 每次拓荒的基本格數，並受人口、資源與邊境候選限制。
 EXPANSION_CELLS_PER_SOLDIER = 6         # 軍力支援的領土容量。
 EXPANSION_FOOD_COST_PER_CELL = 0.5      # 每拓一格的糧食成本。
@@ -256,7 +256,3 @@ PORT_COST = (60.0, 130.0, 70.0)
 FLEET_CAPACITY_PER_PORT = 180         # 兩座港口可蓄至360艘，能跨過既有301艘海外門檻。
 FLEET_BUILD_BATCH = 18                # 每次補充的艦艇數量，縮短海外遠征前的等待。
 FLEET_BUILD_COST = (12.0, 30.0, 18.0) # 糧食、木材、礦產。
-OVERSEAS_SOLDIERS_PER_SHIP = 1000      # 每艘艦艇一次可運送的士兵數，出海軍隊不得超出艦隊載量。
-OVERSEAS_POPULATION_PER_SHIP = 1000    # 每艘艦艇一次可運送的人口數；建立海外首都需運送本國人口四分之一。
-OVERSEAS_REINFORCEMENT_CHECK_YEARS = 20 # AI每隔此年數檢查海外駐軍，依缺口決定是否派艦增援。
-OVERSEAS_GARRISON_TARGET_RATIO = 0.015 # 海外駐軍目標：該陸塊人口的1.5%，上限仍受本島可用兵與艦隊載量限制。
