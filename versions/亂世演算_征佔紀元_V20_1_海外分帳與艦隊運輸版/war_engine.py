@@ -1,4 +1,4 @@
-"""V20 空間戰爭核心：分區人口與駐軍、艦隊運輸、行軍、占領與增援。"""
+"""V20_1 空間戰爭核心：分區人口與駐軍、艦隊運輸、行軍、占領與增援。"""
 
 from __future__ import annotations
 
@@ -2109,7 +2109,7 @@ class WarEngine:
             def local_defense(point):
                 share = self._local_garrison_share(defending, point)
                 landmass = int(self.world.continent[point])
-                local_soldiers = min(self._home_soldiers(defender["id"], landmass), max(200, int(defending["soldiers"] * share)))
+                local_soldiers = min(self._home_soldiers(defender, landmass), max(200, int(defending["soldiers"] * share)))
                 defense = local_soldiers * float(defending.get("morale", 1.0)) * self._terrain_defense(point)
                 city_value = float(self.world.city_value[point]) / 100.0
                 port_priority = (0.35 if self._homeland_is_critical(defending)
@@ -2148,7 +2148,7 @@ class WarEngine:
             point = (int(y), int(x))
             share = self._local_garrison_share(defending, point)
             landmass = int(self.world.continent[point])
-            soldiers = min(self._home_soldiers(defender["id"], landmass), max(200, int(defending["soldiers"] * share)))
+            soldiers = min(self._home_soldiers(defender, landmass), max(200, int(defending["soldiers"] * share)))
             defense = soldiers * float(defending.get("morale", 1.0)) * self._terrain_defense(point)
             value = float(self.world.city_value[point]) / 100.0
             port_priority = (0.35 if self._homeland_is_critical(defending)

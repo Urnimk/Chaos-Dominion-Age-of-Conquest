@@ -1,4 +1,4 @@
-"""《亂世演算_征佔紀元》V20 海外分帳、艦隊運輸與被動拓荒參數。"""
+"""《亂世演算_征佔紀元》V20_1 海外戰場目標修正；沿用 V20 海外分帳與艦隊運輸參數。"""
 import random
 
 MAP_WIDTH = 1200
@@ -234,7 +234,7 @@ AI_NAVAL_TARGET_BONUS = 0.35            # AI評估可跨海目標時的額外分
 # V6拓荒：開局只有首都周圍的小型核心領土。
 INITIAL_TERRITORY_RADIUS = 7
 INITIAL_TERRITORY_MAX_CELLS = 150
-EXPANSION_INTERVAL_YEARS = 1            # 每年被動檢查；國土鄰接空地且有資源即自動拓荒。
+EXPANSION_INTERVAL_YEARS = 5            # 每年被動檢查；國土鄰接空地且有資源即自動拓荒。
 BASE_EXPANSION_CELLS = 6                # 每次拓荒的基本格數，並受人口、資源與邊境候選限制。
 EXPANSION_CELLS_PER_SOLDIER = 6         # 軍力支援的領土容量。
 EXPANSION_FOOD_COST_PER_CELL = 0.5      # 每拓一格的糧食成本。
@@ -248,7 +248,7 @@ BARRACKS_AREA_PER_BUILDING = 130
 FRONTIER_LEVEL_AREA_PER_LEVEL = 90       # 每累積此面積，可提升一級拓荒等級。
 CITY_EXPANSION_BONUS = 2
 BARRACKS_EXPANSION_BONUS = 3
-FRONTIER_LEVEL_EXPANSION_BONUS = 2       # 每級增加每次陸上拓荒可取得的格數。
+FRONTIER_LEVEL_EXPANSION_BONUS = 4       # 每級增加每次陸上拓荒可取得的格數。
 CITY_COST = (80.0, 120.0, 45.0)       # 糧食、木材、礦產
 BARRACKS_COST = (55.0, 75.0, 90.0)
 FRONTIER_LEVEL_COST = (35.0, 55.0, 25.0) # 拓荒等級升級成本：糧食、木材、礦產。
