@@ -1,0 +1,21 @@
+test_birth_budget_and_overseas_growth (__main__.Regression.test_birth_budget_and_overseas_growth) ... ok
+test_delayed_credit_does_not_clear_other_traces (__main__.Regression.test_delayed_credit_does_not_clear_other_traces) ... ok
+test_destroyed_port_interrupts_and_no_retarget (__main__.Regression.test_destroyed_port_interrupts_and_no_retarget) ... ok
+test_exact_eighty_percent_qualifies (__main__.Regression.test_exact_eighty_percent_qualifies) ... ok
+test_no_followup_random_naval_invasion (__main__.Regression.test_no_followup_random_naval_invasion) ... ok
+test_no_free_port_and_fixed_existing_port (__main__.Regression.test_no_free_port_and_fixed_existing_port) ... ok
+test_no_repeat_stockpiling_reward (__main__.Regression.test_no_repeat_stockpiling_reward) ... ok
+test_overseas_food_ledger_posts_once (__main__.Regression.test_overseas_food_ledger_posts_once) ... ok
+test_recruit_budget_and_overseas_recruitment (__main__.Regression.test_recruit_budget_and_overseas_recruitment) ... ok
+test_save_reload_continuation (__main__.Regression.test_save_reload_continuation) ... ok
+test_schema_preserves_old_brain_in_only_sidecar (__main__.Regression.test_schema_preserves_old_brain_in_only_sidecar) ... ok
+test_small_island_is_not_calendar_deleted (__main__.Regression.test_small_island_is_not_calendar_deleted) ... ok
+test_small_voyage_reserves_one_expansion_slot (__main__.Regression.test_small_voyage_reserves_one_expansion_slot) ... ok
+test_transport_conservation_and_real_port_arrival (__main__.Regression.test_transport_conservation_and_real_port_arrival) ... ok
+test_ui_module_import (__main__.Regression.test_ui_module_import) ... ok
+test_weak_first_invasion_can_lose_without_counter_teleport (__main__.Regression.test_weak_first_invasion_can_lose_without_counter_teleport) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 18.301s
+
+OK

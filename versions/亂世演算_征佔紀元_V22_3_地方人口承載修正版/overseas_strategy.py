@@ -171,7 +171,8 @@ class OverseasStrategyMixin:
         productivity_bonus=min(cfg.MAX_CITY_FOOD_PRODUCTIVITY_BONUS,int(c.get('cities',0))*cfg.CITY_FOOD_PRODUCTIVITY_BONUS)
         capacity_factor=cfg.FOOD_PRODUCTION_MULTIPLIER*(1.0+productivity_bonus)/cfg.FOOD_CONSUMPTION_PER_PERSON*cfg.FOOD_GROWTH_RESERVE_RATIO
         all_idx=self._spatial_indices(cid)
-        national_room=max(0,int(float(self.food_yield.ravel()[all_idx].sum())*capacity_factor-int(self.local_population.ravel()[all_idx].sum())))
+        stock_factor=cfg.FOOD_GROWTH_RESERVE_RATIO/(max(1.0,float(cfg.POPULATION_STOCK_SUPPORT_YEARS))*cfg.FOOD_CONSUMPTION_PER_PERSON)
+        national_stock=0.0
         valid=[];seen=set()
         for site in sites:
             x,y=map(int,site['anchor']);lm=int(site['continent_id'])
@@ -179,10 +180,14 @@ class OverseasStrategyMixin:
             seen.add(lm);idx=self._spatial_indices(cid,lm)
             if not len(idx) or self.world.territory[y,x]!=cid:continue
             pop=int(self.local_population.ravel()[idx].sum())
-            room=max(0,int(float(self.food_yield.ravel()[idx].sum())*capacity_factor-pop))
+            # Only food already held at this location supports births; cargo at sea is excluded.
+            stock=max(0.0,float(c.get('food',0) if lm==home else site.get('supply_food',0)))
+            national_stock+=stock
+            room=max(0,int(float(self.food_yield.ravel()[idx].sum())*capacity_factor+stock*stock_factor-pop))
             total=max(0.0,float(growth))+float(fractions.get(str(lm),0.0))
             births=int(total);fractions[str(lm)]=total-births
             if room and births:valid.append((x,y,min(room,births)))
+        national_room=max(0,int(float(self.food_yield.ravel()[all_idx].sum())*capacity_factor+national_stock*stock_factor-int(self.local_population.ravel()[all_idx].sum())))
         desired=sum(n for _,_,n in valid)
         if not desired or not national_room:return 0
         amounts=np.array([n for _,_,n in valid],dtype=np.int64)

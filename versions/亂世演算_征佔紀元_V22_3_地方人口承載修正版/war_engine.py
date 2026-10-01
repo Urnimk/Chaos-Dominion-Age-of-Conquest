@@ -2300,12 +2300,11 @@ class WarEngine(OverseasStrategyMixin):
             # )
 
             capacity_bonus = max(0.0, food_capacity) / max(1.0, float(cfg.FOOD_CAPACITY_BONUS_PER_PERSON))
-            growth = min(
-                cfg.POPULATION_GROWTH
-                * (cfg.REST_BIRTH_GROWTH_MULTIPLIER if resting else 1.0)
-                * (1.0 + capacity_bonus),
-                growth_limit,
-            )
+            # Birth speed depends on productive capacity; existing local stock only
+            # raises the cap checked in _local_growth, never the growth bonus.
+            growth = (cfg.POPULATION_GROWTH
+                      * (cfg.REST_BIRTH_GROWTH_MULTIPLIER if resting else 1.0)
+                      * (1.0 + capacity_bonus))
 
             growth = self._local_growth(c, growth)
             c["population"] = int(populations[cid] + growth)
@@ -3437,7 +3436,7 @@ class WarEngine(OverseasStrategyMixin):
         )
         snapshot_id = uuid.uuid4().hex
         payload = {
-            "version": "V22_3_全島共用人口加成版",
+            "version": "V22_4_在地存糧人口承載版",
             "rl_brains_snapshot_id": snapshot_id,
             "seed": self.world.settings.seed,
             "year": self.year,
@@ -3461,7 +3460,7 @@ class WarEngine(OverseasStrategyMixin):
         brain_path = self._rl_brains_path(path)
         brain_payload = {
             "format_version": 1,
-            "game_version": "V22_3_全島共用人口加成版",
+            "game_version": "V22_4_在地存糧人口承載版",
             "snapshot_id": snapshot_id,
             "seed": int(self.world.settings.seed),
             "year": int(self.year),
@@ -3477,7 +3476,7 @@ class WarEngine(OverseasStrategyMixin):
     def load(cls, world, path: Path):
         path = Path(path)
         payload = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
-        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_逐年回報修正版", "V13_2_靜態航線與抵達日誌版", "V13_2_1_海外艦隊門檻與SARSA獎勵版", "V14_戰術學習與世界統一版", "V14_1_殖民與海外攻佔上限版", "V15_弱點攻防與休養生息版", "V17_大島優先與危急後撤版", "V17_1_本島統一與海外首都守則版", "V17_2_分裂小領土清空版", "V17_3_本土小飛地清空版", "V17_4_積極拓荒與勝者得地版", "V18_本島統一與首都存續版", "V18_逐階海外拓展與撤退版", "V19_逐階海外拓展與撤退版", "V19_地球地圖與海外撤退規則版", "V19_1_拓荒等級版", "V19_2_海外資格與危急後撤版", "V20_海外分帳與艦隊運輸版", "V20.2_自主戰略AI與海外戰術庫版", "V21_海外戰區長期學習版", "V21.1_海外殖民探索修正版", "V22_海外港口戰區策略版", "V22_1_拓荒與補給修正版", "V22_2_地方人口承載修正版", "V22_3_全島共用人口加成版"):
+        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_逐年回報修正版", "V13_2_靜態航線與抵達日誌版", "V13_2_1_海外艦隊門檻與SARSA獎勵版", "V14_戰術學習與世界統一版", "V14_1_殖民與海外攻佔上限版", "V15_弱點攻防與休養生息版", "V17_大島優先與危急後撤版", "V17_1_本島統一與海外首都守則版", "V17_2_分裂小領土清空版", "V17_3_本土小飛地清空版", "V17_4_積極拓荒與勝者得地版", "V18_本島統一與首都存續版", "V18_逐階海外拓展與撤退版", "V19_逐階海外拓展與撤退版", "V19_地球地圖與海外撤退規則版", "V19_1_拓荒等級版", "V19_2_海外資格與危急後撤版", "V20_海外分帳與艦隊運輸版", "V20.2_自主戰略AI與海外戰術庫版", "V21_海外戰區長期學習版", "V21.1_海外殖民探索修正版", "V22_海外港口戰區策略版", "V22_1_拓荒與補給修正版", "V22_2_地方人口承載修正版", "V22_3_全島共用人口加成版", "V22_4_在地存糧人口承載版"):
             raise ValueError("不支援此版本的戰爭存檔")
         if int(payload.get("seed", -1)) != int(world.settings.seed):
             raise ValueError("戰爭存檔與目前世界Seed不一致")
