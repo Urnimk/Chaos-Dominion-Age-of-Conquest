@@ -639,14 +639,14 @@ class MapViewer:
             ("現任國王", (f"第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}"
                        if c['alive'] else f"末代第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}")),
             ("領土規模", f"{c['territory_cells']:,} 格"),
-            ("本島無主土地", f"可拓荒 {frontier_empty:,}／不可通行 {frontier_blocked:,} 格"),
             ("戰略狀態", "休養生息" if self.war.year < int(c.get("recovery_until_year", 0)) else ("交戰中" if active else "和平")),
             # ("終極戰爭目標", "統一世界" if c.get("war_goal", "UNIFY_WORLD") == "UNIFY_WORLD" else c.get("war_goal", "統一世界")),
-            ("已用出海遠征", f"{self.war._overseas_expeditions_used(c):,}／{cfg.OVERSEAS_EXPEDITION_LIMIT}（含失敗）"),
+            # ("已用出海遠征", f"{self.war._overseas_expeditions_used(c):,}／{cfg.OVERSEAS_EXPEDITION_LIMIT}（含失敗）"),
             ("海外首都／出海名額", f"{self.war._overseas_site_count(c):,} 處／{self.war._overseas_expansion_capacity(c):,} 格"),
             ("本島出海資格", ("危局：僅准緊急後撤" if self.war._homeland_is_critical(c) and not self.war._homeland_is_unified(c)
                               else "已達標（>80%、唯一政權）" if self.war._homeland_is_unified(c)
                               else "未達標：一般出海禁止")),
+            ("本島無主土地", f"可拓荒 {frontier_empty:,}／不可通行 {frontier_blocked:,} 格"),
             # ("殖民地數", f"{len(c.get('colonies', [])):,}／{cfg.COLONY_MAX_PER_COUNTRY}"),
         )
         economy_rows = (
