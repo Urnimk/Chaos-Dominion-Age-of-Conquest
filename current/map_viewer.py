@@ -270,7 +270,7 @@ class MapViewer:
         economy_box = ttk.LabelFrame(dashboard, text="👥 人口・建築・資源", style="Panel.TLabelframe", padding=5)
         economy_box.grid(row=0, column=1, sticky="nsew", padx=(4,0), pady=(0,4))
         self.country_economy = self._field_table(
-            economy_box, ("項目", "內容"), height=9, widths=(140, 240)
+            economy_box, ("項目", "內容"), height=9, widths=(130, 250)
         )
 
         # 領地清單置於上方兩張資訊表下方，橫跨整個左側欄；維持參考圖中的矮版資訊列。
