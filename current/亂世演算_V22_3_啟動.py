@@ -1,4 +1,4 @@
-"""《亂世演算_征佔紀元 V22》啟動檔。"""
+"""《亂世演算_征佔紀元 V22_3》啟動檔。"""
 try:
     from map_viewer import main
 except ImportError as exc:
