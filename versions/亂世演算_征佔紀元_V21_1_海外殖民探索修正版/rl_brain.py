@@ -8,16 +8,12 @@ import numpy as np
 
 # 戰略層採 12 維離散狀態。刻意不用原始地圖像素，避免 Q 表狀態爆炸；
 # 地圖資訊先壓縮成「本土控制、鄰國威脅、海外機會、海外駐軍缺口」等可解釋特徵。
-STATE_DIMENSIONS = 9
+STATE_DIMENSIONS = 6
 PASS_ACTION = "PASS"
 
 
 def action_kind(action: str) -> str:
     """把帶目標參數的原子動作壓成戰術庫可理解的動作類型。"""
-    if action.startswith("THEATRE:"):
-        return action.rsplit(":", 1)[-1]
-    if action.startswith("BUILD_OVERSEAS_PORT:"):
-        return "BUILD_OVERSEAS_PORT"
     if action.startswith("ATTACK:"):
         return "ATTACK_NAVAL" if action.endswith(":naval") else "ATTACK_LAND"
     if action == "COLONIZE":
@@ -89,7 +85,7 @@ class CountryBrain:
             return None
         self.tactical_history.append(kind)
         self.tactical_history = self.tactical_history[-max_history:]
-        if len(self.tactical_history) < min_len:
+        if reward <= 0 or len(self.tactical_history) < min_len:
             return None
 
         # 把連續相同動作壓成一個步驟，讓「休養數年後再進攻」形成
@@ -111,10 +107,8 @@ class CountryBrain:
             if existing:
                 existing["uses"] = int(existing.get("uses", 0)) + 1
                 existing["score"] = 0.85 * float(existing.get("score", 0.0)) + 0.15 * float(reward)
-                existing["successes"] = int(existing.get("successes", 0)) + int(reward > 0)
+                existing["successes"] = int(existing.get("successes", 0)) + 1
                 return key
-            if reward <= 0:
-                return None
             # 新戰術只有在至少兩步且本次結果為正時產生。
             self.tactical_library[key] = {
                 "sequence": list(seq),
@@ -228,8 +222,18 @@ class CountryBrain:
         biases = action_biases or {}
         # 未嘗試動作給極小「資訊價值」加成，讓殖民、海戰、增援都能被看見；
         # 這不是人格權重，而是避免新動作永遠因初始Q=0被既有策略壓死。
-        # Exact same behavior policy is used by expected_value: no hidden novelty policy.
-        preferences = values + np.asarray([float(biases.get(a, 0.0)) for a in actions])
+        novelty_values = []
+        for flag, action in zip(unseen, actions):
+            if not flag:
+                novelty_values.append(0.0)
+            elif action == "COLONIZE":
+                novelty_values.append(0.10)
+            elif action == "REINFORCE_OVERSEAS" or (action.startswith("ATTACK:") and action.endswith(":naval")):
+                novelty_values.append(0.05)
+            else:
+                novelty_values.append(0.015)
+        novelty = np.asarray(novelty_values, dtype=float)
+        preferences = values + np.asarray([float(biases.get(a, 0.0)) for a in actions]) + novelty
         best = np.flatnonzero(np.isclose(preferences, preferences.max(), rtol=1e-9, atol=1e-12))
         if self.rng.random() < float(np.clip(epsilon, 0.0, 1.0)):
             index = int(self.rng.integers(len(actions)))
@@ -275,8 +279,6 @@ class CountryBrain:
     def to_dict(self) -> dict:
         return {
             "state_dimensions": STATE_DIMENSIONS,
-            "schema": "V22-strategy9-theatre",
-            "legacy_q_values": getattr(self, "legacy_q_values", {}),
             "q_values": self.q_values,
             "eligibility": self.eligibility,
             "tactical_q_values": self.tactical_q_values,
@@ -292,13 +294,7 @@ class CountryBrain:
         }
 
     def load_dict(self, data: dict):
-        raw_q = {str(k): float(v) for k, v in data.get("q_values", {}).items()}
-        compatible = int(data.get("state_dimensions", 6)) == STATE_DIMENSIONS
-        self.legacy_q_values = dict(data.get("legacy_q_values", {}))
-        self.q_values = raw_q if compatible else {}
-        if not compatible:
-            self.legacy_q_values.update(raw_q)  # archival only, never an active second Q source
-
+        self.q_values = {str(k): float(v) for k, v in data.get("q_values", {}).items()}
         self.eligibility = {str(k): float(v) for k, v in data.get("eligibility", {}).items()}
         self.tactical_q_values = {
             str(k): float(v) for k, v in data.get("tactical_q_values", {}).items()
@@ -315,10 +311,5 @@ class CountryBrain:
             self.eligibility = {}
         self.decisions = int(data.get("decisions", 0))
         self.updates = int(data.get("updates", 0))
-        if not compatible:
-            self.pending = None
-            self.eligibility = {}
-            self.current_plan = []
-            self.current_plan_id = None
         if data.get("rng_state"):
             self.rng.bit_generator.state = data["rng_state"]

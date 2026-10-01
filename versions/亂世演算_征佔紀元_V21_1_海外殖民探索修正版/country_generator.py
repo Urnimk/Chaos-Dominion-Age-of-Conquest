@@ -129,13 +129,8 @@ def _select_capitals(world, rng, count):
     minimum_landmass = max(300, int(cfg.MIN_COUNTRY_LANDMASS_CELLS * area_scale))
     large_enough = continent_sizes[np.clip(world.continent, 0, len(continent_sizes) - 1)] >= minimum_landmass
     usable &= large_enough
-    # Rank habitability within each island, otherwise the global richest islands
-    # monopolize every capital and lower-yield islands never get local competition.
-    thresholds=np.full(len(continent_sizes),100,dtype=float)
-    for island in np.unique(world.continent[usable]):
-        values=world.city_value[usable & (world.continent==island)]
-        if len(values):thresholds[int(island)]=max(20,float(np.quantile(values,.62)))
-    candidates=np.argwhere(usable & (world.city_value>=thresholds[world.continent]))
+    threshold = max(42, int(np.quantile(world.city_value[usable], 0.62))) if usable.any() else 100
+    candidates = np.argwhere(usable & (world.city_value >= threshold))
     if not len(candidates):
         return []
     scores = (
@@ -147,42 +142,17 @@ def _select_capitals(world, rng, count):
     height, width = world.terrain.shape
     min_gap = max(float(getattr(cfg, "CITY_MIN_DISTANCE", 60)),
                   min(height, width) * cfg.COUNTRY_MIN_DISTANCE_RATIO)
-    # V22: new worlds place 2--4 competing countries on each inhabited island
-    # when geography and the requested total make that feasible. Existing saves are untouched.
     selected = []
-    by_island = {}
     for idx in order:
-        y,x=map(int,candidates[idx]);island=int(world.continent[y,x])
-        if island > 0:by_island.setdefault(island,[]).append((y,x))
-    viable=[]
-    for island, points in by_island.items():
-        spaced=[]
-        for y,x in points:
-            if all((y-py)**2+min(abs(x-px),width-abs(x-px))**2>=min_gap**2 for py,px in spaced):
-                spaced.append((y,x))
-                if len(spaced)>=4:break
-        if len(spaced)>=2:viable.append((island,spaced))
-    viable.sort(key=lambda row:int(continent_sizes[row[0]]),reverse=True)
-    inhabited=min(len(viable),max(1,int(round(count/3))))
-    while inhabited < min(len(viable),count//2) and sum(len(p) for _,p in viable[:inhabited]) < count:
-        inhabited += 1
-    if count>=2 and inhabited>0 and inhabited*2<=count<=sum(len(p) for _,p in viable[:inhabited]):
-        quotas=[2]*inhabited
-        remaining=count-sum(quotas)
-        while remaining:
-            for i,(_island,points) in enumerate(viable[:inhabited]):
-                if remaining and quotas[i]<len(points):
-                    quotas[i]+=1;remaining-=1
-        for (_island,points),quota in zip(viable[:inhabited],quotas):
-            selected.extend(points[:quota])
-    # Constrained small maps may lack enough spaced sites; preserve a playable fallback.
-    if len(selected)<count:
-        for idx in order:
-            y,x=map(int,candidates[idx])
-            if any((y-py)**2+min(abs(x-px),width-abs(x-px))**2<min_gap**2 for py,px in selected):
-                continue
-            selected.append((y,x))
-            if len(selected)>=count:break
+        y, x = map(int, candidates[idx])
+        continent = int(world.continent[y, x])
+        if continent <= 0:
+            continue
+        if any((y - py) ** 2 + min(abs(x - px), width - abs(x - px)) ** 2 < min_gap ** 2 for py, px in selected):
+            continue
+        selected.append((y, x))
+        if len(selected) >= count:
+            break
     return selected
 
 
