@@ -1,4 +1,4 @@
-"""V22_6 外島徵兵與戰區擴張版。"""
+"""V22_6_2 出海人口承載版。"""
 try:
     from map_viewer import main
 except ImportError as exc:

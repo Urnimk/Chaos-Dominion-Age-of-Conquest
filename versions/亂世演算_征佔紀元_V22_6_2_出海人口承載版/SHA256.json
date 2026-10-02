@@ -1,0 +1,21 @@
+{
+  "CHANGELOG.md": "1f60d934c7e172f252c4c02bf4a0a4f9a8bf935b04c82feee811ed1792eb8921",
+  "climate_rules.py": "bf933cd48c9c86a870efa7661341a3e9bcb464fd599b17aff5404e700da76d2a",
+  "country_generator.py": "1a56b310689a24f1b8d64f3690db91893ef70a5c0835b31ab6591fc66cf075f1",
+  "environment_generator.py": "09eafee0c5cd46d6a46657f3c904aa724725bb475471b7e3910cfe6b30c29086",
+  "habitability_generator.py": "0114cc5d413961cd9676bd90314d6ba5fb4027a4eb3cb9bb474469cd17ac08f2",
+  "map_config.py": "d1219a39258194a49b0f02e373c08088caa4c8bf57fd91fee8974816fed492b5",
+  "map_generator.py": "b8ee0cfdf3c0f8536afa4a025da81aa130679da42e0b38c669715bcd59f3185e",
+  "map_renderer.py": "4ed9ee9cdd800119813e3ca655b7b142d8eb068adf6d10d27b27d73f5572a508",
+  "map_viewer.py": "420c8917ff3fd9ac65084ac1fd0f3648c5b02544fa56a529cbc161ec98347fad",
+  "overseas_strategy.py": "121d22823706a1f74be904f33e0b7648e269f6db0c44bf8e055f127f7a51efea",
+  "requirements.txt": "98462f6f0ff7038b4f94ec62dbd67df04d86a304b2c670eec067c09369f21a31",
+  "rl_brain.py": "5748936178609f56732e5de9a3a10679dc96c7461207acd0b9bb02ea5a0e4e23",
+  "terrain_rules.py": "37c0d078812aa4d55f6ba728974b641ff78b1d166c792953b50a8b8256c2737e",
+  "validation/results.json": "5a3a5819a69e62d5f61e5404cebd44705132f4c6f99c060eb688f7be7a13cd6d",
+  "validation/test_departure_budget.py": "74cd87225052e1032c3983843a3701f52a2817027decc3cb4cf8eb9a5f1c0776",
+  "war_engine.py": "dc7f29c2c80e19c37bca77c75b358d2e3b6fb38bada7a8abb630ef07d35b5ed3",
+  "啟動遊戲.bat": "86967156b4d313f73e8741a44a720a43b526a9771835dbb8bc70f7bba2b95c64",
+  "啟動遊戲.py": "b0558ab468e7f60003deae65c39aa3c4caf094e64abc44f326b2cebcd6d264b7",
+  "更新說明.txt": "03e738a19f6103dd40b92fcf39446e95e4534aea6f3b53678633a2728c7231fa"
+}
