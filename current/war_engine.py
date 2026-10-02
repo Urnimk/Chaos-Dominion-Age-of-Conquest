@@ -2483,7 +2483,7 @@ class WarEngine(OverseasStrategyMixin):
                 country[key] += 1
                 self._pay(country, cost)
                 # 拓荒等級屬於內部經濟狀態，不再刷逐次升級LOG。
-                return
+                # return
             build_candidates = candidates
             if code in (CITY, BARRACKS):
                 if not len(build_candidates):

@@ -2410,7 +2410,7 @@ class WarEngine(OverseasStrategyMixin):
                 )
                 self._pay(country, cfg.FRONTIER_LEVEL_COST)
                 # 不刷逐次升級 LOG；等級可由國家狀態／UI 直接讀取。
-                return
+                # return
         occupied = self.world.settlement > 0
         candidates = np.argwhere(mask & ~occupied)
         sea = self.world.terrain <= 1
