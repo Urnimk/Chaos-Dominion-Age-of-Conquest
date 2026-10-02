@@ -91,10 +91,9 @@ class OverseasStrategyMixin:
         enemy_army=sum(self._landmass_soldiers(x,lm) for x in enemies)
         port=self._logistics_port(c,site)
         # Leave a real home reserve; overseas target includes offensive capability and enemy pressure.
-        # Reinforcement immigrants enlarge the resident population on arrival.
-        # Do not cap the requested force by the tiny pre-arrival beachhead population.
-        target=max(int(pop*cfg.OVERSEAS_PEACE_GARRISON_RATIO),
-                   int(enemy_army*cfg.OVERSEAS_ENEMY_GARRISON_RATIO) if enemies else 0)
+        target=min(int(pop*cfg.OVERSEAS_REINFORCEMENT_MAX_ISLAND_POP_RATIO),
+                   max(cfg.AI_MIN_ATTACK_SOLDIERS*2,int(pop*cfg.OVERSEAS_PEACE_GARRISON_RATIO),
+                       int(enemy_army*cfg.OVERSEAS_ENEMY_GARRISON_RATIO) if enemies else 0))
         productivity_bonus=min(cfg.MAX_CITY_FOOD_PRODUCTIVITY_BONUS,int(c.get('cities',0))*cfg.CITY_FOOD_PRODUCTIVITY_BONUS)
         production=float(self.food_yield.ravel()[idx].sum())*cfg.FOOD_PRODUCTION_MULTIPLIER*(1.0+productivity_bonus)
         supply_need=max(0.0,(pop*cfg.FOOD_CONSUMPTION_PER_PERSON-production)*cfg.OVERSEAS_SUPPLY_BUFFER_YEARS-float(site.get('supply_food',0))) if production<pop*cfg.FOOD_CONSUMPTION_PER_PERSON else 0.0
@@ -110,7 +109,7 @@ class OverseasStrategyMixin:
         c=self.country(cid);pop=max(1,c['population']);ratio=c['soldiers']/pop
         theatres=[self._theatre(c,s) for s in c.get('overseas_capitals',[])]
         priority={'SUPPLY_INTERRUPTED':0,'ESTABLISH_PORT':1,'REINFORCE':2,'ISLAND_CAMPAIGN':3,'CONSOLIDATE':4,'PACIFIED':5}
-        focus=min(theatres,key=lambda t:(not bool(t['enemies']), priority[t['phase']], -t['gap'], t['lm'])) if theatres else None
+        focus=min(theatres,key=lambda t:(priority[t['phase']],t['lm'])) if theatres else None
         unified=self._homeland_is_unified(c)
         phase=focus['phase'] if focus else ('EXPLORE' if unified else 'HOME_CONTEST')
         legal=self.legal_targets(cid)
@@ -134,13 +133,13 @@ class OverseasStrategyMixin:
                 if (t['gap']>=cfg.AI_MIN_ATTACK_SOLDIERS or t['supply_need']>0) and not c.get('reinforcement_voyage'):
                     actions.append('REINFORCE_OVERSEAS');biases['REINFORCE_OVERSEAS']=.25
                 if c.get('reinforcement_voyage'):actions.append(f'THEATRE:{lm}:WAIT_REINFORCEMENTS')
-                if t['enemies'] and t['army'] < t['enemy_army'] * .3 and not c.get('reinforcement_voyage'):actions.append(f'THEATRE:{lm}:RETREAT')
+                if t['enemies'] and t['army'] < t['enemy_army'] * .3:actions.append(f'THEATRE:{lm}:RETREAT')
                 if t['enemies']:
                     actions.extend([f'THEATRE:{lm}:DEFEND_CAPITAL',f'THEATRE:{lm}:DEFEND_PORT'])
                     if len([p for p in site.get('supply_ports',[]) if self._port_valid(c,p,lm)])<2:
                         actions.append(f'THEATRE:{lm}:BUILD_SECOND_PORT')
-                # 拓荒每年依既有週期被動執行，不把已滿島嶼的空操作放入 AI 動作。
-            if t['enemies'] and not resting and t['gap']<cfg.AI_MIN_ATTACK_SOLDIERS and t['army']>t['population']*cfg.MIN_GARRISON_RATIO+cfg.AI_MIN_ATTACK_SOLDIERS:
+                else:actions.append(f'THEATRE:{lm}:EXPAND_BEACHHEAD')
+            if t['enemies'] and not resting and t['army']>t['population']*cfg.MIN_GARRISON_RATIO+cfg.AI_MIN_ATTACK_SOLDIERS:
                 actions.extend(f'THEATRE:{lm}:{kind}' for kind in ('ATTACK_FRONT','CUT_OFF','ENCIRCLE_CAPITAL'))
             if t['phase']=='PACIFIED' and colony_available and not resting:actions.append(f'THEATRE:{lm}:REDEPLOY')
         if not resting:
@@ -148,7 +147,6 @@ class OverseasStrategyMixin:
             for option in legal:
                 lm=option.get('landmass_id');mode=option['mode']
                 if mode=='naval' and lm in self._overseas_landmass_ids(c):continue
-                if mode=='land' and lm!=home and any(t['lm']==lm and t['gap']>=cfg.AI_MIN_ATTACK_SOLDIERS for t in theatres):continue
                 actions.append(f"ATTACK:{option['id']}:{mode}")
         if focus and focus['gap']>=cfg.AI_MIN_ATTACK_SOLDIERS:actions.append(f"THEATRE:{focus['lm']}:REQUEST_REINFORCEMENTS")
         actions=list(dict.fromkeys(actions))
@@ -161,23 +159,6 @@ class OverseasStrategyMixin:
                 least=min(int(counts.get(x,0)) for x in probes)
                 for x in probes:
                     if int(counts.get(x,0))==least:biases[x]=biases.get(x,0)+cfg.AI_INFORMATION_REVIEW_BIAS
-        # Focus the active front before spending decisions rearranging peaceful garrisons.
-        preferred=[]
-        if focus and focus['enemies']:
-            lm=focus['lm']
-            if not focus['port']:
-                preferred=[f'BUILD_OVERSEAS_PORT:{lm}']
-            elif focus['gap']>=cfg.AI_MIN_ATTACK_SOLDIERS or focus['supply_need']>0:
-                preferred=['REINFORCE_OVERSEAS'] if not c.get('reinforcement_voyage') else []
-            elif not resting:
-                preferred=[f'THEATRE:{lm}:{k}' for k in ('ATTACK_FRONT','CUT_OFF','ENCIRCLE_CAPITAL')]
-        if not preferred and unified and not resting and self._overseas_expansion_ready(c):
-            preferred=[a for a in actions if (a.startswith('ATTACK:') and a.endswith(':naval')) or a=='COLONIZE']
-        brain=self.rl_brains[cid]
-        idle=[a for a in actions if a=='REST_AND_REPRODUCE' or a.endswith(('DEFEND_CAPITAL','DEFEND_PORT','WAIT_REINFORCEMENTS','EXPAND_BEACHHEAD'))]
-        floor=max((brain.value(state,a) for a in idle),default=0.0)+cfg.AI_THEATRE_COMMITMENT_BIAS
-        for a in preferred:
-            if a in actions:biases[a]=max(biases.get(a,0.0),floor-brain.value(state,a))
         return state,actions,biases
 
     def _local_growth(self,c,growth):
@@ -221,29 +202,18 @@ class OverseasStrategyMixin:
             self.local_population[y,x]+=int(n);actual+=int(n)
         self._telemetry(c,'births',actual);return actual
 
-    def _local_recruits(self,c,annual_rate):
-        """Each island drafts its own civilians, with fractional annual carry.
-
-        Soldiers remain part of the population. Land armies still marching on this
-        island count toward its ceiling; embarking at sea physically removes residents.
-        """
-        cid=c['id'];home=self._home_continent_id(c)
-        fractions=c.setdefault('island_recruit_fractions',{})
-        for lm in sorted({home}|self._overseas_landmass_ids(c)):
-            idx=self._spatial_indices(cid,lm)
-            pop=int(self.local_population.ravel()[idx].sum())
-            army=int(self.local_soldiers.ravel()[idx].sum())
-            marching=sum(int(x.soldiers) for x in self.campaigns if x.attacker==cid
-                         and x.status=='marching' and x.mode=='land' and int(x.origin_landmass)==lm)
-            gap=max(0,int(pop*cfg.LOCAL_RECRUIT_TARGET_RATIO)-army-marching)
-            if not gap:
-                fractions[str(lm)]=0.0;continue
-            amount=max(0.,pop*float(annual_rate))+float(fractions.get(str(lm),0.))
-            recruits=min(gap,int(amount));fractions[str(lm)]=amount-int(amount)
-            self._add_local_soldiers(cid,lm,recruits)
-            actual=int(self.local_soldiers.ravel()[idx].sum())-army
-            self._telemetry(c,'local_recruits',actual)
-            if lm!=home:self._telemetry(c,'overseas_local_recruits',actual)
+    def _local_recruits(self,c,recruits):
+        cid=c['id'];homes=[self._home_continent_id(c)]+sorted(self._overseas_landmass_ids(c));gaps=[]
+        for lm in homes:
+            idx=self._spatial_indices(cid,lm);pop=int(self.local_population.ravel()[idx].sum());army=int(self.local_soldiers.ravel()[idx].sum())
+            gaps.append(max(0,int(pop*.18)-army))
+        total=sum(gaps)
+        if not total or recruits<=0:return
+        allocate=[min(g,int(recruits*g/total)) for g in gaps]
+        left=min(recruits,total)-sum(allocate)
+        for i in np.argsort(-np.array(gaps)):
+            n=min(left,gaps[i]-allocate[i]);allocate[i]+=n;left-=n
+        for lm,n in zip(homes,allocate):self._add_local_soldiers(cid,lm,n)
 
     def _reinforce_v22(self,selected_country_ids=None,force=False):
         if not force and self.year%cfg.OVERSEAS_REINFORCEMENT_CHECK_YEARS:return set()
@@ -258,7 +228,11 @@ class OverseasStrategyMixin:
             ts=[self._theatre(c,s) for s in c.get('overseas_capitals',[])]
             ts=[t for t in ts if t['port'] and (t['gap']>=cfg.AI_MIN_ATTACK_SOLDIERS or t['supply_need']>0)]
             if not ts:continue
-            t=max(ts,key=lambda t:(bool(t['enemies']),t['supply_need']>0,t['gap']/max(1,t['target'])));dest=t['port']
+            t=max(ts,key=lambda t:t['gap']/max(1,t['target']));dest=t['port']
+            amount=min(t['gap'],available,int(ha*.5),self._transport_soldier_capacity(c['fleet']))
+            if amount<cfg.AI_MIN_ATTACK_SOLDIERS:
+                amount=0
+                if t['supply_need']<=0:continue
             ports=np.argwhere((self.world.territory==cid)&(self.world.continent==home)&(self.world.settlement==PORT))
             if not len(ports):continue
             route=None
@@ -267,44 +241,22 @@ class OverseasStrategyMixin:
                 if route:break
             if not route:continue
             distance=self._route_distance_km(route);years=max(1,math.ceil(distance/cfg.SEA_MARCH_CELLS_PER_YEAR))
-            max_people=min(int(hp*(1.-cfg.OVERSEAS_REINFORCEMENT_HOME_MIN_POP_RATIO)),
-                           self._transport_population_capacity(c['fleet']))
-            ratio=cfg.OVERSEAS_REINFORCEMENT_MAX_ISLAND_POP_RATIO
-            amount=min(t['gap'],available,int(ha*.5),self._transport_soldier_capacity(c['fleet']),
-                       max(0,int((t['population']+max_people)*ratio)-t['army']))
-            def cargo(n):
-                people=max(n,math.ceil((t['army']+n)/ratio-t['population'])) if n else 0
-                # All passengers eat; include existing island deficit and arriving residents.
-                food=t['supply_need']+people*cfg.FOOD_CONSUMPTION_PER_PERSON*(years+cfg.OVERSEAS_SUPPLY_BUFFER_YEARS)
-                return people,food
-            # Find a fully funded manifest BEFORE taking people, troops, food or ships.
-            limit_food=min(c['food'],c['fleet']*cfg.OVERSEAS_FOOD_PER_SHIP)
-            low,high=0,max(0,int(amount))
-            while low<high:
-                mid=(low+high+1)//2;people,food=cargo(mid)
-                if people<=max_people and food<=limit_food:low=mid
-                else:high=mid-1
-            amount=low if low>=cfg.AI_MIN_ATTACK_SOLDIERS else 0
-            people,supply=cargo(amount)
-            if not amount:supply=min(t['supply_need'],limit_food)
-            if amount<=0 and supply<=1e-6:continue
+            supply=amount*cfg.FOOD_CONSUMPTION_PER_PERSON*(years+cfg.OVERSEAS_SUPPLY_BUFFER_YEARS)+t['supply_need']
+            supply=min(supply,c['fleet']*cfg.OVERSEAS_FOOD_PER_SHIP)
+            if c['food']<supply or (amount <= 0 and supply <= 1e-6):continue
             soldiers=self._take_local_soldiers(cid,home,amount)
+            # Soldiers are residents: remove the SAME people from the origin while in transit.
             source=(self.world.territory==cid)&(self.world.continent==home)
-            # Do not take residents who still serve in the home garrison or land campaigns.
-            if soldiers!=amount or people>hp-self._home_soldiers(cid,home):
-                self._add_local_soldiers(cid,home,soldiers);continue
-            removed=self._remove_population_in_mask(source,people)
-            if removed!=people:
-                x,y=c['capital'];self.local_population[y,x]+=removed;self._add_local_soldiers(cid,home,soldiers);continue
-            ships=max(1,math.ceil(soldiers/cfg.OVERSEAS_SOLDIERS_PER_SHIP),
-                      math.ceil(people/cfg.OVERSEAS_POPULATION_PER_SHIP),math.ceil(supply/cfg.OVERSEAS_FOOD_PER_SHIP))
-            c['fleet']-=ships;c['food']-=supply
+            people=self._remove_population_in_mask(source,soldiers)
+            if people!=soldiers:
+                x,y=c['capital'];self.local_population[y,x]+=people;self._add_local_soldiers(cid,home,soldiers);continue
+            ships=max(1,math.ceil(soldiers/cfg.OVERSEAS_SOLDIERS_PER_SHIP),math.ceil(supply/cfg.OVERSEAS_FOOD_PER_SHIP));c['fleet']-=ships;c['food']-=supply
             c['reinforcement_voyage']={'continent_id':t['lm'],'anchor':list(dest),'origin_port':[px,py],
                  'origin_landmass':home,'soldiers':soldiers,'transported_population':people,'fleet':ships,
                  'years_left':years,'total_years':years,'route':route,'route_distance_km':distance,
                  'launched_year':self.year,'supply_food':supply,'embarked_population':True}
             self._telemetry(c,'reinforcements_launched');self._sync_army_totals(cid)
-            cargo = f"{soldiers}名士兵、{people-soldiers}名居民、糧食{supply:,.1f}" if soldiers else f"糧食{supply:,.1f}（純補給）"
+            cargo = f"{soldiers}名士兵、糧食{supply:,.1f}" if soldiers else f"糧食{supply:,.1f}（純補給）"
             self._log(cid,f"{'增援' if soldiers else '補給'}船隊自本島港({px},{py})向指定海外港{dest}運送{cargo}、{ships}艘艦艇，航程{years}年。")
             launched.add(cid)
         return launched
@@ -320,7 +272,7 @@ class OverseasStrategyMixin:
                 v['returning']=True;v['years_left']=max(1,self.year-int(v.get('launched_year',self.year)))
                 self._telemetry(c,'route_interruptions');self._log(c['id'],'海外港失守或被毀，增援航線中斷，船隊實際返航。')
             v['years_left']=int(v.get('years_left',1))-1
-            cost=int(v.get('transported_population',v.get('soldiers',0)))*cfg.FOOD_CONSUMPTION_PER_PERSON
+            cost=int(v.get('soldiers',0))*cfg.FOOD_CONSUMPTION_PER_PERSON
             if float(v.get('supply_food',cost))>=cost:v['supply_food']=float(v.get('supply_food',cost))-cost
             else:
                 loss=min(int(v.get('soldiers',0)),max(1,int(int(v.get('soldiers',0))*cfg.SUPPLY_SHORTAGE_ATTRITION)))
@@ -462,8 +414,30 @@ class OverseasStrategyMixin:
                 # Economic production/consumption was already posted exactly once by _economic_year.
                 if float(site.get('food_shortfall_this_year',0))>0:
                     site['unsupplied_years']=int(site.get('unsupplied_years',0))+1
-                    # Residents stay in theatre while awaiting a real supply/evacuation voyage.
-                    # No instantaneous transfer of people or garrison back across the ocean.
+                    # V22.4 的問題：海外糧食不足超過寬限期後，直接把部分人口當成傷亡。
+                    # V22.4.1：先撤回超過該島糧食負荷的平民，只有無法撤回時才產生隔離傷亡。
+                    productivity_bonus=min(cfg.MAX_CITY_FOOD_PRODUCTIVITY_BONUS,int(c.get('cities',0))*cfg.CITY_FOOD_PRODUCTIVITY_BONUS)
+                    local_output=float(self.food_yield.ravel()[idx].sum())*cfg.FOOD_PRODUCTION_MULTIPLIER*(1.0+productivity_bonus)
+                    local_capacity=int(local_output/max(0.0001,cfg.FOOD_CONSUMPTION_PER_PERSON)*cfg.FOOD_GROWTH_RESERVE_RATIO)
+                    excess=max(0,pop-local_capacity)
+                    evacuation=min(pop,max(0,excess))
+                    if evacuation>0 and bool(getattr(cfg,'OVERSEAS_REPATRIATION_ON_FOOD_SHORTAGE',True)):
+                        home=self._home_continent_id(c)
+                        home_mask=(self.world.territory==c['id'])&(self.world.continent==home)
+                        home_coords=np.argwhere(home_mask)
+                        if len(home_coords):
+                            hx,hy=map(int,c.get('capital',self.world.countries[c['id']-1]['capital']))
+                            if not (0<=hy<self.world.settings.height and 0<=hx<self.world.settings.width and int(self.world.territory[hy,hx])==c['id'] and int(self.world.continent[hy,hx])==home):
+                                weights=self.local_population[home_coords[:,0],home_coords[:,1]].astype(np.int64)
+                                hy,hx=map(int,home_coords[int(np.argmin(weights))])
+                            moved,moved_soldier=self._move_population_group(
+                                (self.world.territory==c['id'])&(self.world.continent==lm),hy,hx,evacuation
+                            )
+                            if moved:
+                                self._telemetry(c,'overseas_repatriation',moved)
+                                self._telemetry(c,'overseas_repatriation_soldiers',moved_soldier)
+                                pop-=moved;army=max(0,army-moved_soldier)
+                                site['unsupplied_years']=0
                     if site['unsupplied_years']>cfg.OVERSEAS_SUPPLY_GRACE_YEARS:
                         loss=min(army,max(1,int(army*cfg.OVERSEAS_ISOLATION_ATTRITION)))
                         taken=self._take_local_soldiers(c['id'],lm,loss)

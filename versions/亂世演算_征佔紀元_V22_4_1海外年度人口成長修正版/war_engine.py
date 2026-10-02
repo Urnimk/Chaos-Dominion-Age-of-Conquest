@@ -2166,13 +2166,6 @@ class WarEngine(OverseasStrategyMixin):
         selected = getattr(self, "_selected_theatre", None)
         if selected and selected[0] == attacker:
             options = [x for x in options if x.get("landmass_id") == selected[1]]
-        # Q chooses the rival; select useful territory per defending soldier.
-        # Purely minimizing defenders caused endless exchanges of tiny islets.
-        if mode == "naval":
-            options.sort(key=lambda x:(
-                -len(self._spatial_indices(defender,x.get("landmass_id"))) /
-                max(200,self._home_soldiers(defender,x.get("landmass_id"))),
-                x["distance"],x.get("landmass_id",0)))
         option = next((x for x in options if mode is None or x["mode"] == mode), None)
         if not option:
             return None
@@ -2222,8 +2215,8 @@ class WarEngine(OverseasStrategyMixin):
             return None
         tactical_state = self._tactical_region_state(attacker, defender, objective, option["mode"])
         tactical_actions = [f"ATTACK:{int(round(fraction * 100))}" for fraction in cfg.TACTICAL_ATTACK_FRACTIONS]
-        if option["mode"] == "naval" or source_landmass != home_landmass:
-            # An overseas battle must budget troops against the actual destination island,
+        if option["mode"] == "naval":
+            # A landing must budget troops against the actual destination island,
             # rather than send a tiny fraction of an already depleted home army.
             target = self.country(defender)
             defending_army = self._home_soldiers(defender, target_landmass)
@@ -2231,12 +2224,12 @@ class WarEngine(OverseasStrategyMixin):
                         float(np.median(cfg.BATTLE_LEARNED_GARRISON_SHARES)))
             defenders = min(defending_army, max(200, int(defending_army * share)))
             estimated_defense = defenders * target["morale"] * self._terrain_defense(objective)
-            unit_attack = max(.01, a["morale"] * ((1.0-cfg.AMPHIBIOUS_ATTACK_PENALTY) if option["mode"]=="naval" else 1.0))
+            unit_attack = max(.01, a["morale"] * (1.0-cfg.AMPHIBIOUS_ATTACK_PENALTY))
             tactical_actions = [action for action in tactical_actions
                                 if min(available,max(cfg.AI_MIN_ATTACK_SOLDIERS,int(available*int(action.split(':')[1])/100))) * unit_attack >= estimated_defense]
             if not tactical_actions:
                 if self.year-int(a.get("last_landing_deferred_log",-100))>=20:
-                    self._log(attacker, "海外攻勢暫緩：可投入兵力不足以對抗目標島預估守軍；先累積戰區兵力或另選目標。")
+                    self._log(attacker, "海外登陸暫緩：可運送兵力不足以對抗目標島預估守軍；保留兵力發展或另選目標。")
                     a["last_landing_deferred_log"]=self.year
                 return None
         tactical_action = self._choose_tactical_action(attacker, tactical_state, tactical_actions)
@@ -2365,13 +2358,26 @@ class WarEngine(OverseasStrategyMixin):
             c["population"] = int(populations[cid] + growth)
             self._sync_army_totals(cid)
             c["soldiers"] = min(c["soldiers"], c["population"])
+            desired_army = int(c["population"] * 0.18)
             slowdown_span = max(1, int(cfg.RECRUIT_SLOWDOWN_FULL_YEAR) - int(cfg.RECRUIT_SLOWDOWN_START_YEAR))
-            slowdown_progress = float(np.clip((self.year-cfg.RECRUIT_SLOWDOWN_START_YEAR)/slowdown_span,0.,1.))
-            recruit_multiplier = 1.-slowdown_progress*(1.-cfg.LATE_GAME_RECRUIT_MIN_MULTIPLIER)
-            annual_rate = (cfg.ANNUAL_RECRUIT_RATIO * recruit_multiplier
-                           * (1.-exhaustion*cfg.WAR_EXHAUSTION_RECRUIT_PENALTY)
-                           * (1.+capacity_bonus) * (1.15 if resting else 1.))
-            self._local_recruits(c, annual_rate)
+            slowdown_progress = float(np.clip(
+                (self.year - int(cfg.RECRUIT_SLOWDOWN_START_YEAR)) / slowdown_span, 0.0, 1.0
+            ))
+            recruit_multiplier = 1.0 - slowdown_progress * (1.0 - float(cfg.LATE_GAME_RECRUIT_MIN_MULTIPLIER))
+            recruits = min(
+                int(c["population"] * cfg.ANNUAL_RECRUIT_RATIO * recruit_multiplier
+                    * (1.0 - exhaustion * cfg.WAR_EXHAUSTION_RECRUIT_PENALTY)
+                    * (1.0 + capacity_bonus)
+                    * (1.15 if resting else 1.0)),
+                max(0, desired_army - c["soldiers"]),
+            )
+            capital_x, capital_y = map(int, c.get("capital", self.world.countries[cid - 1]["capital"]))
+            if int(self.world.territory[capital_y, capital_x]) != cid:
+                owned = np.argwhere(self.world.territory == cid)
+                if len(owned):
+                    capital_y, capital_x = map(int, owned[len(owned) // 2])
+            home = int(self.world.continent[capital_y, capital_x])
+            self._local_recruits(c, int(recruits))
             self._sync_army_totals(cid)
             annual_food_consumption = float(c["population"] * cfg.FOOD_CONSUMPTION_PER_PERSON)
             annual_food_balance = annual_food_output - annual_food_consumption
@@ -2397,7 +2403,6 @@ class WarEngine(OverseasStrategyMixin):
             if c["food"] < 0:
                 shortage = min(0.025, -c["food"] / max(1.0, c["population"] * 30.0))
                 losses = int(c["population"] * shortage)
-                home = self._home_continent_id(c)
                 home_mask = (self.world.territory == cid) & (self.world.continent == home)
                 self._remove_population_in_mask(home_mask, losses)
                 c["morale"] = max(0.55, c["morale"] - 0.03)
@@ -2745,7 +2750,7 @@ class WarEngine(OverseasStrategyMixin):
         return float(cfg.AI_RL_EPSILON + (cfg.AI_RL_MIN_EPSILON - cfg.AI_RL_EPSILON) * fraction)
 
     def _rl_war_decisions(self, alive: list[dict]):
-        """每個國家獨立決策；最遲20年內重新評估一次戰略動作。
+        """每個國家獨立決策；最遲20年內必須選一次積極行動。
 
         海外殖民、海外征戰、海外增援與休養同屬戰略動作，
         SARSA 只在「合法動作集合」內學習，不再用固定海外優先序覆蓋Q值。
@@ -3487,7 +3492,7 @@ class WarEngine(OverseasStrategyMixin):
         )
         snapshot_id = uuid.uuid4().hex
         payload = {
-            "version": "V22_6_外島徵兵與戰區擴張版",
+            "version": "V22_5_海運顯示與登陸修正版",
             "rl_brains_snapshot_id": snapshot_id,
             "seed": self.world.settings.seed,
             "year": self.year,
@@ -3511,7 +3516,7 @@ class WarEngine(OverseasStrategyMixin):
         brain_path = self._rl_brains_path(path)
         brain_payload = {
             "format_version": 1,
-            "game_version": "V22_6_外島徵兵與戰區擴張版",
+            "game_version": "V22_5_海運顯示與登陸修正版",
             "snapshot_id": snapshot_id,
             "seed": int(self.world.settings.seed),
             "year": int(self.year),
@@ -3527,7 +3532,7 @@ class WarEngine(OverseasStrategyMixin):
     def load(cls, world, path: Path):
         path = Path(path)
         payload = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
-        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_逐年回報修正版", "V13_2_靜態航線與抵達日誌版", "V13_2_1_海外艦隊門檻與SARSA獎勵版", "V14_戰術學習與世界統一版", "V14_1_殖民與海外攻佔上限版", "V15_弱點攻防與休養生息版", "V17_大島優先與危急後撤版", "V17_1_本島統一與海外首都守則版", "V17_2_分裂小領土清空版", "V17_3_本土小飛地清空版", "V17_4_積極拓荒與勝者得地版", "V18_本島統一與首都存續版", "V18_逐階海外拓展與撤退版", "V19_逐階海外拓展與撤退版", "V19_地球地圖與海外撤退規則版", "V19_1_拓荒等級版", "V19_2_海外資格與危急後撤版", "V20_海外分帳與艦隊運輸版", "V20.2_自主戰略AI與海外戰術庫版", "V21_海外戰區長期學習版", "V21.1_海外殖民探索修正版", "V22_海外港口戰區策略版", "V22_1_拓荒與補給修正版", "V22_2_地方人口承載修正版", "V22_3_全島共用人口加成版", "V22_4_在地存糧人口承載版", "V22_5_海運顯示與登陸修正版", "V22_6_外島徵兵與戰區擴張版"):
+        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_逐年回報修正版", "V13_2_靜態航線與抵達日誌版", "V13_2_1_海外艦隊門檻與SARSA獎勵版", "V14_戰術學習與世界統一版", "V14_1_殖民與海外攻佔上限版", "V15_弱點攻防與休養生息版", "V17_大島優先與危急後撤版", "V17_1_本島統一與海外首都守則版", "V17_2_分裂小領土清空版", "V17_3_本土小飛地清空版", "V17_4_積極拓荒與勝者得地版", "V18_本島統一與首都存續版", "V18_逐階海外拓展與撤退版", "V19_逐階海外拓展與撤退版", "V19_地球地圖與海外撤退規則版", "V19_1_拓荒等級版", "V19_2_海外資格與危急後撤版", "V20_海外分帳與艦隊運輸版", "V20.2_自主戰略AI與海外戰術庫版", "V21_海外戰區長期學習版", "V21.1_海外殖民探索修正版", "V22_海外港口戰區策略版", "V22_1_拓荒與補給修正版", "V22_2_地方人口承載修正版", "V22_3_全島共用人口加成版", "V22_4_在地存糧人口承載版", "V22_5_海運顯示與登陸修正版"):
             raise ValueError("不支援此版本的戰爭存檔")
         if int(payload.get("seed", -1)) != int(world.settings.seed):
             raise ValueError("戰爭存檔與目前世界Seed不一致")

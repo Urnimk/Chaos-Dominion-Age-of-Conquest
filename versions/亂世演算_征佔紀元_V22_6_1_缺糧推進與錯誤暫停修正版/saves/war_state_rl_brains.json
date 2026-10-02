@@ -1,0 +1,1542 @@
+{
+  "format_version": 1,
+  "game_version": "V22_6_外島徵兵與戰區擴張版",
+  "snapshot_id": "e8a4d2a680f94ada991ea5172cdfbc34",
+  "seed": 954789979,
+  "year": 602,
+  "brains": {
+    "1": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.18990153999313442,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.03574872204921121,
+        "3,0,0,0,0,0,0,0,0|ATTACK:2:land": 0.0,
+        "3,0,0,0,0,0,0,0,0|ATTACK:3:land": 0.0,
+        "4,0,0,0,0,0,0,0,0|ATTACK:2:land": 0.0,
+        "4,0,0,0,0,0,0,0,0|ATTACK:3:land": 0.0
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.3576040000000001,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.5980000000000001
+      },
+      "tactical_q_values": {
+        "3,0,1,1,0,1|DEFEND:70": 0.09000000000000001
+      },
+      "tactical_library": {},
+      "tactical_history": [
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "REST_AND_REPRODUCE",
+        "metrics": {
+          "alive": true,
+          "territory": 11715,
+          "population": 14428,
+          "food": 438064.76743385266,
+          "wars_won": 1,
+          "wars_lost": 0,
+          "war_exhaustion": 0.0,
+          "morale": 1.15,
+          "remaining_enemies": 15,
+          "world_control_share": 0.037046289678900536,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 47,
+      "updates": 47,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 102162255731208829737980956938073561582,
+          "inc": 107583695161609742965987366546148525135
+        },
+        "has_uint32": 1,
+        "uinteger": 3416317270
+      }
+    },
+    "2": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "1,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.015928588571198273,
+        "2,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.004775553376901124,
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.14487189488563035,
+        "3,0,0,0,0,0,0,0,0|ATTACK:1:land": 0.0,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.0,
+        "4,0,0,0,0,0,0,0,0|ATTACK:1:land": 0.0,
+        "4,0,0,0,0,0,0,0,0|ATTACK:3:land": -0.004792184649261391,
+        "3,0,0,0,0,0,0,0,0|ATTACK:3:land": -0.017880644700230066,
+        "3,0,0,0,0,1,0,0,0|REST_AND_REPRODUCE": 0.026374135095553652,
+        "3,0,0,0,0,1,0,0,0|ATTACK:1:land": 0.0,
+        "3,0,0,0,0,1,0,0,0|ATTACK:3:land": 0.0
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.3576040000000001,
+        "4,0,0,0,0,0,0,0,0|ATTACK:3:land": 0.5980000000000001,
+        "3,0,0,0,0,0,0,0,0|ATTACK:3:land": 0.009779365001810779,
+        "3,0,0,0,0,1,0,0,0|REST_AND_REPRODUCE": 0.016353453180285582
+      },
+      "tactical_q_values": {
+        "4,0,0,2,0,1|ATTACK:40": -0.03466715414142611,
+        "4,0,0,2,0,1|ATTACK:18": -0.09032941176470588,
+        "4,0,0,2,0,1|ATTACK:55": -0.09456627795832029
+      },
+      "tactical_library": {
+        "REST→ATTACK_LAND": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND"
+          ],
+          "score": 0.1447783228487094,
+          "uses": 2,
+          "successes": 1,
+          "created_decision": 39,
+          "source": "self_discovered"
+        },
+        "REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.0764293130770192,
+          "uses": 4,
+          "successes": 4,
+          "created_decision": 41,
+          "source": "self_discovered"
+        },
+        "ATTACK_LAND→REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "ATTACK_LAND",
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.062142756287181675,
+          "uses": 2,
+          "successes": 2,
+          "created_decision": 46,
+          "source": "self_discovered"
+        }
+      },
+      "tactical_history": [
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "ATTACK_LAND",
+        "REST",
+        "REST",
+        "ATTACK_LAND"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "REST_AND_REPRODUCE",
+        "metrics": {
+          "alive": true,
+          "territory": 13454,
+          "population": 13311,
+          "food": 866342.3428597841,
+          "wars_won": 1,
+          "wars_lost": 3,
+          "war_exhaustion": 0.09202564102564098,
+          "morale": 1.0773309386227428,
+          "remaining_enemies": 15,
+          "world_control_share": 0.04254552124113767,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 49,
+      "updates": 52,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 176247253540787330721176591581162024190,
+          "inc": 305423032523860480571454118866887912493
+        },
+        "has_uint32": 0,
+        "uinteger": 2359476342
+      }
+    },
+    "3": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.18127941918400176,
+        "3,0,0,0,0,0,0,0,0|ATTACK:1:land": 0.0,
+        "3,0,0,0,0,0,0,0,0|ATTACK:2:land": 0.0,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.03695678858996985,
+        "4,0,0,0,0,0,0,0,0|ATTACK:1:land": 0.004071751725128236,
+        "4,0,0,0,0,0,0,0,0|ATTACK:2:land": 0.0,
+        "3,0,0,0,0,1,0,0,0|REST_AND_REPRODUCE": 0.03270020905745348,
+        "3,0,0,0,0,1,0,0,0|ATTACK:1:land": 0.0,
+        "3,0,0,0,0,1,0,0,0|ATTACK:2:land": 0.0
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.5980000000000001,
+        "4,0,0,0,0,0,0,0,0|ATTACK:1:land": 0.12788062081600005,
+        "3,0,0,0,0,1,0,0,0|REST_AND_REPRODUCE": 0.21384719200000005,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.3576040000000001
+      },
+      "tactical_q_values": {
+        "4,0,2,2,0,1|DEFEND:10": -0.09385,
+        "4,0,2,2,0,1|DEFEND:40": 0.17100000000000004,
+        "3,0,0,1,0,1|ATTACK:28": -0.09016,
+        "4,0,1,2,0,1|DEFEND:70": 0.09000000000000001
+      },
+      "tactical_library": {
+        "REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.10584800267533642,
+          "uses": 3,
+          "successes": 3,
+          "created_decision": 38,
+          "source": "self_discovered"
+        }
+      },
+      "tactical_history": [
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "ATTACK_LAND",
+        "REST",
+        "REST",
+        "REST"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "REST_AND_REPRODUCE",
+        "metrics": {
+          "alive": true,
+          "territory": 12153,
+          "population": 11786,
+          "food": 663343.5284434732,
+          "wars_won": 3,
+          "wars_lost": 2,
+          "war_exhaustion": 0.0,
+          "morale": 1.1151035458449472,
+          "remaining_enemies": 15,
+          "world_control_share": 0.03843137502925123,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 41,
+      "updates": 45,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 209545918259668348399466663611804832859,
+          "inc": 215446159766927534211867692190234903901
+        },
+        "has_uint32": 1,
+        "uinteger": 3131100280
+      }
+    },
+    "4": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "2,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.012781454600766854,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.006841169552899603,
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.2227412207507498
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.5980000000000001
+      },
+      "tactical_q_values": {},
+      "tactical_library": {},
+      "tactical_history": [
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "REST_AND_REPRODUCE",
+        "metrics": {
+          "alive": true,
+          "territory": 14036,
+          "population": 15541,
+          "food": 657944.5339986047,
+          "wars_won": 0,
+          "wars_lost": 0,
+          "war_exhaustion": 0.0,
+          "morale": 1.15,
+          "remaining_enemies": 15,
+          "world_control_share": 0.044385977117631065,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 46,
+      "updates": 45,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 222961846051564411033924907897241200293,
+          "inc": 259299013577793619407954553085274110101
+        },
+        "has_uint32": 0,
+        "uinteger": 0
+      }
+    },
+    "5": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "2,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.010271126162753452,
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.21426072875733007,
+        "3,0,0,0,0,0,0,0,0|ATTACK:6:land": 0.0,
+        "3,0,0,0,0,0,0,0,0|ATTACK:7:land": -0.008239448371244492
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.5980000000000001,
+        "3,0,0,0,0,0,0,0,0|ATTACK:7:land": 0.21384719200000005
+      },
+      "tactical_q_values": {
+        "4,0,2,0,0,1|DEFEND:70": 0.09000000000000001,
+        "4,0,0,0,0,1|ATTACK:18": -0.09034349030470915,
+        "4,0,1,0,0,1|DEFEND:55": 0.09000000000000001
+      },
+      "tactical_library": {
+        "REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.07098063556726922,
+          "uses": 2,
+          "successes": 2,
+          "created_decision": 47,
+          "source": "self_discovered"
+        }
+      },
+      "tactical_history": [
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "ATTACK_LAND",
+        "REST",
+        "REST"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "REST_AND_REPRODUCE",
+        "metrics": {
+          "alive": true,
+          "territory": 13803,
+          "population": 14330,
+          "food": 586188.477021277,
+          "wars_won": 1,
+          "wars_lost": 1,
+          "war_exhaustion": 0.0,
+          "morale": 1.15,
+          "remaining_enemies": 15,
+          "world_control_share": 0.04364916230796961,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 49,
+      "updates": 51,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 304405169949655857863865965252722200250,
+          "inc": 6321868390199754907671148026192218261
+        },
+        "has_uint32": 0,
+        "uinteger": 3206687391
+      }
+    },
+    "6": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "1,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.01527936921176438,
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.17905453911070163,
+        "3,0,0,0,0,0,0,0,0|ATTACK:5:land": -0.027385228999334387,
+        "3,0,0,0,0,0,0,0,0|ATTACK:7:land": 0.0
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.5980000000000001,
+        "3,0,0,0,0,0,0,0,0|ATTACK:5:land": 0.04573062152628488
+      },
+      "tactical_q_values": {
+        "4,0,0,0,0,1|ATTACK:55": -0.09461400671239338,
+        "3,0,1,1,0,1|DEFEND:10": -0.09645000000000001,
+        "3,0,1,1,0,1|DEFEND:40": 0.09000000000000001,
+        "4,0,0,0,0,1|ATTACK:28": -0.09027655986509275
+      },
+      "tactical_library": {
+        "REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.0485507844585066,
+          "uses": 4,
+          "successes": 4,
+          "created_decision": 48,
+          "source": "self_discovered"
+        }
+      },
+      "tactical_history": [
+        "REST",
+        "REST",
+        "ATTACK_LAND",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "ATTACK:5:land",
+        "metrics": {
+          "alive": true,
+          "territory": 13518,
+          "population": 14624,
+          "food": 650948.7667897359,
+          "wars_won": 1,
+          "wars_lost": 2,
+          "war_exhaustion": 0.0,
+          "morale": 1.15,
+          "remaining_enemies": 15,
+          "world_control_share": 0.04274790814164553,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 52,
+      "updates": 55,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 63656874440958079679490036575534833259,
+          "inc": 94437555797602904292259740682451450583
+        },
+        "has_uint32": 0,
+        "uinteger": 1533141410
+      }
+    },
+    "7": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "2,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.005854060962824833,
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.2110554276113041,
+        "3,0,0,0,0,0,0,0,0|ATTACK:5:land": 0.0,
+        "3,0,0,0,0,0,0,0,0|ATTACK:6:land": 0.032240512487406434,
+        "3,0,0,0,0,1,0,0,0|REST_AND_REPRODUCE": 0.029776850907293838,
+        "3,0,0,0,0,1,0,0,0|ATTACK:5:land": 0.0,
+        "3,0,0,0,0,1,0,0,0|ATTACK:6:land": -0.013595796076723142
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.12788062081600005,
+        "3,0,0,0,0,0,0,0,0|ATTACK:6:land": 0.21384719200000005,
+        "3,0,0,0,0,1,0,0,0|ATTACK:6:land": 0.3576040000000001,
+        "3,0,0,0,0,1,0,0,0|REST_AND_REPRODUCE": 0.5980000000000001
+      },
+      "tactical_q_values": {
+        "3,0,0,1,0,1|ATTACK:40": -0.03194970140409642,
+        "4,0,0,0,0,1|DEFEND:70": 0.09000000000000001
+      },
+      "tactical_library": {
+        "REST→ATTACK_LAND": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND"
+          ],
+          "score": 0.24670688185167597,
+          "uses": 2,
+          "successes": 1,
+          "created_decision": 45,
+          "source": "self_discovered"
+        },
+        "REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.07260766895617318,
+          "uses": 1,
+          "successes": 1,
+          "created_decision": 47,
+          "source": "self_discovered"
+        }
+      },
+      "tactical_history": [
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "ATTACK_LAND",
+        "ATTACK_LAND",
+        "REST"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "REST_AND_REPRODUCE",
+        "metrics": {
+          "alive": true,
+          "territory": 13011,
+          "population": 13503,
+          "food": 497921.64491163427,
+          "wars_won": 2,
+          "wars_lost": 1,
+          "war_exhaustion": 0.0788250123180739,
+          "morale": 1.0217100104398273,
+          "remaining_enemies": 15,
+          "world_control_share": 0.041144624414184795,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 48,
+      "updates": 50,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 146175567251616878709826691734460605978,
+          "inc": 90613259792743793445070301209968030811
+        },
+        "has_uint32": 1,
+        "uinteger": 688791956
+      }
+    },
+    "8": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "2,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.009816240093216903,
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.15797494544101698,
+        "3,0,0,0,0,0,0,0,0|ATTACK:9:land": -0.012432356797277085,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.020988449699239468,
+        "4,0,0,0,0,0,0,0,0|ATTACK:9:land": 0.0,
+        "3,0,0,0,0,0,0,0,0|ATTACK:10:land": 0.0
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.5980000000000001,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.00015992638769003599,
+        "3,0,0,0,0,0,0,0,0|ATTACK:9:land": 0.0012505912676178256
+      },
+      "tactical_q_values": {
+        "3,0,0,1,0,1|ATTACK:18": -0.09041379310344827
+      },
+      "tactical_library": {
+        "REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.05381650261544688,
+          "uses": 6,
+          "successes": 6,
+          "created_decision": 35,
+          "source": "self_discovered"
+        },
+        "ATTACK_LAND→REST": {
+          "sequence": [
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.03728016135276595,
+          "uses": 1,
+          "successes": 1,
+          "created_decision": 41,
+          "source": "self_discovered"
+        }
+      },
+      "tactical_history": [
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "REST_AND_REPRODUCE",
+        "metrics": {
+          "alive": true,
+          "territory": 11328,
+          "population": 14402,
+          "food": 433849.9373163679,
+          "wars_won": 0,
+          "wars_lost": 1,
+          "war_exhaustion": 0.0,
+          "morale": 1.15,
+          "remaining_enemies": 15,
+          "world_control_share": 0.03582248138989204,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 47,
+      "updates": 47,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 41075310062777774205159500174201715515,
+          "inc": 277625120336032335130605437882622470049
+        },
+        "has_uint32": 1,
+        "uinteger": 3171056910
+      }
+    },
+    "9": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "2,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.009666885977113559,
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.1922700187811324,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.030755711839887647,
+        "3,0,0,0,0,0,0,0,0|ATTACK:8:land": 0.0,
+        "4,0,0,0,0,0,0,0,0|ATTACK:8:land": 0.0
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.5980000000000001,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.12788062081600005
+      },
+      "tactical_q_values": {
+        "3,0,0,1,0,1|DEFEND:40": 0.09000000000000001
+      },
+      "tactical_library": {},
+      "tactical_history": [
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "REST_AND_REPRODUCE",
+        "metrics": {
+          "alive": true,
+          "territory": 12307,
+          "population": 14545,
+          "food": 460454.08975920704,
+          "wars_won": 1,
+          "wars_lost": 0,
+          "war_exhaustion": 0.0,
+          "morale": 1.15,
+          "remaining_enemies": 15,
+          "world_control_share": 0.03891836850859828,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 47,
+      "updates": 47,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 183020787757373634713654692876949812223,
+          "inc": 112262083144270687193549882492077904009
+        },
+        "has_uint32": 0,
+        "uinteger": 1975758197
+      }
+    },
+    "10": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "1,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.006839394816401106,
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.22192980885644212,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.028115670389199845,
+        "3,0,0,0,0,0,0,0,0|ATTACK:8:land": 0.0
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.5980000000000001
+      },
+      "tactical_q_values": {},
+      "tactical_library": {},
+      "tactical_history": [
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "REST_AND_REPRODUCE",
+        "metrics": {
+          "alive": true,
+          "territory": 13488,
+          "population": 14508,
+          "food": 668889.7704325209,
+          "wars_won": 0,
+          "wars_lost": 0,
+          "war_exhaustion": 0.0,
+          "morale": 1.15,
+          "remaining_enemies": 15,
+          "world_control_share": 0.04265303928203247,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 46,
+      "updates": 45,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 20866652291950951497831345052951344408,
+          "inc": 329782675878369403840720887172723031595
+        },
+        "has_uint32": 0,
+        "uinteger": 0
+      }
+    },
+    "11": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "2,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.010589552493372501,
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.1320797515238293,
+        "3,0,1,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.08040329351366883,
+        "4,0,1,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.020365129196631946,
+        "3,0,1,0,0,0,0,0,0|ATTACK:12:land": 0.0
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.0002674354309197926,
+        "3,0,1,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.5980000000000001,
+        "4,0,1,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.0007478535780354597
+      },
+      "tactical_q_values": {},
+      "tactical_library": {},
+      "tactical_history": [
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          3,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "REST_AND_REPRODUCE",
+        "metrics": {
+          "alive": true,
+          "territory": 12355,
+          "population": 14147,
+          "food": 308457.46816866176,
+          "wars_won": 0,
+          "wars_lost": 0,
+          "war_exhaustion": 0.0,
+          "morale": 1.15,
+          "remaining_enemies": 15,
+          "world_control_share": 0.03907015868397918,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 47,
+      "updates": 46,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 219493039116982674669449606587270682953,
+          "inc": 196054052252075454873827499889365093939
+        },
+        "has_uint32": 0,
+        "uinteger": 0
+      }
+    },
+    "12": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "2,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.00456082984518133,
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.1349895040465893,
+        "3,0,0,0,0,0,0,0,0|ATTACK:13:land": 0.0,
+        "3,0,1,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.1179681186480386,
+        "3,0,1,0,0,0,0,0,0|ATTACK:13:land": 0.0,
+        "3,0,1,0,0,0,0,0,0|ATTACK:11:land": 0.0
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.00015992638769003599,
+        "3,0,1,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.5980000000000001
+      },
+      "tactical_q_values": {
+        "3,0,0,1,0,1|DEFEND:40": 0.17100000000000004
+      },
+      "tactical_library": {},
+      "tactical_history": [
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          3,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "REST_AND_REPRODUCE",
+        "metrics": {
+          "alive": true,
+          "territory": 12828,
+          "population": 14174,
+          "food": 287793.8280743826,
+          "wars_won": 2,
+          "wars_lost": 0,
+          "war_exhaustion": 0.0,
+          "morale": 1.15,
+          "remaining_enemies": 15,
+          "world_control_share": 0.04056592437054512,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 49,
+      "updates": 50,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 30845402483814307602619532179042972234,
+          "inc": 272196336030400787898152824838541598609
+        },
+        "has_uint32": 1,
+        "uinteger": 2716674155
+      }
+    },
+    "13": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "2,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.006900197601245751,
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.07609021725836769,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.022849476627878288,
+        "3,0,0,0,0,0,0,0,0|ATTACK:12:land": -0.042106512701280054
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.5980000000000001,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.00015992638769003599,
+        "3,0,0,0,0,0,0,0,0|ATTACK:12:land": 0.3576040000000001
+      },
+      "tactical_q_values": {
+        "3,0,1,1,0,1|ATTACK:18": -0.09050331125827815,
+        "3,0,1,1,0,1|ATTACK:40": -0.09017582417582418
+      },
+      "tactical_library": {
+        "REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.02126127912839839,
+          "uses": 5,
+          "successes": 5,
+          "created_decision": 38,
+          "source": "self_discovered"
+        },
+        "ATTACK_LAND→REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "ATTACK_LAND",
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.03884953625268492,
+          "uses": 1,
+          "successes": 1,
+          "created_decision": 44,
+          "source": "self_discovered"
+        }
+      },
+      "tactical_history": [
+        "ATTACK_LAND",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "ATTACK_LAND",
+        "REST"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "REST_AND_REPRODUCE",
+        "metrics": {
+          "alive": true,
+          "territory": 5075,
+          "population": 6364,
+          "food": 3176.680943704781,
+          "wars_won": 0,
+          "wars_lost": 2,
+          "war_exhaustion": 0.0,
+          "morale": 1.148,
+          "remaining_enemies": 15,
+          "world_control_share": 0.01604864875120958,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 45,
+      "updates": 46,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 249671154149049420196033489188722085652,
+          "inc": 70900980137482944765173964519099156621
+        },
+        "has_uint32": 1,
+        "uinteger": 2969742338
+      }
+    },
+    "14": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "1,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.005065860818484978,
+        "2,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.005443148112098516,
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.10776198717493045,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.01910093976202358,
+        "3,0,1,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.09299786491954441,
+        "3,0,1,0,0,0,0,0,0|ATTACK:15:land": 0.0,
+        "3,0,2,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.0,
+        "3,0,2,0,0,0,0,0,0|ATTACK:15:land": 0.01866246214769457,
+        "4,0,2,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.0,
+        "4,0,2,0,0,0,0,0,0|ATTACK:15:land": 0.0
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 3.419980893421757e-05,
+        "3,0,1,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.3576040000000001,
+        "3,0,2,0,0,0,0,0,0|ATTACK:15:land": 0.5980000000000001
+      },
+      "tactical_q_values": {
+        "2,1,1,1,0,1|DEFEND:25": 0.09000000000000001,
+        "2,1,0,1,0,1|ATTACK:70": 0.1269269269444636
+      },
+      "tactical_library": {
+        "REST→ATTACK_LAND": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND"
+          ],
+          "score": 0.15552051789745475,
+          "uses": 1,
+          "successes": 1,
+          "created_decision": 50,
+          "source": "self_discovered"
+        }
+      },
+      "tactical_history": [
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "REST",
+        "ATTACK_LAND"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          4,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action": "ATTACK:15:land",
+        "metrics": {
+          "alive": true,
+          "territory": 10185,
+          "population": 13150,
+          "food": 132181.52987258608,
+          "wars_won": 2,
+          "wars_lost": 0,
+          "war_exhaustion": 0.13310677754955597,
+          "morale": 1.0405893240907567,
+          "remaining_enemies": 15,
+          "world_control_share": 0.0322079778386344,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 51,
+      "updates": 53,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 169455540986358915339383767811866941049,
+          "inc": 107616966213989827532410118428901926187
+        },
+        "has_uint32": 0,
+        "uinteger": 3027190673
+      }
+    },
+    "15": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "2,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.004637225541542995,
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.1339244506489443,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.01123461141213726,
+        "3,0,1,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.0,
+        "3,0,1,0,0,0,0,0,0|ATTACK:16:land": 0.2629418007345759,
+        "3,0,1,0,0,1,0,0,0|REST_AND_REPRODUCE": 0.22689992453928548,
+        "3,0,1,0,0,1,0,0,0|ATTACK:14:land": 0.0,
+        "3,0,1,0,0,1,0,0,0|ATTACK:16:land": 0.0,
+        "3,0,1,0,0,0,0,0,0|ATTACK:14:land": 0.0,
+        "3,0,2,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.0,
+        "3,0,2,0,0,0,0,0,0|ATTACK:14:land": 0.0,
+        "3,0,2,0,0,0,0,0,0|ATTACK:16:land": -0.024097553540897064,
+        "3,0,2,0,0,1,0,0,0|REST_AND_REPRODUCE": 0.0,
+        "3,0,2,0,0,1,0,0,0|ATTACK:14:land": -0.06964091662595824,
+        "3,0,2,0,0,1,0,0,0|ATTACK:16:land": 0.0,
+        "2,0,2,0,0,2,0,0,0|REST_AND_REPRODUCE": 0.0,
+        "2,0,2,0,0,2,0,0,0|ATTACK:14:land": 0.0,
+        "2,0,2,0,0,2,0,0,0|ATTACK:16:land": 0.0
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 3.419980893421757e-05,
+        "3,0,1,0,0,0,0,0,0|ATTACK:16:land": 0.12788062081600005,
+        "3,0,1,0,0,1,0,0,0|REST_AND_REPRODUCE": 0.21384719200000005,
+        "3,0,2,0,0,0,0,0,0|ATTACK:16:land": 0.3576040000000001,
+        "3,0,2,0,0,1,0,0,0|ATTACK:14:land": 0.5980000000000001
+      },
+      "tactical_q_values": {
+        "3,1,0,1,0,1|ATTACK:55": 0.20258339828648653,
+        "2,1,0,1,0,1|ATTACK:40": 0.12694203804681198,
+        "3,0,0,1,0,1|DEFEND:10": 0.24390000000000006,
+        "3,1,0,0,0,1|ATTACK:70": 0.191065571236638,
+        "3,0,1,1,0,1|DEFEND:70": 0.09000000000000001,
+        "3,0,0,0,0,1|DEFEND:55": 0.30951000000000006,
+        "2,0,0,0,0,1|DEFEND:55": 0.09000000000000001,
+        "2,1,0,0,0,1|ATTACK:28": 0.07157251812614766,
+        "3,2,0,1,0,1|ATTACK:55": 0.07580821960916184,
+        "2,1,1,1,0,1|ATTACK:40": -0.09189444646213603,
+        "2,1,3,1,0,1|DEFEND:55": -0.09340000000000001,
+        "2,2,0,0,0,1|ATTACK:55": 0.07274658131546295,
+        "2,1,3,1,0,1|DEFEND:70": -0.09410000000000002
+      },
+      "tactical_library": {
+        "REST→ATTACK_LAND": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND"
+          ],
+          "score": 0.16964059594913858,
+          "uses": 2,
+          "successes": 2,
+          "created_decision": 29,
+          "source": "self_discovered"
+        },
+        "REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.08509143254702134,
+          "uses": 1,
+          "successes": 1,
+          "created_decision": 31,
+          "source": "self_discovered"
+        },
+        "REST→ATTACK_LAND→REST→ATTACK_LAND": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND",
+            "REST",
+            "ATTACK_LAND"
+          ],
+          "score": 0.1488915286000868,
+          "uses": 1,
+          "successes": 1,
+          "created_decision": 32,
+          "source": "self_discovered"
+        },
+        "REST→ATTACK_LAND→REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND",
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.08967096477273022,
+          "uses": 1,
+          "successes": 1,
+          "created_decision": 33,
+          "source": "self_discovered"
+        },
+        "REST→ATTACK_LAND→REST→ATTACK_LAND→REST→ATTACK_LAND": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND",
+            "REST",
+            "ATTACK_LAND",
+            "REST",
+            "ATTACK_LAND"
+          ],
+          "score": 0.13304313922629762,
+          "uses": 8,
+          "successes": 7,
+          "created_decision": 34,
+          "source": "self_discovered"
+        },
+        "ATTACK_LAND→REST→ATTACK_LAND→REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "ATTACK_LAND",
+            "REST",
+            "ATTACK_LAND",
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.22883651188102902,
+          "uses": 6,
+          "successes": 6,
+          "created_decision": 35,
+          "source": "self_discovered"
+        }
+      },
+      "tactical_history": [
+        "ATTACK_LAND",
+        "REST",
+        "ATTACK_LAND",
+        "REST",
+        "ATTACK_LAND",
+        "REST",
+        "ATTACK_LAND",
+        "ATTACK_LAND"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          2,
+          0,
+          2,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        "action": "ATTACK:16:land",
+        "metrics": {
+          "alive": true,
+          "territory": 10054,
+          "population": 8528,
+          "food": 44442.25729894178,
+          "wars_won": 19,
+          "wars_lost": 2,
+          "war_exhaustion": 0.48167652225540036,
+          "morale": 0.7019828428580298,
+          "remaining_enemies": 15,
+          "world_control_share": 0.03179371715165736,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 48,
+      "updates": 70,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 319224911130600927958421234975178159101,
+          "inc": 16727428195592756691448711751041924507
+        },
+        "has_uint32": 0,
+        "uinteger": 3678163363
+      }
+    },
+    "16": {
+      "state_dimensions": 9,
+      "schema": "V22-strategy9-theatre",
+      "legacy_q_values": {},
+      "q_values": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": -0.0829275927294381,
+        "4,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.013680553366228457,
+        "3,0,0,0,0,0,0,0,0|ATTACK:15:land": -0.17458949523862655,
+        "3,0,0,0,0,1,0,0,0|REST_AND_REPRODUCE": -0.04632463649996615,
+        "3,0,0,0,0,1,0,0,0|ATTACK:15:land": 0.0,
+        "2,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": -0.05399020064951062,
+        "2,0,0,0,0,0,0,0,0|ATTACK:15:land": 0.0,
+        "2,0,0,0,0,1,0,0,0|REST_AND_REPRODUCE": 0.0,
+        "2,0,0,0,0,1,0,0,0|ATTACK:15:land": -0.2608856929851748,
+        "0,0,0,0,0,3,0,0,0|REST_AND_REPRODUCE": -0.06270121848868573,
+        "0,0,0,0,0,3,0,0,0|ATTACK:15:land": 0.0,
+        "0,0,0,0,0,2,0,0,0|REST_AND_REPRODUCE": -0.11764992989116149,
+        "0,0,0,0,0,2,0,0,0|ATTACK:15:land": 0.0,
+        "0,0,0,0,0,1,0,0,0|REST_AND_REPRODUCE": -0.05359427122688499,
+        "0,0,0,0,0,1,0,0,0|ATTACK:15:land": 0.0,
+        "1,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.0,
+        "1,0,0,0,0,0,0,0,0|ATTACK:15:land": -0.09965597195131268,
+        "1,0,0,0,0,1,0,0,0|REST_AND_REPRODUCE": 0.0,
+        "1,0,0,0,0,1,0,0,0|ATTACK:15:land": -0.07364752316474041
+      },
+      "eligibility": {
+        "3,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.0004472164396652049,
+        "3,0,0,0,0,0,0,0,0|ATTACK:15:land": 0.0020912897451803103,
+        "3,0,0,0,0,1,0,0,0|REST_AND_REPRODUCE": 0.00015992638769003599,
+        "2,0,0,0,0,0,0,0,0|REST_AND_REPRODUCE": 0.0007478535780354597,
+        "2,0,0,0,0,1,0,0,0|ATTACK:15:land": 0.21384719200000005,
+        "0,0,0,0,0,3,0,0,0|REST_AND_REPRODUCE": 0.009779365001810779,
+        "0,0,0,0,0,2,0,0,0|REST_AND_REPRODUCE": 0.3576040000000001,
+        "0,0,0,0,0,1,0,0,0|REST_AND_REPRODUCE": 0.02734691167271836,
+        "1,0,0,0,0,0,0,0,0|ATTACK:15:land": 0.04573062152628488,
+        "1,0,0,0,0,1,0,0,0|ATTACK:15:land": 0.5980000000000001
+      },
+      "tactical_q_values": {
+        "3,1,3,1,0,1|DEFEND:25": -0.09635,
+        "2,1,3,1,0,1|DEFEND:10": -0.09275,
+        "3,0,2,1,0,1|ATTACK:28": -0.09072727272727273,
+        "3,1,3,0,0,1|DEFEND:40": -0.0922,
+        "3,1,3,0,0,1|DEFEND:55": -0.09340000000000001,
+        "3,0,1,1,0,1|ATTACK:55": -0.09027184466019417,
+        "3,0,2,0,0,1|ATTACK:55": -0.09057142857142858,
+        "3,0,3,0,0,0|ATTACK:70": -0.09018691588785047,
+        "3,0,3,0,0,0|ATTACK:18": -0.0911764705882353,
+        "3,1,3,1,0,1|DEFEND:40": -0.09570000000000001,
+        "3,1,3,1,0,1|DEFEND:10": -0.09355000000000001,
+        "3,1,3,0,0,1|DEFEND:25": -0.09450000000000001,
+        "3,0,3,1,0,0|ATTACK:70": -0.0909032258064516,
+        "2,0,3,0,0,1|ATTACK:55": -0.09071232876712329,
+        "2,1,3,0,0,1|DEFEND:40": -0.09415000000000001,
+        "3,0,3,0,0,0|ATTACK:55": -0.09094545454545455,
+        "2,1,3,1,0,1|DEFEND:25": -0.09255000000000001,
+        "3,0,3,1,0,0|ATTACK:55": -0.09215384615384616,
+        "3,2,3,1,0,1|DEFEND:70": -0.09465000000000001,
+        "2,2,3,0,0,0|DEFEND:10": -0.09355000000000001
+      },
+      "tactical_library": {
+        "REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": -0.0384128577388151,
+          "uses": 6,
+          "successes": 3,
+          "created_decision": 30,
+          "source": "self_discovered"
+        },
+        "ATTACK_LAND→REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "ATTACK_LAND",
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.06389818383488813,
+          "uses": 1,
+          "successes": 1,
+          "created_decision": 46,
+          "source": "self_discovered"
+        },
+        "REST→ATTACK_LAND→REST→ATTACK_LAND→REST": {
+          "sequence": [
+            "REST",
+            "ATTACK_LAND",
+            "REST",
+            "ATTACK_LAND",
+            "REST"
+          ],
+          "score": 0.05322292964689585,
+          "uses": 1,
+          "successes": 1,
+          "created_decision": 49,
+          "source": "self_discovered"
+        }
+      },
+      "tactical_history": [
+        "REST",
+        "REST",
+        "ATTACK_LAND",
+        "ATTACK_LAND",
+        "REST",
+        "ATTACK_LAND",
+        "REST",
+        "ATTACK_LAND"
+      ],
+      "current_plan": [],
+      "current_plan_id": null,
+      "next_plan_id": 1,
+      "pending": {
+        "state": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        "action": "REST_AND_REPRODUCE",
+        "metrics": {
+          "alive": true,
+          "territory": 826,
+          "population": 1012,
+          "food": 517.645751380616,
+          "wars_won": 0,
+          "wars_lost": 19,
+          "war_exhaustion": 0.4745415097486382,
+          "morale": 0.516,
+          "remaining_enemies": 15,
+          "world_control_share": 0.002612055934679628,
+          "pacified_overseas": 0,
+          "strategic_potential": 0.0
+        }
+      },
+      "decisions": 52,
+      "updates": 65,
+      "rng_state": {
+        "bit_generator": "PCG64",
+        "state": {
+          "state": 296971648387500978511820814983907383016,
+          "inc": 215029384316294402514505855008042327027
+        },
+        "has_uint32": 1,
+        "uinteger": 1931909189
+      }
+    }
+  }
+}

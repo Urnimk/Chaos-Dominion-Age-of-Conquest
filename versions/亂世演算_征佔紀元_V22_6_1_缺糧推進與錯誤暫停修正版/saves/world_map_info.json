@@ -1,0 +1,308 @@
+{
+  "game": "亂世演算_征佔紀元",
+  "version": "V19_地球地圖與海外撤退規則版",
+  "width": 1200,
+  "height": 1200,
+  "seed": 954789979,
+  "world_style": "ARCHIPELAGO",
+  "target_ocean_ratio": 0.7,
+  "actual_ocean_ratio": 0.780399,
+  "sea_level": 0.502189,
+  "landmass_count": 44,
+  "largest_landmasses": [
+    73210,
+    71457,
+    67634,
+    34365,
+    24781,
+    20598,
+    18934,
+    584,
+    525,
+    450,
+    298,
+    292
+  ],
+  "generation_seconds": 15.433,
+  "average_land_temperature_c": 15.439,
+  "average_land_humidity": 0.6325,
+  "average_land_rainfall_mm": 1340.68,
+  "lake_cells": 595,
+  "river_cells": 1067,
+  "average_agriculture": 32.37,
+  "average_timber": 61.77,
+  "average_minerals": 32.3,
+  "average_freshwater": 27.46,
+  "average_city_value": 38.81,
+  "average_defense_value": 44.65,
+  "average_movement_cost": 7.7,
+  "country_count": 16,
+  "claimed_land_ratio": 0.57648,
+  "capital_count": 16,
+  "city_count": 35,
+  "port_count": 0,
+  "road_cells": 0,
+  "sea_route_cells": 0,
+  "countries": [
+    {
+      "id": 1,
+      "name": "挫蛋先鋒",
+      "color": [
+        229,
+        152,
+        96
+      ],
+      "capital": [
+        701,
+        702
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 2,
+      "name": "奶霜聯盟",
+      "color": [
+        101,
+        82,
+        229
+      ],
+      "capital": [
+        652,
+        596
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 3,
+      "name": "嗜血狂鯊",
+      "color": [
+        95,
+        229,
+        68
+      ],
+      "capital": [
+        761,
+        571
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 4,
+      "name": "霹靂暗雷",
+      "color": [
+        229,
+        96,
+        157
+      ],
+      "capital": [
+        730,
+        402
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 5,
+      "name": "地獄烈焰",
+      "color": [
+        82,
+        192,
+        229
+      ],
+      "capital": [
+        238,
+        591
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 6,
+      "name": "閃電戰狼",
+      "color": [
+        229,
+        223,
+        68
+      ],
+      "capital": [
+        312,
+        669
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 7,
+      "name": "虛擬幻影",
+      "color": [
+        185,
+        96,
+        229
+      ],
+      "capital": [
+        375,
+        545
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 8,
+      "name": "深淵巨妖",
+      "color": [
+        82,
+        229,
+        138
+      ],
+      "capital": [
+        993,
+        661
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 9,
+      "name": "夜城行者",
+      "color": [
+        229,
+        82,
+        68
+      ],
+      "capital": [
+        905,
+        624
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 10,
+      "name": "量子重力",
+      "color": [
+        96,
+        123,
+        229
+      ],
+      "capital": [
+        1010,
+        506
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 11,
+      "name": "黑客帝國",
+      "color": [
+        155,
+        229,
+        82
+      ],
+      "capital": [
+        571,
+        864
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 12,
+      "name": "蒸汽朋克",
+      "color": [
+        229,
+        68,
+        195
+      ],
+      "capital": [
+        437,
+        908
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 13,
+      "name": "諸神黃昏",
+      "color": [
+        96,
+        229,
+        218
+      ],
+      "capital": [
+        426,
+        1036
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 14,
+      "name": "冥府使者",
+      "color": [
+        229,
+        174,
+        82
+      ],
+      "capital": [
+        994,
+        920
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 15,
+      "name": "奧林帕斯",
+      "color": [
+        122,
+        68,
+        229
+      ],
+      "capital": [
+        920,
+        977
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 16,
+      "name": "北歐暴風",
+      "color": [
+        96,
+        229,
+        102
+      ],
+      "capital": [
+        863,
+        1050
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 104
+    }
+  ],
+  "files": {
+    "data": "world_map.npz",
+    "preview": "world_map_preview.png"
+  }
+}

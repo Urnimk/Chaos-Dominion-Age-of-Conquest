@@ -1,4 +1,4 @@
-"""《亂世演算_征佔紀元》V22_6 外島徵兵與戰區擴張版。"""
+"""《亂世演算_征佔紀元》V21.1 海外殖民探索修正版。"""
 import random
 
 MAP_WIDTH = 1200
@@ -26,6 +26,8 @@ TERRITORY_SPLIT_MIN_FRACTION = 0.25 # 任一分裂主體達原國土1/4即可保
 POPULATION_GROWTH = 10                   # 本土基礎每年新增人口
 OVERSEAS_ANNUAL_POPULATION_GROWTH = 10    # 每一個已占據海外陸塊每年固定新增人口基數
 OVERSEAS_POPULATION_BONUS_CAP = 3.0       # 海外人口成長加成最高 +300%，避免超高產糧地爆量
+OVERSEAS_REPATRIATION_ON_FOOD_SHORTAGE = True  # 海外糧食超載時優先撤回本島，不直接刪人口
+OVERSEAS_REPATRIATION_MIN_POPULATION = 30  # 海外至少保留最低人口，避免小型據點被一次撤空
 REST_BIRTH_GROWTH_MULTIPLIER = 3        # 休養生息時提高出生速度，仍受糧食承載量限制。
 
 
@@ -299,7 +301,7 @@ AI_STRATEGIC_STATE_DIMENSIONS = 9
 COLONY_AUTO_PORT = False  # Overseas ports are paid, explicit strategic actions.
 OVERSEAS_COLONY_MIN_LANDMASS_CELLS = MIN_ISLAND_AREA
 OVERSEAS_PEACE_GARRISON_RATIO = 0.12
-OVERSEAS_ENEMY_GARRISON_RATIO = 1.0 # 有敵軍時累積可持續進攻的戰區軍力；仍受實際海運與本土留守約束。
+OVERSEAS_ENEMY_GARRISON_RATIO = 0.65
 OVERSEAS_PORT_MAX_DISTANCE = 60
 OVERSEAS_SECOND_PORT_MIN_DISTANCE = 12
 OVERSEAS_SUPPLY_BUFFER_YEARS = 20
@@ -314,7 +316,3 @@ OVERSEAS_FOOD_PER_SHIP = 10000.0  # capacity for actual transported food stocks
 
 # V22_4：將當地已到貨存糧按此年數折算可支持人口；不提高出生速度加成。
 POPULATION_STOCK_SUPPORT_YEARS = 20
-
-# V22_6: independent local recruitment and committed overseas operations.
-LOCAL_RECRUIT_TARGET_RATIO = 0.18  # 沿用既有18%徵兵上限，逐島計算。
-AI_THEATRE_COMMITMENT_BIAS = 0.35

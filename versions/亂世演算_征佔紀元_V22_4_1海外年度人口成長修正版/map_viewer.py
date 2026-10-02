@@ -113,7 +113,7 @@ STYLE_CODES = {v: k for k, v in STYLE_LABELS.items()}
 class MapViewer:
     def __init__(self, root):
         self.root = root
-        self.root.title("亂世演算_征佔紀元 V22_6_1｜缺糧推進與錯誤暫停修正版")
+        self.root.title("亂世演算_征佔紀元 V22_5｜海運顯示與海外首都修正版")
         self.root.geometry(WINDOW_SIZE)
         self.root.configure(bg="#161616")
         self.world = self.war = self.full_image = self.tk_image = None
@@ -279,25 +279,14 @@ class MapViewer:
             style="Panel.TLabelframe", padding=4,
         )
         colony_box.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0,4))
-        territory_frame = ttk.Frame(colony_box, style="Dark.TFrame")
-        territory_frame.pack(fill="both", expand=True)
-        self.colony_links = self._field_table(
-            territory_frame, ("類別", "連結（地名）", "大小", "人口", "駐兵"),
-            height=5, widths=(120, 205, 90, 100, 90),
+        self.colony_links = tk.Text(
+            colony_box, height=4, bg="#222", fg="#eee", relief="flat",
+            font=(UI_FONT_FAMILY, UI_FONT_SIZE), wrap="word", cursor="arrow"
         )
-        for column in ("field_2", "field_3", "field_4"):
-            self.colony_links.column(column, anchor="e", minwidth=70)
-        self.colony_links.column("field_0", minwidth=100)
-        self.colony_links.column("field_1", minwidth=150)
-        horizontal = ttk.Scrollbar(colony_box, orient="horizontal", command=self.colony_links.xview)
-        horizontal.pack(fill="x")
-        self.colony_links.configure(xscrollcommand=horizontal.set)
-        self._territory_points = {}
-        self.colony_links.bind("<ButtonRelease-1>", self._territory_link_click)
-        self.colony_links.bind("<Motion>", self._territory_link_motion)
-        self.colony_links.bind("<Leave>", lambda _e: self.colony_links.configure(cursor=""))
-        self.colony_voyages = ttk.Label(colony_box, text="", style="Dark.TLabel", wraplength=580)
-        self.colony_voyages.pack(fill="x")
+        colony_scroll = ttk.Scrollbar(colony_box, orient="vertical", command=self.colony_links.yview)
+        self.colony_links.configure(yscrollcommand=colony_scroll.set)
+        colony_scroll.pack(side="right", fill="y")
+        self.colony_links.pack(side="left", fill="both", expand=True)
 
         war_box = ttk.LabelFrame(dashboard, text="⚔ 當前戰爭", style="Panel.TLabelframe", padding=5)
         war_box.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=4)
@@ -413,11 +402,13 @@ class MapViewer:
         return "break"
 
     def _refresh_colony_links(self, country):
-        """以類別、地名連結、大小、人口、駐兵五欄顯示本島與海外領地。"""
+        """列出本島與海外領地的面積、建立年份、人口和士兵。"""
         widget = self.colony_links
-        position = widget.yview()[0]
-        widget.delete(*widget.get_children())
-        self._territory_points = {}
+        widget.configure(state="normal")
+        widget.delete("1.0", tk.END)
+        for tag in widget.tag_names():
+            if tag.startswith("site_"):
+                widget.tag_delete(tag)
         sites = list(country.get("overseas_capitals", []))
         if not sites and country.get("overseas_capital"):
             sites = [country["overseas_capital"]]
@@ -445,13 +436,21 @@ class MapViewer:
                 continue
             name = self.war.geographic_name_at(ay, ax)
             rows.append((kind, name, area, founded, population, soldiers, ax, ay))
-        for index, (kind, name, area, founded, population, soldiers, ax, ay) in enumerate(rows):
-            iid=f"site_{index}"
-            widget.insert("", "end", iid=iid,
-                          values=(kind, "↗ " + name, f"{area:,}", f"{population:,}", f"{soldiers:,}"))
-            self._territory_points[iid]=(ax,ay,name)
-        widget.yview_moveto(position)
-        voyage_lines=[]
+        if not rows:
+            widget.insert("end", "尚無有效領地")
+        else:
+            for index, (kind, name, area, founded, population, soldiers, ax, ay) in enumerate(rows):
+                tag = f"site_{index}"
+                if index:
+                    widget.insert("end", "\n")
+                founded_text = "開局" if kind in ("本島", "本島首都") else f"第 {founded} 年建立"
+                widget.insert("end", f"{kind}｜{name}", tag)
+                widget.insert("end", f"｜{area:,} 格｜{founded_text}｜人口 {population:,}｜駐軍 {soldiers:,}")
+                widget.tag_config(tag, foreground="#38bdf8", underline=True)
+                widget.tag_bind(tag, "<Enter>", lambda _e, w=widget: w.configure(cursor="hand2"))
+                widget.tag_bind(tag, "<Leave>", lambda _e, w=widget: w.configure(cursor="arrow"))
+                if kind not in ("本島", "本島首都", "後撤基地"):
+                    widget.tag_bind(tag, "<Button-1>", lambda _e, x=ax, y=ay, n=name: self.focus_colony_on_map(x, y, n))
         voyage = country.get("colonization_voyage")
         if voyage:
             ax, ay = map(int, voyage["anchor"])
@@ -459,24 +458,17 @@ class MapViewer:
             distance_left = max(0.0, float(voyage["route_distance_km"]) - float(voyage["travelled_km"]))
             speed = float(voyage.get("speed_km_per_year", cfg.COLONY_SHIP_SPEED_KM_PER_YEAR))
             eta = int(np.ceil(distance_left / max(0.1, speed)))
-            voyage_lines.append(f"⛵ 航行中：{destination}｜剩餘 {distance_left:,.0f} 公里，約 {eta} 年")
+            if sites:
+                widget.insert("end", "\n")
+            widget.insert("end", f"⛵ 航行中：{destination}｜剩餘 {distance_left:,.0f} 公里，約 {eta} 年")
         reinforcement = country.get("reinforcement_voyage")
         if reinforcement:
             anchor = tuple(map(int, reinforcement.get("anchor", (0, 0))))
             destination = self.war.geographic_name_at(anchor[1], anchor[0])
-            voyage_lines.append(f"⚓ 海外增援：前往{destination}｜{int(reinforcement.get('soldiers', 0)):,}人｜約 {int(reinforcement.get('years_left', 0))} 年抵達")
-        self.colony_voyages.configure(text="\n".join(voyage_lines))
-
-    def _territory_link_click(self, event):
-        tree=self.colony_links
-        row=tree.identify_row(event.y)
-        if tree.identify_column(event.x)=="#2" and row in self._territory_points:
-            return self.focus_colony_on_map(*self._territory_points[row])
-
-    def _territory_link_motion(self, event):
-        tree=self.colony_links
-        is_link=tree.identify_column(event.x)=="#2" and tree.identify_row(event.y) in self._territory_points
-        tree.configure(cursor="hand2" if is_link else "")
+            if sites or voyage:
+                widget.insert("end", "\n")
+            widget.insert("end", f"⚓ 海外增援：前往{destination}｜{int(reinforcement.get('soldiers', 0)):,}人｜約 {int(reinforcement.get('years_left', 0))} 年抵達")
+        widget.configure(state="disabled")
 
     def focus_colony_on_map(self, x, y, name):
         self.center_x, self.center_y = float(x), float(y)
@@ -587,27 +579,8 @@ class MapViewer:
             summary = self.war.step(years)
             self.root.after(0, self._finish_advance, summary, int(years))
         except Exception as exc:
-            # Stop the clock before opening a modal dialog, whose nested Tk loop
-            # would otherwise dispatch more failing simulation workers.
-            self.running = False
-            self._sim_year_credit = 0.0
-            self.root.after(0, self._handle_advance_error, str(exc))
-
-    def _handle_advance_error(self, detail):
-        if getattr(self, "_advance_error_pending", False):
-            return
-        self._advance_error_pending = True
-        self.running = False
-        self._sim_year_credit = 0.0
-        self._sim_last_clock = time.perf_counter()
-        self.war_busy = True
-        try:
-            self.run_button.configure(text="繼續")
-            self.status.configure(text="推進失敗，已暫停；請重新讀取最近存檔後再繼續。")
-            messagebox.showerror("推進失敗", detail + "\n\n已暫停自動推進，請重新讀取最近存檔後再繼續。")
-        finally:
-            self.war_busy = False
-            self._advance_error_pending = False
+            self.root.after(0, messagebox.showerror, "推進失敗", str(exc))
+            self.root.after(0, setattr, self, "war_busy", False)
 
     def _finish_advance(self, summary, years_completed):
         """模擬完成後只按各自頻率刷新 UI / 地圖，不再每年重畫整張世界。"""
