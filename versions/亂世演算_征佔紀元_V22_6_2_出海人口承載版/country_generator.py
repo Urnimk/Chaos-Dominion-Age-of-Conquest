@@ -93,11 +93,29 @@ def _country_names(n):
 
     # 先使用自訂名稱；不足時再用前綴＋後綴穩定補足。
     names = []
-    for name in custom_names:
+    # for name in custom_names:
+    #     if len(names) >= n:
+    #         break
+    #     if name not in names:
+    #         names.append(name)
+
+    import random
+
+    seek = {"挫蛋先鋒"}
+
+    names.append("挫蛋先鋒")  
+
+    while(1):
         if len(names) >= n:
             break
-        if name not in names:
-            names.append(name)
+        temp = random.choice(custom_names)
+        if temp not in seek:
+            seek.add(temp)
+            names.append(temp)
+        else:
+            continue
+        
+
 
     index = 0
     while len(names) < n:
