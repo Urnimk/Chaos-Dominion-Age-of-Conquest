@@ -283,7 +283,7 @@ class MapViewer:
         territory_frame.pack(fill="both", expand=True)
         self.colony_links = self._field_table(
             territory_frame, ("類別", "連結（地名）", "大小", "人口", "駐兵"),
-            height=5, widths=(120, 205, 90, 100, 90),
+            height=4, widths=(120, 205, 90, 100, 90),
         )
         for column in ("field_2", "field_3", "field_4"):
             self.colony_links.column(column, anchor="e", minwidth=70)
@@ -302,7 +302,7 @@ class MapViewer:
         war_box = ttk.LabelFrame(dashboard, text="⚔ 當前戰爭", style="Panel.TLabelframe", padding=5)
         war_box.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=4)
         self.country_war = self._field_table(
-            war_box, ("戰爭", "立場", "交戰對象", "抵達", "狀態"), height=2,
+            war_box, ("戰爭", "立場", "交戰對象", "抵達", "狀態"), height=1,
             widths=(80, 90, 300, 80, 100),
         )
 
