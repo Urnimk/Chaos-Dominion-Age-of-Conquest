@@ -1,0 +1,23 @@
+{
+  "terrain_rules.py": "37c0d078812aa4d55f6ba728974b641ff78b1d166c792953b50a8b8256c2737e",
+  "CHANGELOG.md": "92caee6bc32641eb2c46ecbadcd59660270e872ef4e1a75a9dcb4264678e38de",
+  "rl_brain.py": "c6b28e3e92a959ff1c4a38d685d5b9e985dd71913c77e2ef9e61675a8134f095",
+  "country_generator.py": "6e93607d4dd021ec2b67c9e2842766550b44e29d52eb295250ecbc9e6b2f122f",
+  "map_viewer.py": "15af5e665fdf4687c11e3f71ea71f01df4ee9832f60c71a259ee265ab50eceff",
+  "hierarchical_strategy.py": "63d0db713f991ab4c726d192c094efe19a93cc8c5ddcc125b675cde7bb42b66c",
+  "test_hierarchical_strategy.py": "b8c185dfbd47c89857a1dfb53d2e7294616fd3478c262ea7e90b2fe0973d92c8",
+  "map_renderer.py": "7d3ed332aae81616fbf1188d2f754bffd4cf42cc4556e32ce8c705f551463bec",
+  "V23_修改說明.md": "09d80e1b9112093d92dfd358afe0851b020a4d67f4e2f1fb078749a4b371b3d4",
+  "habitability_generator.py": "0114cc5d413961cd9676bd90314d6ba5fb4027a4eb3cb9bb474469cd17ac08f2",
+  "更新說明.txt": "fa42821ab072b1758922580d7cd9c27809516c7cfdf51fc3c24d63c07c3600f0",
+  "overseas_strategy.py": "4660422b1b3247029c3c1d522b0d89ff8b02a05cfa291182f060e847bda71b34",
+  "map_generator.py": "14141eb3498d9d27a4c84a6f1ab91851e1cdb25754b4c239859be3bffed69cc4",
+  "headless_sanity.py": "8db4868c2ffdf8cb43001564e98bdf6d29c90283b9a158861166c8bf126e3982",
+  "climate_rules.py": "bf933cd48c9c86a870efa7661341a3e9bcb464fd599b17aff5404e700da76d2a",
+  "map_config.py": "e310f09607fd63064badcdec75f62382ea2c48ca16296b31f169c4e0459b3926",
+  "啟動遊戲.py": "d92b71019e1e08cb44dc00226f6d41b8ab570ba7f193b40133f5cfb6ae874dba",
+  "war_engine.py": "291d93da942ad0555010354e5f0772141a994bc8b930452ec23f19d20b447cfb",
+  "requirements.txt": "98462f6f0ff7038b4f94ec62dbd67df04d86a304b2c670eec067c09369f21a31",
+  "environment_generator.py": "09eafee0c5cd46d6a46657f3c904aa724725bb475471b7e3910cfe6b30c29086",
+  "啟動遊戲.bat": "86967156b4d313f73e8741a44a720a43b526a9771835dbb8bc70f7bba2b95c64"
+}

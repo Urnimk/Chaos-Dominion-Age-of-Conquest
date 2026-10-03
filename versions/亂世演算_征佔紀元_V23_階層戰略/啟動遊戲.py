@@ -1,4 +1,4 @@
-"""V23_1 地名連結版。"""
+"""V23 階層戰略承諾版。"""
 try:
     from map_viewer import main
 except ImportError as exc:

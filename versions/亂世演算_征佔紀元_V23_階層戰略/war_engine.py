@@ -275,27 +275,6 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         rid = int(self.geographic_region_id[int(y), int(x)])
         return self.geographic_regions[rid - 1]["name"] if 0 < rid <= len(self.geographic_regions) else "未命名區域"
 
-    def landmass_place_name(self, landmass_id, country=None):
-        """Display-only geographic label; never changes a strategic target."""
-        lm=int(landmass_id)
-        if lm<=0:return "尚未選定地區"
-        if country:
-            points=[country.get('capital')]+[site.get('anchor') for site in country.get('overseas_capitals',[])]
-            for point in points:
-                if not point:continue
-                x,y=map(int,point)
-                if 0<=y<self.world.settings.height and 0<=x<self.world.settings.width and int(self.world.continent[y,x])==lm:
-                    name=self.geographic_name_at(y,x)
-                    if name!='未命名區域':return name
-        cache=getattr(self,'_landmass_label_cache',None)
-        if cache is None:self._landmass_label_cache={};cache=self._landmass_label_cache
-        if lm not in cache:
-            ids=self.geographic_region_id[self.world.continent==lm]
-            ids=ids[(ids>0)&(ids<=len(self.geographic_regions))]
-            rid=int(np.bincount(ids).argmax()) if len(ids) else 0
-            cache[lm]=self.geographic_regions[rid-1]['name'] if rid else f'未命名陸塊{lm}'
-        return cache[lm]
-
     def _history(self, category: str, message: str):
         self.history_events.append(f"第{self.year}年｜【{category}】{message}")
         self.history_events = self.history_events[-1000:]
@@ -3617,7 +3596,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         )
         snapshot_id = uuid.uuid4().hex
         payload = {
-            "version": "V23_1_Geographic_Log_Links",
+            "version": "V23_Hierarchical_Strategy",
             "rl_brains_snapshot_id": snapshot_id,
             "seed": self.world.settings.seed,
             "year": self.year,
@@ -3641,7 +3620,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         brain_path = self._rl_brains_path(path)
         brain_payload = {
             "format_version": 1,
-            "game_version": "V23_1_Geographic_Log_Links",
+            "game_version": "V23_Hierarchical_Strategy",
             "snapshot_id": snapshot_id,
             "seed": int(self.world.settings.seed),
             "year": int(self.year),
@@ -3657,7 +3636,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
     def load(cls, world, path: Path):
         path = Path(path)
         payload = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
-        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_逐年回報修正版", "V13_2_靜態航線與抵達日誌版", "V13_2_1_海外艦隊門檻與SARSA獎勵版", "V14_戰術學習與世界統一版", "V14_1_殖民與海外攻佔上限版", "V15_弱點攻防與休養生息版", "V17_大島優先與危急後撤版", "V17_1_本島統一與海外首都守則版", "V17_2_分裂小領土清空版", "V17_3_本土小飛地清空版", "V17_4_積極拓荒與勝者得地版", "V18_本島統一與首都存續版", "V18_逐階海外拓展與撤退版", "V19_逐階海外拓展與撤退版", "V19_地球地圖與海外撤退規則版", "V19_1_拓荒等級版", "V19_2_海外資格與危急後撤版", "V20_海外分帳與艦隊運輸版", "V20.2_自主戰略AI與海外戰術庫版", "V21_海外戰區長期學習版", "V21.1_海外殖民探索修正版", "V22_海外港口戰區策略版", "V22_1_拓荒與補給修正版", "V22_2_地方人口承載修正版", "V22_3_全島共用人口加成版", "V22_4_在地存糧人口承載版", "V22_5_海運顯示與登陸修正版", "V22_6_外島徵兵與戰區擴張版", "V22_6_2_出海人口承載版", "V22_6_4_休養本島糧食安全庫存版", "V22_6_5_海外戰區堅守與撤離修正版", "V22_6_6_統一目標推進版", "V23_Hierarchical_Strategy", "V23_1_Geographic_Log_Links"):
+        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_逐年回報修正版", "V13_2_靜態航線與抵達日誌版", "V13_2_1_海外艦隊門檻與SARSA獎勵版", "V14_戰術學習與世界統一版", "V14_1_殖民與海外攻佔上限版", "V15_弱點攻防與休養生息版", "V17_大島優先與危急後撤版", "V17_1_本島統一與海外首都守則版", "V17_2_分裂小領土清空版", "V17_3_本土小飛地清空版", "V17_4_積極拓荒與勝者得地版", "V18_本島統一與首都存續版", "V18_逐階海外拓展與撤退版", "V19_逐階海外拓展與撤退版", "V19_地球地圖與海外撤退規則版", "V19_1_拓荒等級版", "V19_2_海外資格與危急後撤版", "V20_海外分帳與艦隊運輸版", "V20.2_自主戰略AI與海外戰術庫版", "V21_海外戰區長期學習版", "V21.1_海外殖民探索修正版", "V22_海外港口戰區策略版", "V22_1_拓荒與補給修正版", "V22_2_地方人口承載修正版", "V22_3_全島共用人口加成版", "V22_4_在地存糧人口承載版", "V22_5_海運顯示與登陸修正版", "V22_6_外島徵兵與戰區擴張版", "V22_6_2_出海人口承載版", "V22_6_4_休養本島糧食安全庫存版", "V22_6_5_海外戰區堅守與撤離修正版", "V22_6_6_統一目標推進版", "V23_Hierarchical_Strategy"):
             raise ValueError("不支援此版本的戰爭存檔")
         if int(payload.get("seed", -1)) != int(world.settings.seed):
             raise ValueError("戰爭存檔與目前世界Seed不一致")

@@ -1,0 +1,73 @@
+# V23 階層戰略承諾版
+
+## 結論與範圍
+
+已確認 V22_6_6 的 choose_plan_action 沒有接入實際決策，既有戰術庫主要記錄短期行動序列，沒有可跨年度保存的征島承諾。V23 新增 WORLD_UNIFICATION → 持續島嶼承諾 → Macro Goal 階段 → 現有 Expected SARSA(λ) 戰術行動。這次是核心狀態與行動結構改版，因此使用整數大版本 V23。
+
+本版完成架構接線與 500 年續跑驗證，尚未證明能統一世界，也未重跑多 Seed／10,000 年。保留人口、經濟、出生、徵兵、戰鬥、外交、建設、承載量、船艦、航行及補給規則；測試沒有使用 GUI、圖片或 sleep。
+
+## 戰略承諾與九種 Macro Goal
+
+每國保存 strategic_commitment：承諾編號、目標島、對手、開始年、最後進展年、控制率／兵力高水位、最少敵國數及狀態。macro_goal 保存 goal_type、target_country、target_landmass、started_year、last_progress_year、progress、success_condition、failure_condition、switch_reason，另附 commitment_id。
+
+九個階段：UNIFY_HOMELAND、PREPARE_OVERSEAS_EXPANSION、COLONIZE_LANDMASS、ESTABLISH_OVERSEAS_BASE、CONQUER_LANDMASS、REINFORCE_THEATRE、PACIFY_LANDMASS、DESTROY_RIVAL、PREPARE_NEXT_EXPEDITION。
+
+同一座島可以在征戰、增援、建港等階段轉換，這些轉換沿用同一份承諾，不會重抽島嶼。選定下一島須先達到至少 80% 控制率且沒有其他政權。DESTROY_RIVAL 階段處理目標政權在承諾島上的據點；對手離開該島不等同全球滅國，全球滅國另有獨立 credit。
+
+允許的中止：基地及當地領土完全失去、目標地理資料已無有效陸塊、連續 300 年沒有新控制率高點／增強兵力／新增基地或港口／減少當地敵國。本土致命危機則暫停海外承諾，保留原目標，危機解除後恢復。中止目標冷卻 100 年，避免每次決策立刻重選同一失敗目標。航行中不因一般停滯逾時中止；資源不足並不直接等同不可達，先整備。
+
+macro_history 記錄 COMMIT／PHASE／COMPLETE／ABORT／SUSPEND／RESUME 與原因，最多保存最近 500 筆。詳細年度決策與階段停留可由 headless_sanity.py 輸出。
+
+## Action 與 Target 分離
+
+12 維策略 state：本島控制、可用兵力比例、疲勞、活動戰役數、Macro 階段、目標島控制率、相對敵軍、基地／港口、糧食年數、運輸狀態、目標島敵國數、世界控制率；不包含 country_id 或 landmass_id。
+
+策略 Q 表學習 ATTACK_OVERSEAS、ATTACK_HOMELAND、REINFORCE_ACTIVE_THEATRE、SECURE_SUPPLY、COLONIZE、ATTACK_FRONT、CUT_OFF、ENCIRCLE_CAPITAL、EXPAND_BEACHHEAD、DEFEND_CAPITAL、DEFEND_PORT、WAIT_FOR_TRANSPORT、REST_AND_REPRODUCE。Target Selector 依已有基地、相對當地兵力、距離、島嶼面積／承載价值與補給成本選島；承諾存續期間只在該島選可攻擊對手。
+
+macro_action_bindings 把抽象行動映射至原引擎的具體執行指令。殖民出航、海上戰役與增援都在執行端再次限定目標島。國家資料分別保存 last_policy_action 與 last_ai_action，方便區分學習類型和實際指令。
+
+V22 動態 Q-floor／ATTACK_BIAS 選擇路徑已移除。Macro 階段用可執行任務集合表達前置需求：無港先建港、危急補給優先運輸，資源不足可休養。SARSA 在這個集合內學習，沒有提高進攻分數。低階戰鬥 Q 表中的 ATTACK:百分比仍是出兵比例，不是國家 ID。
+
+## 後勤與 Reward
+
+增援的可行性檢查與真正出航共用 _reinforcement_manifest：船艦、航線、航程糧食、當地人口空間、本土留守、可運兵數與居民數均按既有規則計算；檢查階段不扣資源。不能支付時不提供虛假的可執行增援行動，透過原有休養生產規則準備資源。
+
+macro_credit 以各島歷史高點／一次性里程碑支付：新控制率高點（整島最多 2 分）、首次基地 0.25、首次固定港口 0.25、首次有效補給抵達 0.15、首次平定 0.6；首次觀察到每個敵國消滅另給 0.5。原始已存在的控制、基地、港口在遷移時建立基準，不當作新成就。丟地重奪、拆港重建、反覆航行不會重領同一份里程碑。既有海運事件的重複正向即時加分停用，避免與里程碑重複支付；負向航線事件保留。獎勵經由 Expected SARSA(λ) 的資格跡線分配給近期行動；沒有新增獨立 Macro Q 表。
+
+領土損失、戰敗、疲勞與人口變化仍影響戰術回饋。此版沒有把宣戰次數、出航次數或切換 Macro 次數當作成就。
+
+## 存檔與 bug 修正
+
+載入 V22 存檔時保留世界與低階戰鬥 Q；舊 9 維策略 Q 歸檔至 legacy_q_values，新的 12 維策略 Q 從空表學習，不把語義不相容的舊數值硬套入新狀態。待結算的旧策略 state／eligibility 不遷入新表。V23 save 與 Q sidecar 一起保存，包含戰略承諾、里程碑帳本及亂數狀態。舊版不能讀取 V23 存檔，請保留原資料夾。
+
+_split_country 改用深拷貝；新政權不再與母國共用策略統計／action_visits 等可變字典，新國重建自己的承諾。既有已領取的里程碑帳本保留副本，避免分裂重新領取既有基地獎勵。
+
+## 實測與限制
+
+從本次 saves.rar 的第 8539 年連續跑至第 9039 年，500 年約 101.28 秒。沒有改動原始存檔。最终仍存活 4 國；這是架構 sanity test，並非統一成果宣告。
+
+- 4 個存活國皆建立持久目標。
+- 國家 2、7 在這 500 年持續承諾島 1，沒有重抽其他島。
+- 國家 10：島 34 用 25 年平定後選島 1；其後兩次基地被毀，承諾分別維持 156、158 年才中止，有明確 BASE_DESTROYED 紀錄。
+- 國家 15：承諾島 37 共 429 年，平定後才改選島 32。
+- 85 次增援發航、84 次抵達（抵達含起始存檔已在航的船隊，不能直接相除當 cohort 成功率）。有持續同島增援與攻勢。
+- 學習／執行：6 次 ATTACK_OVERSEAS、34 次同島進攻戰術、5 次 SECURE_SUPPLY、10 次 EXPAND_BEACHHEAD；策略執行失敗 0 次。
+- 策略 Q key 沒有目標 ID；人口與兵力非負、士兵不超過當地人口、糧食與艦隊不負。
+- 存檔／重載後再各跑 2 年，領土、人口、士兵、完整國家資料、引擎 RNG、所有大腦資料完全相同。
+- 6 項控制情境測試通過：目標承諾／平定換島、停滯中止、致命危機暫停、缺糧 manifest、防刷里程碑、九種 Goal 欄位與舊 Q 歸檔。測試情境不是偽裝成真實 500 年的結果。
+- 最後相容入口整理另跑 10 年 smoke test 及全部控制測試，通過。
+
+重要限制：第一次登陸仍須通過現有整島人口承載與海運限制，外島也尚未新增「由外島發動跨海遠征」的基地網。本版會篩選可行目標與保持承諾，並不以免費資源或取消物理限制保證統一。後續可沿用本版 telemetry 檢查實際完成率，另做更長與多 Seed 對照。
+
+## 使用
+
+解壓到新資料夾後執行 啟動遊戲.bat；saves 內是本次提供的原始存檔副本，首次載入會遷移 AI。此次交付未啟動該 GUI。
+
+無介面續跑：
+python headless_sanity.py --save saves --output validation_run --years 500
+
+控制測試（Windows PowerShell）：
+$env:V23_TEST_SAVE='saves'
+python test_hierarchical_strategy.py
+
+validation/sanity_report.json 是 500 年完整觀測，包含每次策略行動、承諾歷史與階段停留。validation/unit_test.log 與 smoke_final.log 是其他檢查結果。

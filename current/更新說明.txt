@@ -1,5 +1,0 @@
-V22_6_6 統一目標推進版
-
-備份舊程式與完整saves。解壓到新資料夾，將saves複製進來，再執行啟動遊戲.bat。
-詳細規則、300年對照、限制與回退方法見CHANGELOG.md。
-可調參數位於map_config.py末段：AI_OFFENSIVE_SAFETY_RATIO、AI_UNIFICATION_PROGRESS_BIAS、AI_IDLE_DEFENSE_PENALTY。

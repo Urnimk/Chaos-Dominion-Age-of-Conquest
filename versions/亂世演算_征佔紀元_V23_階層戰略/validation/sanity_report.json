@@ -1,0 +1,2102 @@
+{
+  "start_year": 8539,
+  "years": 500,
+  "seconds": 101.28408588299953,
+  "initial_alive": 4,
+  "actions": {
+    "REINFORCE_ACTIVE_THEATRE": 85,
+    "SECURE_SUPPLY": 5,
+    "CUT_OFF": 10,
+    "ENCIRCLE_CAPITAL": 12,
+    "REST_AND_REPRODUCE": 29,
+    "EXPAND_BEACHHEAD": 10,
+    "ATTACK_OVERSEAS": 6,
+    "DEFEND_CAPITAL": 4,
+    "DEFEND_PORT": 1,
+    "ATTACK_FRONT": 12,
+    "WAIT_FOR_TRANSPORT": 6
+  },
+  "executions": [
+    {
+      "id": 15,
+      "year": 8541,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8545,
+      "policy": "SECURE_SUPPLY",
+      "action": "BUILD_OVERSEAS_PORT:34",
+      "landmass": 34,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8546,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8548,
+      "policy": "CUT_OFF",
+      "action": "THEATRE:1:CUT_OFF",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8551,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8553,
+      "policy": "ENCIRCLE_CAPITAL",
+      "action": "THEATRE:1:ENCIRCLE_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8554,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8554,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 34,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8561,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8564,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8565,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8569,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8570,
+      "policy": "EXPAND_BEACHHEAD",
+      "action": "THEATRE:34:EXPAND_BEACHHEAD",
+      "landmass": 34,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8570,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8571,
+      "policy": "ENCIRCLE_CAPITAL",
+      "action": "THEATRE:1:ENCIRCLE_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8578,
+      "policy": "ATTACK_OVERSEAS",
+      "action": "ATTACK:7:naval",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8579,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8580,
+      "policy": "DEFEND_CAPITAL",
+      "action": "THEATRE:1:DEFEND_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8582,
+      "policy": "DEFEND_PORT",
+      "action": "THEATRE:1:DEFEND_PORT",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8582,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8583,
+      "policy": "DEFEND_CAPITAL",
+      "action": "THEATRE:1:DEFEND_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8588,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8588,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8589,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8592,
+      "policy": "SECURE_SUPPLY",
+      "action": "BUILD_OVERSEAS_PORT:1",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8593,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8600,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8604,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8606,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8608,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8610,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8617,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8622,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8624,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8624,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8628,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8629,
+      "policy": "ATTACK_FRONT",
+      "action": "THEATRE:1:ATTACK_FRONT",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8630,
+      "policy": "WAIT_FOR_TRANSPORT",
+      "action": "THEATRE:1:WAIT_REINFORCEMENTS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8630,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8634,
+      "policy": "ENCIRCLE_CAPITAL",
+      "action": "THEATRE:1:ENCIRCLE_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8636,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8642,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8643,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8643,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8654,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8659,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8660,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8660,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8662,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8664,
+      "policy": "WAIT_FOR_TRANSPORT",
+      "action": "THEATRE:1:WAIT_REINFORCEMENTS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8669,
+      "policy": "ATTACK_FRONT",
+      "action": "THEATRE:1:ATTACK_FRONT",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8673,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8675,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8677,
+      "policy": "ENCIRCLE_CAPITAL",
+      "action": "THEATRE:1:ENCIRCLE_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8678,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8682,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8686,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8689,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8689,
+      "policy": "CUT_OFF",
+      "action": "THEATRE:1:CUT_OFF",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8693,
+      "policy": "ATTACK_FRONT",
+      "action": "THEATRE:1:ATTACK_FRONT",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8699,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8702,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8705,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8707,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8717,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8719,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8723,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8723,
+      "policy": "ENCIRCLE_CAPITAL",
+      "action": "THEATRE:1:ENCIRCLE_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8725,
+      "policy": "EXPAND_BEACHHEAD",
+      "action": "THEATRE:1:EXPAND_BEACHHEAD",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8726,
+      "policy": "ATTACK_FRONT",
+      "action": "THEATRE:1:ATTACK_FRONT",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8732,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8733,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8734,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8735,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8744,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8747,
+      "policy": "ENCIRCLE_CAPITAL",
+      "action": "THEATRE:1:ENCIRCLE_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8750,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8752,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8753,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8753,
+      "policy": "ATTACK_OVERSEAS",
+      "action": "ATTACK:15:naval",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8757,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8762,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8767,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8771,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8771,
+      "policy": "SECURE_SUPPLY",
+      "action": "BUILD_OVERSEAS_PORT:37",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8772,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8775,
+      "policy": "ATTACK_FRONT",
+      "action": "THEATRE:1:ATTACK_FRONT",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8777,
+      "policy": "ATTACK_FRONT",
+      "action": "THEATRE:1:ATTACK_FRONT",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8778,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8781,
+      "policy": "EXPAND_BEACHHEAD",
+      "action": "THEATRE:37:EXPAND_BEACHHEAD",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8783,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8783,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8785,
+      "policy": "ENCIRCLE_CAPITAL",
+      "action": "THEATRE:37:ENCIRCLE_CAPITAL",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8786,
+      "policy": "CUT_OFF",
+      "action": "THEATRE:37:CUT_OFF",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8787,
+      "policy": "WAIT_FOR_TRANSPORT",
+      "action": "THEATRE:1:WAIT_REINFORCEMENTS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8796,
+      "policy": "ATTACK_FRONT",
+      "action": "THEATRE:1:ATTACK_FRONT",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8800,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8801,
+      "policy": "ENCIRCLE_CAPITAL",
+      "action": "THEATRE:37:ENCIRCLE_CAPITAL",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8803,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8807,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8816,
+      "policy": "ATTACK_FRONT",
+      "action": "THEATRE:1:ATTACK_FRONT",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8817,
+      "policy": "ATTACK_FRONT",
+      "action": "THEATRE:37:ATTACK_FRONT",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8818,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8818,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8818,
+      "policy": "CUT_OFF",
+      "action": "THEATRE:37:CUT_OFF",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8825,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8828,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8829,
+      "policy": "WAIT_FOR_TRANSPORT",
+      "action": "THEATRE:37:WAIT_REINFORCEMENTS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8835,
+      "policy": "CUT_OFF",
+      "action": "THEATRE:1:CUT_OFF",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8835,
+      "policy": "EXPAND_BEACHHEAD",
+      "action": "THEATRE:37:EXPAND_BEACHHEAD",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8838,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8843,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8844,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8845,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8855,
+      "policy": "EXPAND_BEACHHEAD",
+      "action": "THEATRE:37:EXPAND_BEACHHEAD",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8857,
+      "policy": "ENCIRCLE_CAPITAL",
+      "action": "THEATRE:1:ENCIRCLE_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8858,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8863,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8866,
+      "policy": "ENCIRCLE_CAPITAL",
+      "action": "THEATRE:1:ENCIRCLE_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8867,
+      "policy": "CUT_OFF",
+      "action": "THEATRE:1:CUT_OFF",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8874,
+      "policy": "EXPAND_BEACHHEAD",
+      "action": "THEATRE:37:EXPAND_BEACHHEAD",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8878,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8880,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8880,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8882,
+      "policy": "ATTACK_FRONT",
+      "action": "THEATRE:37:ATTACK_FRONT",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8883,
+      "policy": "ENCIRCLE_CAPITAL",
+      "action": "THEATRE:1:ENCIRCLE_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8894,
+      "policy": "CUT_OFF",
+      "action": "THEATRE:37:CUT_OFF",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8895,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8897,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8901,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8905,
+      "policy": "CUT_OFF",
+      "action": "THEATRE:37:CUT_OFF",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8907,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8907,
+      "policy": "ENCIRCLE_CAPITAL",
+      "action": "THEATRE:1:ENCIRCLE_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8911,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8913,
+      "policy": "EXPAND_BEACHHEAD",
+      "action": "THEATRE:37:EXPAND_BEACHHEAD",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8918,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8921,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8922,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8925,
+      "policy": "ATTACK_OVERSEAS",
+      "action": "ATTACK:7:naval",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8931,
+      "policy": "CUT_OFF",
+      "action": "THEATRE:1:CUT_OFF",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8931,
+      "policy": "EXPAND_BEACHHEAD",
+      "action": "THEATRE:37:EXPAND_BEACHHEAD",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8932,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8940,
+      "policy": "EXPAND_BEACHHEAD",
+      "action": "THEATRE:37:EXPAND_BEACHHEAD",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8941,
+      "policy": "ATTACK_OVERSEAS",
+      "action": "ATTACK:7:naval",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8942,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8948,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8949,
+      "policy": "ATTACK_FRONT",
+      "action": "THEATRE:1:ATTACK_FRONT",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8949,
+      "policy": "DEFEND_CAPITAL",
+      "action": "THEATRE:1:DEFEND_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8952,
+      "policy": "EXPAND_BEACHHEAD",
+      "action": "THEATRE:37:EXPAND_BEACHHEAD",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8957,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8958,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8958,
+      "policy": "ATTACK_OVERSEAS",
+      "action": "ATTACK:7:naval",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8959,
+      "policy": "DEFEND_CAPITAL",
+      "action": "THEATRE:1:DEFEND_CAPITAL",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8962,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8970,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 37,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8972,
+      "policy": "SECURE_SUPPLY",
+      "action": "BUILD_OVERSEAS_PORT:1",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8973,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8976,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8977,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8978,
+      "policy": "WAIT_FOR_TRANSPORT",
+      "action": "THEATRE:1:WAIT_REINFORCEMENTS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 8985,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8988,
+      "policy": "ATTACK_OVERSEAS",
+      "action": "ATTACK:10:naval",
+      "landmass": 32,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 8989,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8993,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 8995,
+      "policy": "WAIT_FOR_TRANSPORT",
+      "action": "THEATRE:1:WAIT_REINFORCEMENTS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 8995,
+      "policy": "SECURE_SUPPLY",
+      "action": "BUILD_OVERSEAS_PORT:32",
+      "landmass": 32,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 9000,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 9001,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 9006,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 32,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 9007,
+      "policy": "CUT_OFF",
+      "action": "THEATRE:32:CUT_OFF",
+      "landmass": 32,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 9008,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 32,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 9010,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 9011,
+      "policy": "ATTACK_FRONT",
+      "action": "THEATRE:1:ATTACK_FRONT",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 9014,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 9016,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 15,
+      "year": 9025,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 32,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 9029,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 2,
+      "year": 9030,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 7,
+      "year": 9032,
+      "policy": "REST_AND_REPRODUCE",
+      "action": "REST_AND_REPRODUCE",
+      "landmass": 1,
+      "success": true
+    },
+    {
+      "id": 10,
+      "year": 9032,
+      "policy": "REINFORCE_ACTIVE_THEATRE",
+      "action": "REINFORCE_OVERSEAS",
+      "landmass": 1,
+      "success": true
+    }
+  ],
+  "phase_years": {
+    "2:PENDING": 6,
+    "7:PENDING": 8,
+    "10:PENDING": 5,
+    "15:PENDING": 1,
+    "15:PACIFY_LANDMASS": 278,
+    "10:ESTABLISH_OVERSEAS_BASE": 108,
+    "2:REINFORCE_THEATRE": 494,
+    "7:DESTROY_RIVAL": 188,
+    "7:REINFORCE_THEATRE": 292,
+    "10:PACIFY_LANDMASS": 16,
+    "10:PREPARE_NEXT_EXPEDITION": 41,
+    "10:REINFORCE_THEATRE": 330,
+    "7:CONQUER_LANDMASS": 12,
+    "15:REINFORCE_THEATRE": 53,
+    "15:DESTROY_RIVAL": 132,
+    "15:PREPARE_NEXT_EXPEDITION": 18,
+    "15:ESTABLISH_OVERSEAS_BASE": 18
+  },
+  "original_unchanged": true,
+  "reload_plus_2_years_equivalent": true,
+  "target_free_q_keys": true,
+  "countries": [
+    {
+      "id": 2,
+      "name": "光纖追蹤",
+      "alive": true,
+      "goal": {
+        "goal_type": "REINFORCE_THEATRE",
+        "target_country": 7,
+        "target_landmass": 1,
+        "started_year": 8546,
+        "last_progress_year": 8918,
+        "progress": {
+          "cells": 4354,
+          "control": 0.10369629417928931,
+          "army": 9015,
+          "rivals": [
+            7,
+            10
+          ],
+          "base": true,
+          "port": true,
+          "pacified": false
+        },
+        "success_condition": {
+          "local_force_gap_below_minimum": true,
+          "supply_deficit": 0
+        },
+        "failure_condition": [
+          "BASE_DESTROYED",
+          "HOME_FATAL_THREAT",
+          "TARGET_UNREACHABLE",
+          "LONG_NO_PROGRESS"
+        ],
+        "switch_reason": "PHASE_PROGRESS",
+        "commitment_id": 1
+      },
+      "commitment": {
+        "id": 1,
+        "target_landmass": 1,
+        "target_country": 7,
+        "kind": "CONQUER",
+        "started_year": 8546,
+        "last_progress_year": 8918,
+        "best_control": 0.11446127464989997,
+        "best_army": 10268,
+        "fewest_rivals": 1,
+        "had_base": true,
+        "had_port": true,
+        "status": "ACTIVE"
+      },
+      "history": [
+        {
+          "year": 8546,
+          "event": "COMMIT",
+          "commitment": 1,
+          "landmass": 1,
+          "kind": "CONQUER",
+          "target": 7
+        },
+        {
+          "year": 8546,
+          "event": "PHASE",
+          "goal": "REINFORCE_THEATRE",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        }
+      ],
+      "counters": {
+        "births": 20123,
+        "local_recruits": 26311,
+        "successful_decisions": 43,
+        "conquest_capitals_established": 0,
+        "overseas_local_recruits": 1638,
+        "tactic_CUT_OFF": 0,
+        "isolated_casualties": 453,
+        "ports_built": 0,
+        "reinforcements_launched": 27,
+        "reinforcements_arrived": 27,
+        "troop_reinforcements_arrived": 20,
+        "tactic_ATTACK_FRONT": 5,
+        "tactic_DEFEND_PORT": 0,
+        "tactic_ENCIRCLE_CAPITAL": 1,
+        "tactic_DEFEND_CAPITAL": 0,
+        "tactic_BUILD_SECOND_PORT": 0,
+        "tactic_REQUEST_REINFORCEMENTS": 0,
+        "failed_decisions": 0,
+        "tactic_WAIT_REINFORCEMENTS": 1,
+        "macro_commit": 1,
+        "macro_phase": 1,
+        "supply_only_arrivals": 7
+      }
+    },
+    {
+      "id": 7,
+      "name": "薪水小偷",
+      "alive": true,
+      "goal": {
+        "goal_type": "REINFORCE_THEATRE",
+        "target_country": 2,
+        "target_landmass": 1,
+        "started_year": 8958,
+        "last_progress_year": 8777,
+        "progress": {
+          "cells": 37234,
+          "control": 0.8867771744307897,
+          "army": 7125,
+          "rivals": [
+            2,
+            10
+          ],
+          "base": true,
+          "port": true,
+          "pacified": false
+        },
+        "success_condition": {
+          "local_force_gap_below_minimum": true,
+          "supply_deficit": 0
+        },
+        "failure_condition": [
+          "BASE_DESTROYED",
+          "HOME_FATAL_THREAT",
+          "TARGET_UNREACHABLE",
+          "LONG_NO_PROGRESS"
+        ],
+        "switch_reason": "PHASE_PROGRESS",
+        "commitment_id": 1
+      },
+      "commitment": {
+        "id": 1,
+        "target_landmass": 1,
+        "target_country": 2,
+        "kind": "CONQUER",
+        "started_year": 8548,
+        "last_progress_year": 8777,
+        "best_control": 0.9104267886062685,
+        "best_army": 11204,
+        "fewest_rivals": 1,
+        "had_base": true,
+        "had_port": true,
+        "status": "ACTIVE"
+      },
+      "history": [
+        {
+          "year": 8548,
+          "event": "COMMIT",
+          "commitment": 1,
+          "landmass": 1,
+          "kind": "CONQUER",
+          "target": 2
+        },
+        {
+          "year": 8548,
+          "event": "PHASE",
+          "goal": "DESTROY_RIVAL",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8553,
+          "event": "PHASE",
+          "goal": "REINFORCE_THEATRE",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8571,
+          "event": "PHASE",
+          "goal": "DESTROY_RIVAL",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8580,
+          "event": "PHASE",
+          "goal": "REINFORCE_THEATRE",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8610,
+          "event": "PHASE",
+          "goal": "CONQUER_LANDMASS",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8622,
+          "event": "PHASE",
+          "goal": "REINFORCE_THEATRE",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8767,
+          "event": "PHASE",
+          "goal": "DESTROY_RIVAL",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8818,
+          "event": "PHASE",
+          "goal": "REINFORCE_THEATRE",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8835,
+          "event": "PHASE",
+          "goal": "DESTROY_RIVAL",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8958,
+          "event": "PHASE",
+          "goal": "REINFORCE_THEATRE",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        }
+      ],
+      "counters": {
+        "births": 29699,
+        "local_recruits": 35384,
+        "successful_decisions": 47,
+        "overseas_local_recruits": 7865,
+        "tactic_EXPAND_BEACHHEAD": 1,
+        "theatre_expansion_cells": 18,
+        "isolated_casualties": 0,
+        "ports_built": 0,
+        "conquest_capitals_established": 0,
+        "tactic_ATTACK_FRONT": 4,
+        "tactic_CUT_OFF": 5,
+        "tactic_ENCIRCLE_CAPITAL": 8,
+        "reinforcements_launched": 13,
+        "reinforcements_arrived": 14,
+        "troop_reinforcements_arrived": 14,
+        "tactic_BUILD_SECOND_PORT": 0,
+        "tactic_REQUEST_REINFORCEMENTS": 0,
+        "failed_decisions": 0,
+        "tactic_DEFEND_PORT": 1,
+        "tactic_WAIT_REINFORCEMENTS": 0,
+        "tactic_DEFEND_CAPITAL": 4,
+        "macro_commit": 1,
+        "macro_phase": 10
+      }
+    },
+    {
+      "id": 10,
+      "name": "南虛擬幻影",
+      "alive": true,
+      "goal": {
+        "goal_type": "REINFORCE_THEATRE",
+        "target_country": 2,
+        "target_landmass": 1,
+        "started_year": 8977,
+        "last_progress_year": 9014,
+        "progress": {
+          "cells": 400,
+          "control": 0.00952653138992093,
+          "army": 2951,
+          "rivals": [
+            2,
+            7
+          ],
+          "base": true,
+          "port": true,
+          "pacified": false
+        },
+        "success_condition": {
+          "local_force_gap_below_minimum": true,
+          "supply_deficit": 0
+        },
+        "failure_condition": [
+          "BASE_DESTROYED",
+          "HOME_FATAL_THREAT",
+          "TARGET_UNREACHABLE",
+          "LONG_NO_PROGRESS"
+        ],
+        "switch_reason": "PHASE_PROGRESS",
+        "commitment_id": 4
+      },
+      "commitment": {
+        "id": 4,
+        "target_landmass": 1,
+        "target_country": 2,
+        "kind": "CONQUER",
+        "started_year": 8925,
+        "last_progress_year": 9014,
+        "best_control": 0.00952653138992093,
+        "best_army": 2951,
+        "fewest_rivals": 2,
+        "had_base": true,
+        "had_port": true,
+        "status": "ACTIVE"
+      },
+      "history": [
+        {
+          "year": 8545,
+          "event": "COMMIT",
+          "commitment": 1,
+          "landmass": 34,
+          "kind": "CONQUER",
+          "target": null
+        },
+        {
+          "year": 8545,
+          "event": "PHASE",
+          "goal": "ESTABLISH_OVERSEAS_BASE",
+          "landmass": 34,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8554,
+          "event": "PHASE",
+          "goal": "PACIFY_LANDMASS",
+          "landmass": 34,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8570,
+          "event": "COMPLETE",
+          "commitment": 1,
+          "landmass": 34,
+          "reason": "PACIFIED",
+          "duration": 25
+        },
+        {
+          "year": 8570,
+          "event": "PHASE",
+          "goal": "PREPARE_NEXT_EXPEDITION",
+          "landmass": 34,
+          "reason": "PACIFIED"
+        },
+        {
+          "year": 8578,
+          "event": "COMMIT",
+          "commitment": 2,
+          "landmass": 1,
+          "kind": "CONQUER",
+          "target": 7
+        },
+        {
+          "year": 8578,
+          "event": "PHASE",
+          "goal": "ESTABLISH_OVERSEAS_BASE",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8606,
+          "event": "PHASE",
+          "goal": "REINFORCE_THEATRE",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8734,
+          "event": "ABORT",
+          "commitment": 2,
+          "landmass": 1,
+          "reason": "BASE_DESTROYED",
+          "duration": 156
+        },
+        {
+          "year": 8734,
+          "event": "PHASE",
+          "goal": "PREPARE_NEXT_EXPEDITION",
+          "landmass": 1,
+          "reason": "BASE_DESTROYED"
+        },
+        {
+          "year": 8753,
+          "event": "COMMIT",
+          "commitment": 3,
+          "landmass": 37,
+          "kind": "CONQUER",
+          "target": 15
+        },
+        {
+          "year": 8753,
+          "event": "PHASE",
+          "goal": "ESTABLISH_OVERSEAS_BASE",
+          "landmass": 37,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8772,
+          "event": "PHASE",
+          "goal": "REINFORCE_THEATRE",
+          "landmass": 37,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8911,
+          "event": "ABORT",
+          "commitment": 3,
+          "landmass": 37,
+          "reason": "BASE_DESTROYED",
+          "duration": 158
+        },
+        {
+          "year": 8911,
+          "event": "PHASE",
+          "goal": "PREPARE_NEXT_EXPEDITION",
+          "landmass": 37,
+          "reason": "BASE_DESTROYED"
+        },
+        {
+          "year": 8925,
+          "event": "COMMIT",
+          "commitment": 4,
+          "landmass": 1,
+          "kind": "CONQUER",
+          "target": 2
+        },
+        {
+          "year": 8925,
+          "event": "PHASE",
+          "goal": "ESTABLISH_OVERSEAS_BASE",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8977,
+          "event": "PHASE",
+          "goal": "REINFORCE_THEATRE",
+          "landmass": 1,
+          "reason": "PHASE_PROGRESS"
+        }
+      ],
+      "counters": {
+        "births": 11641,
+        "local_recruits": 11975,
+        "successful_decisions": 48,
+        "failed_decisions": 0,
+        "conquest_capitals_established": 3,
+        "overseas_local_recruits": 381,
+        "tactic_ENCIRCLE_CAPITAL": 2,
+        "isolated_casualties": 889,
+        "tactic_CUT_OFF": 0,
+        "tactic_ATTACK_FRONT": 2,
+        "ports_built": 4,
+        "tactic_REQUEST_REINFORCEMENTS": 0,
+        "reinforcements_launched": 22,
+        "reinforcements_arrived": 20,
+        "troop_reinforcements_arrived": 12,
+        "tactic_DEFEND_CAPITAL": 0,
+        "tactic_DEFEND_PORT": 0,
+        "tactic_BUILD_SECOND_PORT": 0,
+        "tactic_RETREAT": 0,
+        "evacuations": 0,
+        "reinforcements_returned": 1,
+        "supply_only_arrivals": 8,
+        "tactic_EXPAND_BEACHHEAD": 1,
+        "theatre_expansion_cells": 16,
+        "tactic_WAIT_REINFORCEMENTS": 5,
+        "macro_commit": 4,
+        "macro_phase": 11,
+        "macro_complete": 1,
+        "route_interruptions": 1,
+        "macro_abort": 2
+      }
+    },
+    {
+      "id": 15,
+      "name": "東幽冥狂瀾",
+      "alive": true,
+      "goal": {
+        "goal_type": "REINFORCE_THEATRE",
+        "target_country": 10,
+        "target_landmass": 32,
+        "started_year": 9006,
+        "last_progress_year": 9006,
+        "progress": {
+          "cells": 345,
+          "control": 0.0075852516324780685,
+          "army": 2462,
+          "rivals": [
+            10
+          ],
+          "base": true,
+          "port": true,
+          "pacified": false
+        },
+        "success_condition": {
+          "local_force_gap_below_minimum": true,
+          "supply_deficit": 0
+        },
+        "failure_condition": [
+          "BASE_DESTROYED",
+          "HOME_FATAL_THREAT",
+          "TARGET_UNREACHABLE",
+          "LONG_NO_PROGRESS"
+        ],
+        "switch_reason": "PHASE_PROGRESS",
+        "commitment_id": 2
+      },
+      "commitment": {
+        "id": 2,
+        "target_landmass": 32,
+        "target_country": 10,
+        "kind": "CONQUER",
+        "started_year": 8988,
+        "last_progress_year": 9006,
+        "best_control": 0.008794494646351384,
+        "best_army": 3212,
+        "fewest_rivals": 1,
+        "had_base": true,
+        "had_port": true,
+        "status": "ACTIVE"
+      },
+      "history": [
+        {
+          "year": 8541,
+          "event": "COMMIT",
+          "commitment": 1,
+          "landmass": 37,
+          "kind": "CONQUER",
+          "target": null
+        },
+        {
+          "year": 8541,
+          "event": "PHASE",
+          "goal": "PACIFY_LANDMASS",
+          "landmass": 37,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8762,
+          "event": "PHASE",
+          "goal": "REINFORCE_THEATRE",
+          "landmass": 37,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8781,
+          "event": "PHASE",
+          "goal": "DESTROY_RIVAL",
+          "landmass": 37,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8913,
+          "event": "PHASE",
+          "goal": "PACIFY_LANDMASS",
+          "landmass": 37,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 8970,
+          "event": "COMPLETE",
+          "commitment": 1,
+          "landmass": 37,
+          "reason": "PACIFIED",
+          "duration": 429
+        },
+        {
+          "year": 8970,
+          "event": "PHASE",
+          "goal": "PREPARE_NEXT_EXPEDITION",
+          "landmass": 37,
+          "reason": "PACIFIED"
+        },
+        {
+          "year": 8988,
+          "event": "COMMIT",
+          "commitment": 2,
+          "landmass": 32,
+          "kind": "CONQUER",
+          "target": 10
+        },
+        {
+          "year": 8988,
+          "event": "PHASE",
+          "goal": "ESTABLISH_OVERSEAS_BASE",
+          "landmass": 32,
+          "reason": "PHASE_PROGRESS"
+        },
+        {
+          "year": 9006,
+          "event": "PHASE",
+          "goal": "REINFORCE_THEATRE",
+          "landmass": 32,
+          "reason": "PHASE_PROGRESS"
+        }
+      ],
+      "counters": {
+        "births": 13679,
+        "local_recruits": 5269,
+        "successful_decisions": 42,
+        "failed_decisions": 0,
+        "overseas_local_recruits": 2121,
+        "tactic_EXPAND_BEACHHEAD": 8,
+        "theatre_expansion_cells": 255,
+        "isolated_casualties": 534,
+        "ports_built": 1,
+        "conquest_capitals_established": 1,
+        "reinforcements_launched": 23,
+        "reinforcements_arrived": 23,
+        "troop_reinforcements_arrived": 0,
+        "tactic_CUT_OFF": 5,
+        "tactic_ATTACK_FRONT": 1,
+        "tactic_WAIT_REINFORCEMENTS": 0,
+        "tactic_ENCIRCLE_CAPITAL": 1,
+        "tactic_DEFEND_PORT": 0,
+        "tactic_BUILD_SECOND_PORT": 0,
+        "tactic_DEFEND_CAPITAL": 0,
+        "route_interruptions": 0,
+        "reinforcements_returned": 0,
+        "tactic_REQUEST_REINFORCEMENTS": 0,
+        "settler_demobilizations": 0,
+        "supply_only_arrivals": 23,
+        "macro_commit": 2,
+        "macro_phase": 7,
+        "macro_complete": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,628 @@
+{
+  "game": "亂世演算_征佔紀元",
+  "version": "V19_地球地圖與海外撤退規則版",
+  "width": 1200,
+  "height": 1200,
+  "seed": 835113634,
+  "world_style": "ARCHIPELAGO",
+  "target_ocean_ratio": 0.7,
+  "actual_ocean_ratio": 0.78048,
+  "sea_level": 0.456105,
+  "landmass_count": 42,
+  "largest_landmasses": [
+    87870,
+    53592,
+    45483,
+    41988,
+    20034,
+    14214,
+    9661,
+    8783,
+    7785,
+    6626,
+    3116,
+    2552
+  ],
+  "generation_seconds": 7.257,
+  "average_land_temperature_c": 9.706,
+  "average_land_humidity": 0.6488,
+  "average_land_rainfall_mm": 1141.11,
+  "lake_cells": 527,
+  "river_cells": 1013,
+  "average_agriculture": 23.31,
+  "average_timber": 52.06,
+  "average_minerals": 32.69,
+  "average_freshwater": 23.27,
+  "average_city_value": 33.05,
+  "average_defense_value": 49.82,
+  "average_movement_cost": 8.54,
+  "country_count": 25,
+  "claimed_land_ratio": 0.94969,
+  "capital_count": 14,
+  "city_count": 84,
+  "port_count": 34,
+  "road_cells": 0,
+  "sea_route_cells": 0,
+  "countries": [
+    {
+      "id": 1,
+      "name": "新挫蛋先鋒",
+      "color": [
+        229,
+        152,
+        96
+      ],
+      "capital": [
+        371,
+        574
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 2,
+      "name": "光纖追蹤",
+      "color": [
+        101,
+        82,
+        229
+      ],
+      "capital": [
+        255,
+        539
+      ],
+      "cities": [],
+      "ports": [
+        [
+          246,
+          447
+        ],
+        [
+          156,
+          448
+        ],
+        [
+          591,
+          737
+        ],
+        [
+          552,
+          317
+        ],
+        [
+          545,
+          306
+        ],
+        [
+          481,
+          1
+        ],
+        [
+          469,
+          1
+        ]
+      ],
+      "territory_cells": 149
+    },
+    {
+      "id": 3,
+      "name": "極限方塊",
+      "color": [
+        95,
+        229,
+        68
+      ],
+      "capital": [
+        251,
+        671
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 4,
+      "name": "火鍋戰隊",
+      "color": [
+        229,
+        96,
+        157
+      ],
+      "capital": [
+        388,
+        736
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 5,
+      "name": "霹靂暗雷",
+      "color": [
+        82,
+        192,
+        229
+      ],
+      "capital": [
+        683,
+        745
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 6,
+      "name": "珍珠奶茶",
+      "color": [
+        229,
+        223,
+        68
+      ],
+      "capital": [
+        608,
+        682
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 7,
+      "name": "薪水小偷",
+      "color": [
+        185,
+        96,
+        229
+      ],
+      "capital": [
+        804,
+        667
+      ],
+      "cities": [],
+      "ports": [
+        [
+          820,
+          771
+        ],
+        [
+          666,
+          734
+        ],
+        [
+          32,
+          489
+        ],
+        [
+          479,
+          245
+        ],
+        [
+          486,
+          255
+        ]
+      ],
+      "territory_cells": 149
+    },
+    {
+      "id": 8,
+      "name": "紅石科技",
+      "color": [
+        82,
+        229,
+        138
+      ],
+      "capital": [
+        1026,
+        821
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 140
+    },
+    {
+      "id": 9,
+      "name": "西代碼漏洞",
+      "color": [
+        229,
+        82,
+        68
+      ],
+      "capital": [
+        935,
+        954
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 10,
+      "name": "南虛擬幻影",
+      "color": [
+        96,
+        123,
+        229
+      ],
+      "capital": [
+        1142,
+        1014
+      ],
+      "cities": [],
+      "ports": [
+        [
+          1023,
+          817
+        ],
+        [
+          1021,
+          819
+        ],
+        [
+          671,
+          323
+        ],
+        [
+          675,
+          335
+        ],
+        [
+          625,
+          362
+        ],
+        [
+          615,
+          369
+        ],
+        [
+          1198,
+          514
+        ],
+        [
+          351,
+          320
+        ],
+        [
+          310,
+          707
+        ],
+        [
+          320,
+          714
+        ],
+        [
+          830,
+          539
+        ],
+        [
+          579,
+          793
+        ],
+        [
+          588,
+          801
+        ],
+        [
+          234,
+          939
+        ],
+        [
+          1198,
+          692
+        ]
+      ],
+      "territory_cells": 149
+    },
+    {
+      "id": 11,
+      "name": "新冥府使者",
+      "color": [
+        155,
+        229,
+        82
+      ],
+      "capital": [
+        585,
+        159
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 12,
+      "name": "東不死鳳凰",
+      "color": [
+        229,
+        68,
+        195
+      ],
+      "capital": [
+        519,
+        28
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 13,
+      "name": "西黑客帝國",
+      "color": [
+        96,
+        229,
+        218
+      ],
+      "capital": [
+        525,
+        151
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 14,
+      "name": "西合金重裝",
+      "color": [
+        229,
+        174,
+        82
+      ],
+      "capital": [
+        69,
+        825
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 15,
+      "name": "東幽冥狂瀾",
+      "color": [
+        122,
+        68,
+        229
+      ],
+      "capital": [
+        242,
+        848
+      ],
+      "cities": [],
+      "ports": [
+        [
+          1,
+          766
+        ],
+        [
+          1,
+          767
+        ],
+        [
+          1194,
+          782
+        ],
+        [
+          1096,
+          984
+        ],
+        [
+          32,
+          717
+        ],
+        [
+          1100,
+          996
+        ],
+        [
+          1059,
+          266
+        ],
+        [
+          792,
+          312
+        ],
+        [
+          1149,
+          1019
+        ],
+        [
+          580,
+          835
+        ],
+        [
+          591,
+          829
+        ],
+        [
+          1044,
+          970
+        ],
+        [
+          1054,
+          963
+        ],
+        [
+          1034,
+          978
+        ],
+        [
+          454,
+          493
+        ],
+        [
+          1,
+          974
+        ]
+      ],
+      "territory_cells": 149
+    },
+    {
+      "id": 16,
+      "name": "北賽博浪人",
+      "color": [
+        96,
+        229,
+        102
+      ],
+      "capital": [
+        1,
+        766
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 44
+    },
+    {
+      "id": 17,
+      "name": "南賽博浪人",
+      "color": [
+        177,
+        170,
+        79
+      ],
+      "capital": [
+        32,
+        817
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 738
+    },
+    {
+      "id": 18,
+      "name": "北代碼漏洞",
+      "color": [
+        134,
+        199,
+        221
+      ],
+      "capital": [
+        1019,
+        823
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 3168
+    },
+    {
+      "id": 19,
+      "name": "上代碼漏洞",
+      "color": [
+        134,
+        199,
+        221
+      ],
+      "capital": [
+        910,
+        1013
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 2954
+    },
+    {
+      "id": 20,
+      "name": "東合金重裝",
+      "color": [
+        134,
+        115,
+        59
+      ],
+      "capital": [
+        112,
+        875
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 725
+    },
+    {
+      "id": 21,
+      "name": "東代碼漏洞",
+      "color": [
+        134,
+        199,
+        221
+      ],
+      "capital": [
+        1014,
+        923
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 1601
+    },
+    {
+      "id": 22,
+      "name": "南挫蛋先鋒",
+      "color": [
+        134,
+        93,
+        73
+      ],
+      "capital": [
+        335,
+        614
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 2012
+    },
+    {
+      "id": 23,
+      "name": "後冥府使者",
+      "color": [
+        60,
+        170,
+        59
+      ],
+      "capital": [
+        602,
+        352
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 5076
+    },
+    {
+      "id": 24,
+      "name": "上冥府使者",
+      "color": [
+        141,
+        111,
+        212
+      ],
+      "capital": [
+        554,
+        271
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 1071
+    },
+    {
+      "id": 25,
+      "name": "西不死鳳凰",
+      "color": [
+        134,
+        185,
+        172
+      ],
+      "capital": [
+        459,
+        25
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 1172
+    }
+  ],
+  "files": {
+    "data": "world_map.npz",
+    "preview": "world_map_preview.png"
+  }
+}

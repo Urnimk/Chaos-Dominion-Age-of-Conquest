@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 import random
 import math
 import threading
@@ -114,7 +113,7 @@ STYLE_CODES = {v: k for k, v in STYLE_LABELS.items()}
 class MapViewer:
     def __init__(self, root):
         self.root = root
-        self.root.title("亂世演算_征佔紀元 V23_1｜地名連結版")
+        self.root.title("亂世演算_征佔紀元 V23｜階層戰略承諾版")
         self.root.geometry(WINDOW_SIZE)
         self.root.configure(bg="#161616")
         self.world = self.war = self.full_image = self.tk_image = None
@@ -850,7 +849,7 @@ class MapViewer:
             line_text = widget.get(f"{line_no}.0", f"{line_no}.end")
         except Exception:
             return None
-        include_places = any(widget is getattr(self, name, None) for name in ("history_log", "country_log", "battle_log"))
+        include_places = widget is getattr(self, "history_log", None)
         for alias, entity_type, entity_id in self._entity_aliases(include_places=include_places):
             if alias not in line_text:
                 continue
@@ -891,7 +890,7 @@ class MapViewer:
             widget.tag_remove("alliance_link", "1.0", tk.END)
             widget.tag_remove("place_link", "1.0", tk.END)
             content = widget.get("1.0", tk.END)
-            include_places = any(widget is getattr(self, name, None) for name in ("history_log", "country_log", "battle_log"))
+            include_places = widget is getattr(self, "history_log", None)
             for alias, kind, _entity_id in self._entity_aliases(include_places=include_places):
                 if alias not in content:
                     continue
@@ -907,10 +906,6 @@ class MapViewer:
             pass
 
     def _set_text(self, widget, value, see_end=True):
-        # Old save logs retain their original data; translate island IDs for display.
-        if self.war and any(widget is getattr(self,name,None) for name in ('history_log','country_log','battle_log')):
-            country=self.war.country(self.selected_country_id) if widget is getattr(self,'country_log',None) and self.selected_country_id else None
-            value=re.sub(r'島(\d+)',lambda match:self.war.landmass_place_name(int(match.group(1)),country),value)
         widget.configure(state="normal")
         widget.delete("1.0", "end")
         widget.insert("end", value)
