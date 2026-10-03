@@ -1,4 +1,4 @@
-"""V22_6_4 休養本島糧食安全庫存版。"""
+"""V22_6_5 海外戰區堅守與撤離修正版。"""
 try:
     from map_viewer import main
 except ImportError as exc:

@@ -1,0 +1,732 @@
+{
+  "start": 5121,
+  "end": 5421,
+  "initial": {
+    "1": {
+      "name": "像素方塊",
+      "population": 101478,
+      "land": 46899,
+      "counters": {
+        "births": 153259,
+        "local_recruits": 82483,
+        "successful_decisions": 413
+      }
+    },
+    "2": {
+      "name": "符文刻印",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 32816,
+        "local_recruits": 23748,
+        "successful_decisions": 119,
+        "failed_decisions": 17
+      }
+    },
+    "3": {
+      "name": "北外送達人",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 82882,
+        "local_recruits": 70923,
+        "successful_decisions": 262,
+        "failed_decisions": 44
+      }
+    },
+    "4": {
+      "name": "新終焉之刃",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 68273,
+        "local_recruits": 51952,
+        "successful_decisions": 367,
+        "failed_decisions": 1
+      }
+    },
+    "5": {
+      "name": "黃金聖盾",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 34739,
+        "local_recruits": 31197,
+        "successful_decisions": 170
+      }
+    },
+    "6": {
+      "name": "代碼漏洞",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 31146,
+        "local_recruits": 20383,
+        "successful_decisions": 110,
+        "failed_decisions": 26
+      }
+    },
+    "7": {
+      "name": "冥府使者",
+      "population": 121132,
+      "land": 70528,
+      "counters": {
+        "births": 173864,
+        "local_recruits": 85969,
+        "successful_decisions": 424,
+        "overseas_local_recruits": 15832,
+        "ports_built": 2,
+        "reinforcements_launched": 112,
+        "isolated_casualties": 5143,
+        "reinforcements_arrived": 112,
+        "supply_only_arrivals": 72,
+        "tactic_WAIT_REINFORCEMENTS": 18,
+        "failed_decisions": 1,
+        "conquest_capitals_established": 1,
+        "tactic_ATTACK_FRONT": 4,
+        "tactic_CUT_OFF": 3,
+        "troop_reinforcements_arrived": 40,
+        "tactic_DEFEND_PORT": 1,
+        "tactic_ENCIRCLE_CAPITAL": 1
+      }
+    },
+    "8": {
+      "name": "咖啡因癮",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 22651,
+        "local_recruits": 16989,
+        "successful_decisions": 95
+      }
+    },
+    "9": {
+      "name": "精靈密語",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 12477,
+        "local_recruits": 6432,
+        "successful_decisions": 74
+      }
+    },
+    "10": {
+      "name": "摸魚大師",
+      "population": 63460,
+      "land": 39410,
+      "counters": {
+        "births": 147054,
+        "local_recruits": 118467,
+        "successful_decisions": 414,
+        "conquest_capitals_established": 1,
+        "ports_built": 3,
+        "overseas_local_recruits": 20553,
+        "isolated_casualties": 10639,
+        "reinforcements_launched": 124,
+        "reinforcements_arrived": 124,
+        "troop_reinforcements_arrived": 102,
+        "tactic_DEFEND_PORT": 28,
+        "supply_only_arrivals": 22,
+        "tactic_DEFEND_CAPITAL": 29,
+        "tactic_REQUEST_REINFORCEMENTS": 3,
+        "failed_decisions": 51,
+        "tactic_CUT_OFF": 1,
+        "tactic_BUILD_SECOND_PORT": 1,
+        "tactic_WAIT_REINFORCEMENTS": 17,
+        "tactic_RETREAT": 1,
+        "evacuations": 1,
+        "transport_attrition": 505,
+        "reinforcements_returned": 1
+      }
+    },
+    "11": {
+      "name": "矩陣重組",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 26712,
+        "local_recruits": 15922,
+        "successful_decisions": 114,
+        "failed_decisions": 13
+      }
+    },
+    "12": {
+      "name": "深淵巨妖",
+      "population": 38593,
+      "land": 37259,
+      "counters": {
+        "births": 137462,
+        "local_recruits": 104519,
+        "successful_decisions": 436,
+        "overseas_local_recruits": 16419,
+        "ports_built": 6,
+        "reinforcements_launched": 95,
+        "reinforcements_arrived": 95,
+        "supply_only_arrivals": 74,
+        "tactic_WAIT_REINFORCEMENTS": 12,
+        "conquest_capitals_established": 2,
+        "isolated_casualties": 32865,
+        "troop_reinforcements_arrived": 21,
+        "tactic_DEFEND_CAPITAL": 20,
+        "tactic_DEFEND_PORT": 19,
+        "tactic_REQUEST_REINFORCEMENTS": 2,
+        "failed_decisions": 14,
+        "tactic_BUILD_SECOND_PORT": 4,
+        "tactic_RETREAT": 12,
+        "tactic_ENCIRCLE_CAPITAL": 4,
+        "tactic_ATTACK_FRONT": 2,
+        "tactic_CUT_OFF": 2,
+        "evacuations": 1,
+        "transport_attrition": 231,
+        "reinforcements_returned": 1
+      }
+    },
+    "13": {
+      "name": "全村希望",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 32141,
+        "local_recruits": 25555,
+        "successful_decisions": 141,
+        "failed_decisions": 1
+      }
+    },
+    "14": {
+      "name": "鋼鐵意志",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 23082,
+        "local_recruits": 16349,
+        "successful_decisions": 115
+      }
+    },
+    "15": {
+      "name": "東虛空之眼",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 28389,
+        "local_recruits": 16911,
+        "successful_decisions": 134
+      }
+    },
+    "16": {
+      "name": "黑客帝國",
+      "population": 79064,
+      "land": 46477,
+      "counters": {
+        "births": 129121,
+        "local_recruits": 70430,
+        "successful_decisions": 377,
+        "overseas_local_recruits": 22074,
+        "ports_built": 5,
+        "reinforcements_launched": 107,
+        "reinforcements_arrived": 107,
+        "supply_only_arrivals": 98,
+        "failed_decisions": 68,
+        "isolated_casualties": 17382,
+        "conquest_capitals_established": 1,
+        "troop_reinforcements_arrived": 9,
+        "tactic_REQUEST_REINFORCEMENTS": 2,
+        "tactic_WAIT_REINFORCEMENTS": 5,
+        "tactic_DEFEND_CAPITAL": 5,
+        "tactic_BUILD_SECOND_PORT": 1,
+        "tactic_DEFEND_PORT": 5,
+        "tactic_CUT_OFF": 1,
+        "tactic_ENCIRCLE_CAPITAL": 1,
+        "tactic_ATTACK_FRONT": 2,
+        "tactic_RETREAT": 1,
+        "evacuations": 1,
+        "transport_attrition": 109,
+        "reinforcements_returned": 1,
+        "tactic_REDEPLOY": 1
+      }
+    },
+    "17": {
+      "name": "西虛空之眼",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 28389,
+        "local_recruits": 16911,
+        "successful_decisions": 134
+      }
+    },
+    "18": {
+      "name": "西外送達人",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 82882,
+        "local_recruits": 70923,
+        "successful_decisions": 262,
+        "failed_decisions": 44
+      }
+    },
+    "19": {
+      "name": "南外送達人",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 82882,
+        "local_recruits": 70923,
+        "successful_decisions": 262,
+        "failed_decisions": 44
+      }
+    },
+    "20": {
+      "name": "南終焉之刃",
+      "population": 0,
+      "land": 0,
+      "counters": {
+        "births": 68273,
+        "local_recruits": 51952,
+        "successful_decisions": 367,
+        "failed_decisions": 1
+      }
+    }
+  },
+  "final": [
+    {
+      "id": 1,
+      "name": "像素方塊",
+      "alive": true,
+      "population": 115067,
+      "land": 49165,
+      "sites": 0,
+      "counters": {
+        "births": 166848,
+        "local_recruits": 84929,
+        "successful_decisions": 437
+      }
+    },
+    {
+      "id": 2,
+      "name": "符文刻印",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 32816,
+        "local_recruits": 23748,
+        "successful_decisions": 119,
+        "failed_decisions": 17
+      }
+    },
+    {
+      "id": 3,
+      "name": "北外送達人",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 82882,
+        "local_recruits": 70923,
+        "successful_decisions": 262,
+        "failed_decisions": 44
+      }
+    },
+    {
+      "id": 4,
+      "name": "新終焉之刃",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 68273,
+        "local_recruits": 51952,
+        "successful_decisions": 367,
+        "failed_decisions": 1
+      }
+    },
+    {
+      "id": 5,
+      "name": "黃金聖盾",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 34739,
+        "local_recruits": 31197,
+        "successful_decisions": 170
+      }
+    },
+    {
+      "id": 6,
+      "name": "代碼漏洞",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 31146,
+        "local_recruits": 20383,
+        "successful_decisions": 110,
+        "failed_decisions": 26
+      }
+    },
+    {
+      "id": 7,
+      "name": "冥府使者",
+      "alive": true,
+      "population": 113000,
+      "land": 63668,
+      "sites": 1,
+      "counters": {
+        "births": 184030,
+        "local_recruits": 91882,
+        "successful_decisions": 454,
+        "overseas_local_recruits": 18446,
+        "ports_built": 4,
+        "reinforcements_launched": 125,
+        "isolated_casualties": 5143,
+        "reinforcements_arrived": 125,
+        "supply_only_arrivals": 72,
+        "tactic_WAIT_REINFORCEMENTS": 22,
+        "failed_decisions": 6,
+        "conquest_capitals_established": 1,
+        "tactic_ATTACK_FRONT": 6,
+        "tactic_CUT_OFF": 3,
+        "troop_reinforcements_arrived": 53,
+        "tactic_DEFEND_PORT": 3,
+        "tactic_ENCIRCLE_CAPITAL": 1,
+        "tactic_DEFEND_CAPITAL": 3,
+        "tactic_BUILD_SECOND_PORT": 2,
+        "tactic_RECOVER_PORT": 1,
+        "tactic_REDEPLOY": 1
+      }
+    },
+    {
+      "id": 8,
+      "name": "咖啡因癮",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 22651,
+        "local_recruits": 16989,
+        "successful_decisions": 95
+      }
+    },
+    {
+      "id": 9,
+      "name": "精靈密語",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 12477,
+        "local_recruits": 6432,
+        "successful_decisions": 74
+      }
+    },
+    {
+      "id": 10,
+      "name": "摸魚大師",
+      "alive": true,
+      "population": 69998,
+      "land": 41340,
+      "sites": 2,
+      "counters": {
+        "births": 153592,
+        "local_recruits": 119562,
+        "successful_decisions": 438,
+        "conquest_capitals_established": 1,
+        "ports_built": 4,
+        "overseas_local_recruits": 20952,
+        "isolated_casualties": 10639,
+        "reinforcements_launched": 141,
+        "reinforcements_arrived": 141,
+        "troop_reinforcements_arrived": 103,
+        "tactic_DEFEND_PORT": 28,
+        "supply_only_arrivals": 38,
+        "tactic_DEFEND_CAPITAL": 29,
+        "tactic_REQUEST_REINFORCEMENTS": 4,
+        "failed_decisions": 52,
+        "tactic_CUT_OFF": 1,
+        "tactic_BUILD_SECOND_PORT": 1,
+        "tactic_WAIT_REINFORCEMENTS": 17,
+        "tactic_RETREAT": 1,
+        "evacuations": 1,
+        "transport_attrition": 505,
+        "reinforcements_returned": 1,
+        "tactic_REDEPLOY": 1
+      }
+    },
+    {
+      "id": 11,
+      "name": "矩陣重組",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 26712,
+        "local_recruits": 15922,
+        "successful_decisions": 114,
+        "failed_decisions": 13
+      }
+    },
+    {
+      "id": 12,
+      "name": "深淵巨妖",
+      "alive": true,
+      "population": 44394,
+      "land": 41509,
+      "sites": 1,
+      "counters": {
+        "births": 144749,
+        "local_recruits": 112301,
+        "successful_decisions": 467,
+        "overseas_local_recruits": 16460,
+        "ports_built": 6,
+        "reinforcements_launched": 109,
+        "reinforcements_arrived": 109,
+        "supply_only_arrivals": 88,
+        "tactic_WAIT_REINFORCEMENTS": 12,
+        "conquest_capitals_established": 2,
+        "isolated_casualties": 32915,
+        "troop_reinforcements_arrived": 21,
+        "tactic_DEFEND_CAPITAL": 20,
+        "tactic_DEFEND_PORT": 19,
+        "tactic_REQUEST_REINFORCEMENTS": 2,
+        "failed_decisions": 14,
+        "tactic_BUILD_SECOND_PORT": 4,
+        "tactic_RETREAT": 12,
+        "tactic_ENCIRCLE_CAPITAL": 4,
+        "tactic_ATTACK_FRONT": 2,
+        "tactic_CUT_OFF": 2,
+        "evacuations": 1,
+        "transport_attrition": 231,
+        "reinforcements_returned": 1,
+        "tactic_REDEPLOY": 1
+      }
+    },
+    {
+      "id": 13,
+      "name": "全村希望",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 32141,
+        "local_recruits": 25555,
+        "successful_decisions": 141,
+        "failed_decisions": 1
+      }
+    },
+    {
+      "id": 14,
+      "name": "鋼鐵意志",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 23082,
+        "local_recruits": 16349,
+        "successful_decisions": 115
+      }
+    },
+    {
+      "id": 15,
+      "name": "東虛空之眼",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 28389,
+        "local_recruits": 16911,
+        "successful_decisions": 134
+      }
+    },
+    {
+      "id": 16,
+      "name": "黑客帝國",
+      "alive": true,
+      "population": 77800,
+      "land": 48359,
+      "sites": 3,
+      "counters": {
+        "births": 133490,
+        "local_recruits": 74272,
+        "successful_decisions": 392,
+        "overseas_local_recruits": 25916,
+        "ports_built": 5,
+        "reinforcements_launched": 119,
+        "reinforcements_arrived": 119,
+        "supply_only_arrivals": 110,
+        "failed_decisions": 79,
+        "isolated_casualties": 21579,
+        "conquest_capitals_established": 1,
+        "troop_reinforcements_arrived": 9,
+        "tactic_REQUEST_REINFORCEMENTS": 2,
+        "tactic_WAIT_REINFORCEMENTS": 6,
+        "tactic_DEFEND_CAPITAL": 5,
+        "tactic_BUILD_SECOND_PORT": 1,
+        "tactic_DEFEND_PORT": 5,
+        "tactic_CUT_OFF": 1,
+        "tactic_ENCIRCLE_CAPITAL": 1,
+        "tactic_ATTACK_FRONT": 2,
+        "tactic_RETREAT": 1,
+        "evacuations": 1,
+        "transport_attrition": 109,
+        "reinforcements_returned": 1,
+        "tactic_REDEPLOY": 1
+      }
+    },
+    {
+      "id": 17,
+      "name": "西虛空之眼",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 28389,
+        "local_recruits": 16911,
+        "successful_decisions": 134
+      }
+    },
+    {
+      "id": 18,
+      "name": "西外送達人",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 82882,
+        "local_recruits": 70923,
+        "successful_decisions": 262,
+        "failed_decisions": 44
+      }
+    },
+    {
+      "id": 19,
+      "name": "南外送達人",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 82882,
+        "local_recruits": 70923,
+        "successful_decisions": 262,
+        "failed_decisions": 44
+      }
+    },
+    {
+      "id": 20,
+      "name": "南終焉之刃",
+      "alive": false,
+      "population": 0,
+      "land": 0,
+      "sites": 0,
+      "counters": {
+        "births": 68273,
+        "local_recruits": 51952,
+        "successful_decisions": 367,
+        "failed_decisions": 1
+      }
+    }
+  ],
+  "retreats": [],
+  "events": [
+    [
+      5157,
+      12,
+      "對冥府使者戰役：冥府使者勝，奪取105格；深淵巨妖喪失領土；我軍傷亡約71。"
+    ],
+    [
+      5161,
+      12,
+      "對冥府使者戰役：冥府使者勝，奪取122格；深淵巨妖喪失領土；我軍傷亡約168。"
+    ],
+    [
+      5198,
+      12,
+      "對冥府使者戰役：深淵巨妖勝，奪取71格；冥府使者喪失領土；我軍傷亡約327。"
+    ],
+    [
+      5204,
+      12,
+      "對冥府使者戰役：冥府使者勝，奪取105格；深淵巨妖喪失領土；我軍傷亡約338。"
+    ],
+    [
+      5208,
+      12,
+      "對冥府使者戰役：冥府使者勝，奪取57格；深淵巨妖喪失領土；我軍傷亡約248。"
+    ],
+    [
+      5240,
+      12,
+      "對冥府使者戰役：冥府使者勝，奪取120格；深淵巨妖喪失領土；我軍傷亡約103。"
+    ],
+    [
+      5252,
+      12,
+      "對冥府使者戰役：冥府使者勝，奪取113格；深淵巨妖喪失領土；我軍傷亡約84。"
+    ],
+    [
+      5253,
+      7,
+      "對深淵巨妖戰役：深淵巨妖勝，奪取226格；冥府使者喪失領土；我軍傷亡約272。"
+    ],
+    [
+      5253,
+      7,
+      "定期清理沒有海外首都的飛地，釋出14格土地。"
+    ],
+    [
+      5285,
+      12,
+      "對冥府使者戰役：冥府使者勝，奪取97格；深淵巨妖喪失領土；我軍傷亡約222。"
+    ],
+    [
+      5293,
+      12,
+      "對冥府使者戰役：冥府使者勝，奪取65格；深淵巨妖喪失領土；我軍傷亡約119。"
+    ],
+    [
+      5300,
+      7,
+      "對深淵巨妖戰役：深淵巨妖勝，奪取188格；冥府使者喪失領土；我軍傷亡約204。"
+    ],
+    [
+      5322,
+      12,
+      "對冥府使者戰役：冥府使者勝，奪取135格；深淵巨妖喪失領土；我軍傷亡約78。"
+    ],
+    [
+      5325,
+      7,
+      "對深淵巨妖戰役：深淵巨妖勝，奪取177格；冥府使者喪失領土；我軍傷亡約208。"
+    ],
+    [
+      5325,
+      7,
+      "定期清理沒有海外首都的飛地，釋出7,115格土地。"
+    ],
+    [
+      5356,
+      10,
+      "殖民船隊航行563公里、歷時56年，運送2,484名人口抵達達爾馬提亞海岸並建立海外殖民首都。"
+    ],
+    [
+      5362,
+      12,
+      "對冥府使者戰役：深淵巨妖勝，奪取1格；冥府使者喪失領土；我軍傷亡約107。"
+    ]
+  ]
+}
