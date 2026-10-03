@@ -1,4 +1,4 @@
-"""V22_6_2 出海人口承載版。"""
+"""V22_6_3 精緻群島地形試用版。"""
 try:
     from map_viewer import main
 except ImportError as exc:
