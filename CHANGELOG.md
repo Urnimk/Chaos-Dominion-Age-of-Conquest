@@ -10,38 +10,38 @@
 
 ### 戰略承諾與九種 Macro Goal
 
-每國保存 strategic_commitment：承諾編號、目標島、對手、開始年、最後進展年、控制率／兵力高水位、最少敵國數及狀態。macro_goal 保存 goal_type、target_country、target_landmass、started_year、last_progress_year、progress、success_condition、failure_condition、switch_reason，另附 commitment_id。
+- 每國保存 strategic_commitment：承諾編號、目標島、對手、開始年、最後進展年、控制率／兵力高水位、最少敵國數及狀態。macro_goal 保存 goal_type、target_country、target_landmass、started_year、last_progress_year、progress、success_condition、failure_condition、switch_reason，另附 commitment_id。
 
-九個階段：UNIFY_HOMELAND、PREPARE_OVERSEAS_EXPANSION、COLONIZE_LANDMASS、ESTABLISH_OVERSEAS_BASE、CONQUER_LANDMASS、REINFORCE_THEATRE、PACIFY_LANDMASS、DESTROY_RIVAL、PREPARE_NEXT_EXPEDITION。
+- 九個階段：UNIFY_HOMELAND、PREPARE_OVERSEAS_EXPANSION、COLONIZE_LANDMASS、ESTABLISH_OVERSEAS_BASE、CONQUER_LANDMASS、REINFORCE_THEATRE、PACIFY_LANDMASS、DESTROY_RIVAL、PREPARE_NEXT_EXPEDITION。
 
-同一座島可以在征戰、增援、建港等階段轉換，這些轉換沿用同一份承諾，不會重抽島嶼。選定下一島須先達到至少 80% 控制率且沒有其他政權。DESTROY_RIVAL 階段處理目標政權在承諾島上的據點；對手離開該島不等同全球滅國，全球滅國另有獨立 credit。
+- 同一座島可以在征戰、增援、建港等階段轉換，這些轉換沿用同一份承諾，不會重抽島嶼。選定下一島須先達到至少 80% 控制率且沒有其他政權。DESTROY_RIVAL 階段處理目標政權在承諾島上的據點；對手離開該島不等同全球滅國，全球滅國另有獨立 credit。
 
-允許的中止：基地及當地領土完全失去、目標地理資料已無有效陸塊、連續 300 年沒有新控制率高點／增強兵力／新增基地或港口／減少當地敵國。本土致命危機則暫停海外承諾，保留原目標，危機解除後恢復。中止目標冷卻 100 年，避免每次決策立刻重選同一失敗目標。航行中不因一般停滯逾時中止；資源不足並不直接等同不可達，先整備。
+- 允許的中止：基地及當地領土完全失去、目標地理資料已無有效陸塊、連續 300 年沒有新控制率高點／增強兵力／新增基地或港口／減少當地敵國。本土致命危機則暫停海外承諾，保留原目標，危機解除後恢復。中止目標冷卻 100 年，避免每次決策立刻重選同一失敗目標。航行中不因一般停滯逾時中止；資源不足並不直接等同不可達，先整備。
 
-macro_history 記錄 COMMIT／PHASE／COMPLETE／ABORT／SUSPEND／RESUME 與原因，最多保存最近 500 筆。詳細年度決策與階段停留可由 headless_sanity.py 輸出。
+- macro_history 記錄 COMMIT／PHASE／COMPLETE／ABORT／SUSPEND／RESUME 與原因，最多保存最近 500 筆。詳細年度決策與階段停留可由 headless_sanity.py 輸出。
 
 ### Action 與 Target 分離
 
-12 維策略 state：本島控制、可用兵力比例、疲勞、活動戰役數、Macro 階段、目標島控制率、相對敵軍、基地／港口、糧食年數、運輸狀態、目標島敵國數、世界控制率；不包含 country_id 或 landmass_id。
+- 12 維策略 state：本島控制、可用兵力比例、疲勞、活動戰役數、Macro 階段、目標島控制率、相對敵軍、基地／港口、糧食年數、運輸狀態、目標島敵國數、世界控制率；不包含 country_id 或 landmass_id。
 
-策略 Q 表學習 ATTACK_OVERSEAS、ATTACK_HOMELAND、REINFORCE_ACTIVE_THEATRE、SECURE_SUPPLY、COLONIZE、ATTACK_FRONT、CUT_OFF、ENCIRCLE_CAPITAL、EXPAND_BEACHHEAD、DEFEND_CAPITAL、DEFEND_PORT、WAIT_FOR_TRANSPORT、REST_AND_REPRODUCE。Target Selector 依已有基地、相對當地兵力、距離、島嶼面積／承載价值與補給成本選島；承諾存續期間只在該島選可攻擊對手。
+- 策略 Q 表學習 ATTACK_OVERSEAS、ATTACK_HOMELAND、REINFORCE_ACTIVE_THEATRE、SECURE_SUPPLY、COLONIZE、ATTACK_FRONT、CUT_OFF、ENCIRCLE_CAPITAL、EXPAND_BEACHHEAD、DEFEND_CAPITAL、DEFEND_PORT、WAIT_FOR_TRANSPORT、REST_AND_REPRODUCE。Target Selector 依已有基地、相對當地兵力、距離、島嶼面積／承載价值與補給成本選島；承諾存續期間只在該島選可攻擊對手。
 
-macro_action_bindings 把抽象行動映射至原引擎的具體執行指令。殖民出航、海上戰役與增援都在執行端再次限定目標島。國家資料分別保存 last_policy_action 與 last_ai_action，方便區分學習類型和實際指令。
+- macro_action_bindings 把抽象行動映射至原引擎的具體執行指令。殖民出航、海上戰役與增援都在執行端再次限定目標島。國家資料分別保存 last_policy_action 與 last_ai_action，方便區分學習類型和實際指令。
 
-V22 動態 Q-floor／ATTACK_BIAS 選擇路徑已移除。Macro 階段用可執行任務集合表達前置需求：無港先建港、危急補給優先運輸，資源不足可休養。SARSA 在這個集合內學習，沒有提高進攻分數。低階戰鬥 Q 表中的 ATTACK:百分比仍是出兵比例，不是國家 ID。
+- V22 動態 Q-floor／ATTACK_BIAS 選擇路徑已移除。Macro 階段用可執行任務集合表達前置需求：無港先建港、危急補給優先運輸，資源不足可休養。SARSA 在這個集合內學習，沒有提高進攻分數。低階戰鬥 Q 表中的 ATTACK:百分比仍是出兵比例，不是國家 ID。
 
 ### 後勤與 Reward
 
-增援的可行性檢查與真正出航共用 _reinforcement_manifest：船艦、航線、航程糧食、當地人口空間、本土留守、可運兵數與居民數均按既有規則計算；檢查階段不扣資源。不能支付時不提供虛假的可執行增援行動，透過原有休養生產規則準備資源。
+- 增援的可行性檢查與真正出航共用 _reinforcement_manifest：船艦、航線、航程糧食、當地人口空間、本土留守、可運兵數與居民數均按既有規則計算；檢查階段不扣資源。不能支付時不提供虛假的可執行增援行動，透過原有休養生產規則準備資源。
 
-macro_credit 以各島歷史高點／一次性里程碑支付：新控制率高點（整島最多 2 分）、首次基地 0.25、首次固定港口 0.25、首次有效補給抵達 0.15、首次平定 0.6；首次觀察到每個敵國消滅另給 0.5。原始已存在的控制、基地、港口在遷移時建立基準，不當作新成就。丟地重奪、拆港重建、反覆航行不會重領同一份里程碑。既有海運事件的重複正向即時加分停用，避免與里程碑重複支付；負向航線事件保留。獎勵經由 Expected SARSA(λ) 的資格跡線分配給近期行動；沒有新增獨立 Macro Q 表。
+- macro_credit 以各島歷史高點／一次性里程碑支付：新控制率高點（整島最多 2 分）、首次基地 0.25、首次固定港口 0.25、首次有效補給抵達 0.15、首次平定 0.6；首次觀察到每個敵國消滅另給 0.5。原始已存在的控制、基地、港口在遷移時建立基準，不當作新成就。丟地重奪、拆港重建、反覆航行不會重領同一份里程碑。既有海運事件的重複正向即時加分停用，避免與里程碑重複支付；負向航線事件保留。獎勵經由 Expected SARSA(λ) 的資格跡線分配給近期行動；沒有新增獨立 Macro Q 表。
 
-領土損失、戰敗、疲勞與人口變化仍影響戰術回饋。此版沒有把宣戰次數、出航次數或切換 Macro 次數當作成就。
+- 領土損失、戰敗、疲勞與人口變化仍影響戰術回饋。此版沒有把宣戰次數、出航次數或切換 Macro 次數當作成就。
 
 
 ## V22_6_6｜統一目標推進版
 
-基於使用者提供的 V22_6_5 與 saves(7)，修正「20年內有決策，但一直防守」問題。
+- 基於使用者提供的 V22_6_5 與 saves(7)，修正「20年內有決策，但一直防守」問題。
 
 ### 行為變更
 
