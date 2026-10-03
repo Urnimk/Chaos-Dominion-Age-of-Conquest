@@ -1,0 +1,44 @@
+[
+  {
+    "mode": "OLD",
+    "seed": 20261003,
+    "size": 1200,
+    "seconds": 10.11,
+    "land_cells": 316400,
+    "islands": 59,
+    "islands_ge_300": 17,
+    "islands_ge_3000": 7,
+    "coast_edges": 12132,
+    "terrain_counts": {
+      "0": 688315,
+      "1": 435285,
+      "2": 16809,
+      "3": 192595,
+      "4": 103113,
+      "5": 3240,
+      "6": 643
+    },
+    "countries": 16
+  },
+  {
+    "mode": "NEW",
+    "seed": 20261003,
+    "size": 1200,
+    "seconds": 6.23,
+    "land_cells": 316452,
+    "islands": 51,
+    "islands_ge_300": 30,
+    "islands_ge_3000": 10,
+    "coast_edges": 17848,
+    "terrain_counts": {
+      "0": 871086,
+      "1": 252462,
+      "2": 24397,
+      "3": 133881,
+      "4": 149382,
+      "5": 6198,
+      "6": 2594
+    },
+    "countries": 16
+  }
+]
