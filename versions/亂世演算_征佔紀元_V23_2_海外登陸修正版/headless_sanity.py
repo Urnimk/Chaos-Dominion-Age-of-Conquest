@@ -28,11 +28,9 @@ def main():
     parser.add_argument("--years", type=int, default=500, help="總共推進年數")
     parser.add_argument("--checkpoint-every", type=int, default=100)
     parser.add_argument("--resume", action="store_true", help="由 output 中最近檢查點續跑")
-    parser.add_argument("--cache-assert-every", type=int, default=0,
-                        help="Debug：每 N 年全掃描並核對已建立的 WorldStateCache；0 表示停用")
     args = parser.parse_args()
-    if args.years < 0 or args.checkpoint_every < 1 or args.cache_assert_every < 0:
-        raise SystemExit("years 必須非負、checkpoint-every 必須大於 0，cache-assert-every 必須非負")
+    if args.years < 0 or args.checkpoint_every < 1:
+        raise SystemExit("years 必須非負，checkpoint-every 必須大於 0")
     if args.save.resolve() == args.output.resolve():
         raise SystemExit("output 必須與原始存檔不同")
 
@@ -73,8 +71,6 @@ def main():
 
     for offset in range(remaining):
         engine.step(1)
-        if args.cache_assert_every and (engine.year - origin_year) % args.cache_assert_every == 0:
-            engine.world_state_cache.debug_assert_consistent()
         assert np.all(engine.local_population >= 0)
         assert np.all(engine.local_soldiers >= 0)
         assert np.all(engine.local_soldiers <= engine.local_population)
@@ -144,11 +140,6 @@ def main():
         "original_unchanged": True,
         "reload_plus_2_years_equivalent": True,
         "target_free_q_keys": True,
-        "world_state_cache": {
-            "hits": engine.world_state_cache.hits,
-            "misses": engine.world_state_cache.misses,
-            "debug_assert_every_years": args.cache_assert_every,
-        },
         "countries": [
             {
                 "id": c["id"], "name": c["name"], "alive": c["alive"],

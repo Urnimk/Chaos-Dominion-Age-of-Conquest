@@ -9,7 +9,6 @@ import json
 import uuid
 import math
 import random
-from collections import OrderedDict
 from pathlib import Path
 
 import numpy as np
@@ -22,7 +21,6 @@ from country_generator import CAPITAL, CITY, PORT, BARRACKS, OUTPOST
 from rl_brain import CountryBrain, PASS_ACTION, action_kind, STATE_DIMENSIONS
 from overseas_strategy import OverseasStrategyMixin
 from hierarchical_strategy import HierarchicalStrategyMixin
-from world_state_cache import StrategicSnapshot, WorldStateCache
 
 
 ALLIANCE_NAME_PREFIXES = [
@@ -170,7 +168,6 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
 
     def __init__(self, world, state_path: Path | None = None):
         self.world = world
-        self._navigation_epoch = 0
         land = (world.terrain >= 2) & (world.continent > 0)
         self._landmass_sizes = np.bincount(
             world.continent[land].astype(np.int32), minlength=int(world.continent.max()) + 1
@@ -192,12 +189,6 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         self.battles = 0
         self.disconnected_since: dict[int, int] = {}
         self.territory_dirty: set[int] = {int(c["id"]) for c in world.countries}
-        self._territory_epoch = 0
-        self._spatial_cache_fallback_epoch = 0
-        self._territory_epoch_by_country: dict[int, int] = {}
-        self._territory_epoch_by_country_landmass: dict[tuple[int, int], int] = {}
-        self._indices_cache = {}
-        self.world_state_cache = WorldStateCache(self)
         self._land_totals_dirty = True
         self._cached_areas = None
         self._cached_food_output = None
@@ -400,31 +391,9 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         if len(bucket) > 300:
             del bucket[:-300]
 
-    def _mark_world_changed(self, *country_ids: int, landmass_ids=None,
-                            country_landmass_pairs=None):
+    def _mark_world_changed(self, *country_ids: int):
         self._territory_epoch = getattr(self, "_territory_epoch", 0) + 1
-        country_ids = tuple(int(cid) for cid in country_ids if int(cid) > 0)
-        self.territory_dirty.update(country_ids)
-        if landmass_ids is None:
-            # Unknown mutation scope: preserve correctness with a conservative full invalidation.
-            self._spatial_cache_fallback_epoch += 1
-            self._indices_cache.clear()
-            self.world_state_cache.invalidate()
-        else:
-            landmass_ids = tuple(sorted({int(lm) for lm in landmass_ids if int(lm) > 0}))
-            if not landmass_ids:
-                self._spatial_cache_fallback_epoch += 1
-                self._indices_cache.clear()
-                self.world_state_cache.invalidate()
-            else:
-                for cid in country_ids:
-                    self._territory_epoch_by_country[cid] = self._territory_epoch_by_country.get(cid, 0) + 1
-                pairs = (country_landmass_pairs if country_landmass_pairs is not None
-                         else ((cid, lm) for cid in country_ids for lm in landmass_ids))
-                for cid, lm in pairs:
-                    key = (int(cid), int(lm))
-                    self._territory_epoch_by_country_landmass[key] = self._territory_epoch_by_country_landmass.get(key, 0) + 1
-                self.world_state_cache.invalidate(country_ids, landmass_ids)
+        self.territory_dirty.update(int(cid) for cid in country_ids if int(cid) > 0)
         self._land_totals_dirty = True
         self.visual_revision += 1
 
@@ -595,7 +564,6 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
             return
         cid = country["id"]
         remaining = self.world.territory == cid
-        changed_landmasses = np.unique(self.world.continent[remaining])
         vanished = int(remaining.sum())
         self.world.territory[remaining] = 0
         self.world.settlement[remaining] = 0
@@ -605,7 +573,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         self.building_owner[built_by_country] = 0
         self.local_population[remaining] = 0
         self.local_soldiers[remaining] = 0
-        self._mark_world_changed(cid, landmass_ids=changed_landmasses)
+        self._mark_world_changed(cid)
         country.update({
             "alive": False, "ever_extinct": True, "extinction_year": self.year,
             "territory_cells": 0, "population": 0, "soldiers": 0, "fleet": 0,
@@ -680,7 +648,6 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         cells = int(np.count_nonzero(fragment))
         if cells <= 0:
             return
-        changed_landmasses = np.unique(self.world.continent[fragment])
         self.world.territory[fragment] = 0
         self.world.settlement[fragment] = 0
         self.building_owner[fragment] = 0
@@ -700,7 +667,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         ]
         country["overseas_capital"] = (country["overseas_capitals"][0]
                                         if country["overseas_capitals"] else None)
-        self._mark_world_changed(cid, landmass_ids=changed_landmasses)
+        self._mark_world_changed(cid)
         self.world.border = _border_mask(self.world.territory)
         self._build_geography()
         capital_x, capital_y = map(int, country.get("capital", (0, 0)))
@@ -888,8 +855,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         self._ensure_country_brain(new_id)
         self.country_events[new_id] = []
         self._new_king(new_country, reset=True, reason="國家分裂後建立新王統")
-        self._mark_world_changed(old_id, new_id,
-                                 landmass_ids=np.unique(self.world.continent[separated]))
+        self._mark_world_changed(old_id, new_id)
         self.world.border = _border_mask(self.world.territory)
         self._build_geography()
         message = f"{base}因{reason}，形成{old_name}與{new_name}。"
@@ -959,8 +925,6 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
     def _cleanup_overseas_exclaves_uncached(self):
         """Clear detached overseas land that has no valid overseas capital anchor."""
         changed_ids = set()
-        changed_landmasses = set()
-        changed_pairs = set()
         for country in self.countries:
             if not country.get("alive"):
                 continue
@@ -1000,9 +964,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
             cells = int(clearing.sum())
             if not cells:
                 continue
-            changed_pairs.update((cid, int(lm)) for lm in np.unique(self.world.continent[clearing]) if int(lm) > 0)
             self.world.territory[clearing] = 0
-            changed_landmasses.update(int(lm) for lm in np.unique(self.world.continent[clearing]) if int(lm) > 0)
             self.world.settlement[clearing] = 0
             self.building_owner[clearing] = 0
             self.local_population[clearing] = 0
@@ -1020,8 +982,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
             self._log(cid, f"定期清理沒有海外首都的飛地，釋出{cells:,}格土地。")
         if not changed_ids:
             return False
-        self._mark_world_changed(*changed_ids, landmass_ids=changed_landmasses,
-                                 country_landmass_pairs=changed_pairs)
+        self._mark_world_changed(*changed_ids)
         self.world.border = _border_mask(self.world.territory)
         self._build_geography()
         for cid in changed_ids:
@@ -1089,10 +1050,12 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
     def _overseas_landmass_is_pacified(self, country: dict, landmass_id: int) -> bool:
         """海外陸塊由本國控制至少八成，且沒有其他國家政權時，視為平定。"""
         cid = int(country["id"])
-        total, counts, regimes = self.world_state_cache.landmass_ownership(landmass_id)
+        land = (self.world.continent == int(landmass_id)) & (self.world.terrain >= 2)
+        total = int(np.count_nonzero(land))
         if total <= 0:
             return False
-        owned = int(counts[cid]) if cid < len(counts) else 0
+        owned = int(np.count_nonzero(land & (self.world.territory == cid)))
+        regimes = set(int(v) for v in np.unique(self.world.territory[land]) if int(v) > 0)
         required = float(getattr(cfg, "OVERSEAS_REGION_CONTROL_SHARE_REQUIRED", 0.80))
         return owned / total >= required and regimes == {cid}
 
@@ -1148,7 +1111,8 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
 
     def _overseas_landmass_ids(self, country: dict) -> set[int]:
         cid = int(country["id"])
-        landmasses = set(self.world_state_cache.country_landmasses(cid))
+        owned = self.world.territory == cid
+        landmasses = set(int(v) for v in np.unique(self.world.continent[owned]) if int(v) > 0)
         home = self._home_continent_id(country)
         landmasses.discard(home)
         return landmasses
@@ -1328,25 +1292,15 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         return neighbors
 
     def _sea_route(self, origin_port, target_land):
-        # Sea terrain is static in the current simulation, so navigation_epoch
-        # stays at zero. Keep it in the key so future terrain mutations can
-        # invalidate routes without changing this call contract.
-        key = (tuple(origin_port), tuple(target_land), int(getattr(self, "_navigation_epoch", 0)))
+        key = (tuple(origin_port), tuple(target_land))
         cache = getattr(self, "_sea_route_cache", None)
         if cache is None:
-            cache = self._sea_route_cache = OrderedDict()
-        elif not isinstance(cache, OrderedDict):
-            cache = self._sea_route_cache = OrderedDict(cache)
-        if key in cache:
-            cache.move_to_end(key)
-            return cache[key]
+            cache = self._sea_route_cache = {}
         if key not in cache:
             if self._sea_points_connected(origin_port, target_land):
                 cache[key] = self._sea_route_uncached(origin_port, target_land)
             else:
                 cache[key] = None
-            if len(cache) > 4096:
-                cache.popitem(last=False)
         return cache[key]
 
     def _sea_component_roots(self, points):
@@ -1433,20 +1387,19 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         if not starts or not goals:
             return None
 
-        # Every goal is within sqrt(2) water-cells of the destination land point.
-        # Keep the same admissible estimate and tie ordering while avoiding a
-        # temporary neighbor list and a Python helper call for every expanded node.
-        terrain = self.world.terrain
-        diagonal_cost = math.sqrt(2.0)
+        def heuristic(point):
+            # Every goal is within sqrt(2) water-cells of the destination land
+            # point, so this remains an admissible lower bound while avoiding an
+            # O(number_of_coastal_goals) scan for every expanded water node.
+            return max(0.0, self._wrapped_distance_cells(point, (tx, ty), width) - math.sqrt(2.0))
+
         frontier = []
         came_from = {}
         cost_so_far = {}
         for start in starts:
             cost_so_far[start] = 1.0
             came_from[start] = None
-            dx = min(abs(tx - start[0]), width - abs(tx - start[0]))
-            estimate = max(0.0, math.hypot(dx, ty - start[1]) - diagonal_cost)
-            heapq.heappush(frontier, (1.0 + estimate, 1.0, start))
+            heapq.heappush(frontier, (1.0 + heuristic(start), 1.0, start))
         end = None
         max_expansions = 150_000
         expansions = 0
@@ -1458,29 +1411,14 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                 end = current
                 break
             expansions += 1
-            current_x, current_y = current
-            for dy in (-1, 0, 1):
-                ny = current_y + dy
-                if not 0 <= ny < height:
+            for nx, ny, step_cost in self._water_neighbors(*current):
+                neighbor = (nx, ny)
+                new_cost = current_cost + step_cost
+                if new_cost >= cost_so_far.get(neighbor, float("inf")):
                     continue
-                for dx in (-1, 0, 1):
-                    if dx == 0 and dy == 0:
-                        continue
-                    nx = (current_x + dx) % width
-                    if terrain[ny, nx] > 1:
-                        continue
-                    if dx and dy and (terrain[current_y, nx] > 1 or terrain[ny, current_x] > 1):
-                        continue
-                    neighbor = (nx, ny)
-                    new_cost = current_cost + (diagonal_cost if dx and dy else 1.0)
-                    if new_cost >= cost_so_far.get(neighbor, float("inf")):
-                        continue
-                    cost_so_far[neighbor] = new_cost
-                    came_from[neighbor] = current
-                    horizontal = abs(tx - nx)
-                    horizontal = min(horizontal, width - horizontal)
-                    estimate = max(0.0, math.hypot(horizontal, ty - ny) - diagonal_cost)
-                    heapq.heappush(frontier, (new_cost + estimate, new_cost, neighbor))
+                cost_so_far[neighbor] = new_cost
+                came_from[neighbor] = current
+                heapq.heappush(frontier, (new_cost + heuristic(neighbor), new_cost, neighbor))
         if end is None:
             return None
 
@@ -1948,10 +1886,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         if overseas_site is not None:
             overseas_site["supply_food"] = float(overseas_site.get("supply_food",0)) + float(voyage.get("initial_supply",0))
             self._ensure_overseas_logistics_port(country, overseas_site)
-        changed_landmasses = {int(continent_id)}
-        if retreat:
-            changed_landmasses.add(int(old_home))
-        self._mark_world_changed(cid, landmass_ids=changed_landmasses)
+        self._mark_world_changed(cid)
         self.world.border = _border_mask(self.world.territory)
         self._build_geography()
         region = self.geographic_name_at(ay, ax)
@@ -2244,16 +2179,6 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         self._arrive_reinforcements_v22()
 
     def legal_targets(self, attacker):
-        snapshot = self._strategic_snapshot_for(attacker)
-        if snapshot is not None:
-            cached = snapshot.get_or_compute(
-                ("legal_targets", int(attacker)),
-                lambda: tuple(self._legal_targets_uncached(attacker)),
-            )
-            return [dict(target) for target in cached]
-        return self._legal_targets_uncached(attacker)
-
-    def _legal_targets_uncached(self, attacker):
         c = self.country(attacker)
         if not c["alive"]:
             return []
@@ -2286,51 +2211,9 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
 
     def _home_soldiers(self, cid: int, landmass_id: int | None = None) -> int:
         """Return soldiers physically stationed on one landmass, defaulting to the homeland."""
-        snapshot = self._strategic_snapshot_for(cid)
-        if snapshot is not None:
-            home = int(snapshot.values["home_landmass"])
-            if landmass_id is None or int(landmass_id) == home:
-                return int(snapshot.values["home_soldiers"])
         if landmass_id is None:
             landmass_id = self._home_continent_id(self.country(int(cid)))
         return self._landmass_soldiers(int(cid), int(landmass_id)) if int(landmass_id) > 0 else 0
-
-    def _strategic_snapshot_for(self, country_id):
-        snapshot = getattr(self, "_active_strategic_snapshot", None)
-        if (snapshot is not None and snapshot.country_id == int(country_id)
-                and snapshot.year == int(self.year)
-                and snapshot.territory_epoch == int(getattr(self, "_territory_epoch", 0))):
-            return snapshot
-        return None
-
-    def _make_strategic_snapshot(self, country):
-        """Build the shared, transient view once for this country's AI decision."""
-        cid = int(country["id"])
-        home = self._home_continent_id(country)
-        indices = self._spatial_indices(cid, home)
-        population = int(self.local_population.ravel()[indices].sum())
-        soldiers = int(self.local_soldiers.ravel()[indices].sum())
-        active_campaigns = tuple(
-            campaign.id for campaign in self.campaigns
-            if campaign.attacker == cid and campaign.status == "marching"
-        )
-        return StrategicSnapshot(cid, self.year, self._territory_epoch, {
-            "home_landmass": home,
-            "home_population": population,
-            "home_soldiers": soldiers,
-            "available_home_soldiers": max(
-                0, soldiers - int(population * cfg.MIN_GARRISON_RATIO)
-            ),
-            "controlled_landmasses": frozenset(self.world_state_cache.country_landmasses(cid)),
-            "overseas_sites": tuple(
-                (int(site.get("continent_id", -1)), tuple(site.get("anchor", ())))
-                for site in country.get("overseas_capitals", [])
-            ),
-            "fleet": int(country.get("fleet", 0)),
-            "ports": int(country.get("ports", 0)),
-            "war_exhaustion": float(country.get("war_exhaustion", 0.0)),
-            "active_campaigns": active_campaigns,
-        })
 
     def _objective(self, attacker, defender, mode, landmass_id=None):
         if mode == "land":
@@ -2620,7 +2503,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                 self.local_population[stray] = 0
                 self.local_soldiers[stray] = 0
                 if stray.any():
-                    self._mark_world_changed(c["id"], landmass_ids=np.unique(self.world.continent[stray]))
+                    self._mark_world_changed(c["id"])
                 continue
             cid = c["id"]
             if areas[cid] <= 0:
@@ -2898,7 +2781,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                 continue
             chosen = np.concatenate(claimed, axis=0)
             territory[chosen[:, 0], chosen[:, 1]] = cid
-            self._mark_world_changed(cid, landmass_ids=np.unique(self.world.continent[chosen[:, 0], chosen[:, 1]]))
+            self._mark_world_changed(cid)
             country["food"] -= settlers * cfg.EXPANSION_FOOD_COST_PER_CELL
             country["timber"] -= settlers * cfg.EXPANSION_TIMBER_COST_PER_CELL
             country["territory_cells"] += settlers
@@ -3079,11 +2962,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                 continue
 
             colony_available = bool(len(self._colony_candidates(country, colony_context)))
-            self._active_strategic_snapshot = self._make_strategic_snapshot(country)
-            try:
-                state, actions, action_biases = self._rl_state_and_actions(cid, colony_available)
-            finally:
-                self._active_strategic_snapshot = None
+            state, actions, action_biases = self._rl_state_and_actions(cid, colony_available)
             metrics = self._rl_metrics_for_country(country)
             epsilon = self._rl_epsilon(brain)
 
@@ -3664,8 +3543,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                 broken_overseas_capitals.append((ax, ay))
         capture = reached
         count = int(capture.sum())
-        changed_landmasses = set(int(lm) for lm in np.unique(self.world.continent[capture]) if int(lm) > 0)
-        self._mark_world_changed(winner, loser, landmass_ids=changed_landmasses)
+        self._mark_world_changed(winner, loser)
         self.world.territory[capture] = winner
         self.local_soldiers[capture] = 0
         self.building_owner[capture & (self.world.settlement > 0)] = winner
@@ -3683,7 +3561,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                 self.building_owner[orphaned] = 0
                 self.local_population[orphaned] = 0
                 self.local_soldiers[orphaned] = 0
-            self._mark_world_changed(winner, loser, landmass_ids=changed_landmasses)
+            self._mark_world_changed(winner, loser)
         if count:
             self.world.border = _border_mask(self.world.territory)
             self._build_geography()
@@ -3716,8 +3594,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         iy, ix = map(int, coords[int(np.argmin(dy * dy + dx * dx))])
         self.world.territory[iy, ix] = int(winner)
         self.local_soldiers[iy, ix] = 0
-        self._mark_world_changed(winner, loser,
-                                 landmass_ids=(int(self.world.continent[iy, ix]),))
+        self._mark_world_changed(winner, loser)
         self.world.border = _border_mask(self.world.territory)
         self._build_geography()
         for country in self.countries:
@@ -3807,7 +3684,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         )
         snapshot_id = uuid.uuid4().hex
         payload = {
-            "version": "V24_Incremental_Simulation_Cache",
+            "version": "V23_2_Assault_Transport_Fix",
             "rl_brains_snapshot_id": snapshot_id,
             "seed": self.world.settings.seed,
             "year": self.year,
@@ -3831,7 +3708,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         brain_path = self._rl_brains_path(path)
         brain_payload = {
             "format_version": 1,
-            "game_version": "V24_Incremental_Simulation_Cache",
+            "game_version": "V23_2_Assault_Transport_Fix",
             "snapshot_id": snapshot_id,
             "seed": int(self.world.settings.seed),
             "year": int(self.year),
@@ -3847,7 +3724,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
     def load(cls, world, path: Path):
         path = Path(path)
         payload = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
-        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_逐年回報修正版", "V13_2_靜態航線與抵達日誌版", "V13_2_1_海外艦隊門檻與SARSA獎勵版", "V14_戰術學習與世界統一版", "V14_1_殖民與海外攻佔上限版", "V15_弱點攻防與休養生息版", "V17_大島優先與危急後撤版", "V17_1_本島統一與海外首都守則版", "V17_2_分裂小領土清空版", "V17_3_本土小飛地清空版", "V17_4_積極拓荒與勝者得地版", "V18_本島統一與首都存續版", "V18_逐階海外拓展與撤退版", "V19_逐階海外拓展與撤退版", "V19_地球地圖與海外撤退規則版", "V19_1_拓荒等級版", "V19_2_海外資格與危急後撤版", "V20_海外分帳與艦隊運輸版", "V20.2_自主戰略AI與海外戰術庫版", "V21_海外戰區長期學習版", "V21.1_海外殖民探索修正版", "V22_海外港口戰區策略版", "V22_1_拓荒與補給修正版", "V22_2_地方人口承載修正版", "V22_3_全島共用人口加成版", "V22_4_在地存糧人口承載版", "V22_5_海運顯示與登陸修正版", "V22_6_外島徵兵與戰區擴張版", "V22_6_2_出海人口承載版", "V22_6_4_休養本島糧食安全庫存版", "V22_6_5_海外戰區堅守與撤離修正版", "V22_6_6_統一目標推進版", "V23_Hierarchical_Strategy", "V23_1_Geographic_Log_Links", "V23_2_Assault_Transport_Fix", "V24_Incremental_Simulation_Cache"): 
+        if payload.get("version") not in ("V6_拓荒戰爭UI版", "V7_王統分裂與遷都版", "V7_1_效能優化版", "V7_2_歐洲王室命名版", "V8_地理殖民與政權演化版", "V8_1_地名切換與歷史事件版", "V8_2_本土定位與殖民地連結版", "V8_3_地名歷史連結版", "V8_4_海外登陸戰版", "V9_國家獨立學習AI版", "V10_國家Q表獨立JSON版", "V11_海外擴張學習AI版", "V12_海權與戰區防禦版", "V12_1_本島定位與殖民節奏版", "V13_殖民航線與航行船隊版", "V13_1_十年批次推進版", "V13_2_逐年回報修正版", "V13_2_靜態航線與抵達日誌版", "V13_2_1_海外艦隊門檻與SARSA獎勵版", "V14_戰術學習與世界統一版", "V14_1_殖民與海外攻佔上限版", "V15_弱點攻防與休養生息版", "V17_大島優先與危急後撤版", "V17_1_本島統一與海外首都守則版", "V17_2_分裂小領土清空版", "V17_3_本土小飛地清空版", "V17_4_積極拓荒與勝者得地版", "V18_本島統一與首都存續版", "V18_逐階海外拓展與撤退版", "V19_逐階海外拓展與撤退版", "V19_地球地圖與海外撤退規則版", "V19_1_拓荒等級版", "V19_2_海外資格與危急後撤版", "V20_海外分帳與艦隊運輸版", "V20.2_自主戰略AI與海外戰術庫版", "V21_海外戰區長期學習版", "V21.1_海外殖民探索修正版", "V22_海外港口戰區策略版", "V22_1_拓荒與補給修正版", "V22_2_地方人口承載修正版", "V22_3_全島共用人口加成版", "V22_4_在地存糧人口承載版", "V22_5_海運顯示與登陸修正版", "V22_6_外島徵兵與戰區擴張版", "V22_6_2_出海人口承載版", "V22_6_4_休養本島糧食安全庫存版", "V22_6_5_海外戰區堅守與撤離修正版", "V22_6_6_統一目標推進版", "V23_Hierarchical_Strategy", "V23_1_Geographic_Log_Links", "V23_2_Assault_Transport_Fix"): 
             raise ValueError("不支援此版本的戰爭存檔")
         if int(payload.get("seed", -1)) != int(world.settings.seed):
             raise ValueError("戰爭存檔與目前世界Seed不一致")

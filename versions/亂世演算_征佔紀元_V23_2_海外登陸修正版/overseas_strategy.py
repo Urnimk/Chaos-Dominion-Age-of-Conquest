@@ -18,20 +18,15 @@ PHASES = ('HOME_CONTEST','HOME_DEVELOPMENT','EXPLORE','ESTABLISH_PORT',
 
 class OverseasStrategyMixin:
     def _spatial_indices(self, cid, landmass=None):
-        cid=int(cid);lm=None if landmass is None else int(landmass)
-        key=(cid,lm)
-        fallback=getattr(self,'_spatial_cache_fallback_epoch',0)
-        if lm is None:
-            local=getattr(self,'_territory_epoch_by_country',{}).get(cid,0)
-        else:
-            local=getattr(self,'_territory_epoch_by_country_landmass',{}).get((cid,lm),0)
-        version=(fallback,local)
-        cached=getattr(self,'_indices_cache',{}).get(key)
-        if cached is None or cached[0]!=version:
+        epoch=getattr(self,'_territory_epoch',0)
+        if getattr(self,'_indices_epoch',-1)!=epoch:
+            self._indices_cache={};self._indices_epoch=epoch
+        key=(int(cid),landmass)
+        if key not in self._indices_cache:
             mask=self.world.territory==int(cid)
-            if lm is not None: mask &= self.world.continent==lm
-            self._indices_cache[key]=(version,np.flatnonzero(mask))
-        return self._indices_cache[key][1]
+            if landmass is not None: mask &= self.world.continent==int(landmass)
+            self._indices_cache[key]=np.flatnonzero(mask)
+        return self._indices_cache[key]
 
     def _telemetry(self,c,event,amount=1):
         counters=c.setdefault('strategy_counters',{})
@@ -88,13 +83,6 @@ class OverseasStrategyMixin:
         return px,py
 
     def _theatre(self,c,site):
-        snapshot=self._strategic_snapshot_for(c['id'])
-        if snapshot is not None:
-            return snapshot.get_or_compute(
-                ('theatre',int(site['continent_id'])),lambda:self._theatre_uncached(c,site))
-        return self._theatre_uncached(c,site)
-
-    def _theatre_uncached(self,c,site):
         cid=int(c['id']);lm=int(site['continent_id']);idx=self._spatial_indices(cid,lm)
         pop=int(self.local_population.ravel()[idx].sum());army=int(self.local_soldiers.ravel()[idx].sum())
         owners=np.unique(self.world.territory[self.world.continent==lm])
@@ -427,7 +415,7 @@ class OverseasStrategyMixin:
         if not moved:return False
         cells=cells[:moved];self.world.territory[cells[:,0],cells[:,1]]=c['id']
         c['food']-=moved*cfg.EXPANSION_FOOD_COST_PER_CELL;c['timber']-=moved*cfg.EXPANSION_TIMBER_COST_PER_CELL
-        self._mark_world_changed(c['id'],landmass_ids=(lm,));self._build_geography();
+        self._mark_world_changed(c['id']);self._build_geography();
         from war_engine import _border_mask
         self.world.border=_border_mask(self.world.territory)
         self._telemetry(c,'theatre_expansion_cells',moved)
@@ -477,7 +465,7 @@ class OverseasStrategyMixin:
         c['overseas_capitals']=[s for s in c['overseas_capitals'] if int(s['continent_id'])!=lm]
         c['overseas_capital']=c['overseas_capitals'][0] if c['overseas_capitals'] else None
         c['colonies']=[s for s in c['colonies'] if int(s.get('continent_id',-1))!=lm]
-        self._mark_world_changed(c['id'],landmass_ids=(lm,));self._build_geography();self._telemetry(c,'evacuations')
+        self._mark_world_changed(c['id']);self._build_geography();self._telemetry(c,'evacuations')
         self._log(c['id'],f"島{lm}主動撤離：{reason}；全體{people:,}人（含{army:,}名士兵）登船，釋出{cells:,}格，返航{years}年；攜糧{food:,.1f}，未能運走糧食{max(0.0,stock+home_food-food):,.1f}。")
         return True
 

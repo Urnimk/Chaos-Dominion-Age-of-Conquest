@@ -1,0 +1,956 @@
+{
+  "game": "亂世演算_征佔紀元",
+  "version": "V19_地球地圖與海外撤退規則版",
+  "width": 1200,
+  "height": 1200,
+  "seed": 444381986,
+  "world_style": "ARCHIPELAGO",
+  "target_ocean_ratio": 0.7,
+  "actual_ocean_ratio": 0.780599,
+  "sea_level": 0.434016,
+  "landmass_count": 60,
+  "largest_landmasses": [
+    178893,
+    33718,
+    24923,
+    22385,
+    16558,
+    8076,
+    7412,
+    3847,
+    2059,
+    1654,
+    1561,
+    1285
+  ],
+  "generation_seconds": 8.944,
+  "average_land_temperature_c": 12.288,
+  "average_land_humidity": 0.6776,
+  "average_land_rainfall_mm": 1320.8,
+  "lake_cells": 496,
+  "river_cells": 1091,
+  "average_agriculture": 25.84,
+  "average_timber": 62.12,
+  "average_minerals": 33.84,
+  "average_freshwater": 26.76,
+  "average_city_value": 34.98,
+  "average_defense_value": 47.8,
+  "average_movement_cost": 8.55,
+  "country_count": 36,
+  "claimed_land_ratio": 0.99435,
+  "capital_count": 26,
+  "city_count": 96,
+  "port_count": 65,
+  "road_cells": 0,
+  "sea_route_cells": 0,
+  "countries": [
+    {
+      "id": 1,
+      "name": "東挫蛋先鋒",
+      "color": [
+        229,
+        152,
+        96
+      ],
+      "capital": [
+        686,
+        553
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 2,
+      "name": "引力坍塌",
+      "color": [
+        101,
+        82,
+        229
+      ],
+      "capital": [
+        245,
+        501
+      ],
+      "cities": [],
+      "ports": [
+        [
+          554,
+          1006
+        ],
+        [
+          552,
+          980
+        ],
+        [
+          955,
+          171
+        ],
+        [
+          954,
+          171
+        ],
+        [
+          409,
+          118
+        ],
+        [
+          395,
+          126
+        ],
+        [
+          1127,
+          128
+        ]
+      ],
+      "territory_cells": 149
+    },
+    {
+      "id": 3,
+      "name": "上孤高遊俠",
+      "color": [
+        95,
+        229,
+        68
+      ],
+      "capital": [
+        408,
+        533
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 4,
+      "name": "東煉金術士",
+      "color": [
+        229,
+        96,
+        157
+      ],
+      "capital": [
+        435,
+        206
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 5,
+      "name": "北天譴黑翼",
+      "color": [
+        82,
+        192,
+        229
+      ],
+      "capital": [
+        1015,
+        439
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 6,
+      "name": "猩紅女巫",
+      "color": [
+        229,
+        223,
+        68
+      ],
+      "capital": [
+        1180,
+        637
+      ],
+      "cities": [],
+      "ports": [
+        [
+          1111,
+          454
+        ],
+        [
+          847,
+          567
+        ],
+        [
+          932,
+          303
+        ],
+        [
+          558,
+          950
+        ],
+        [
+          636,
+          1006
+        ],
+        [
+          1183,
+          963
+        ],
+        [
+          637,
+          1025
+        ],
+        [
+          557,
+          953
+        ],
+        [
+          625,
+          858
+        ],
+        [
+          657,
+          842
+        ],
+        [
+          327,
+          608
+        ],
+        [
+          289,
+          952
+        ],
+        [
+          196,
+          372
+        ],
+        [
+          308,
+          385
+        ],
+        [
+          320,
+          626
+        ],
+        [
+          706,
+          972
+        ],
+        [
+          868,
+          368
+        ],
+        [
+          659,
+          356
+        ],
+        [
+          467,
+          652
+        ],
+        [
+          704,
+          939
+        ],
+        [
+          423,
+          658
+        ],
+        [
+          16,
+          502
+        ],
+        [
+          4,
+          901
+        ],
+        [
+          908,
+          803
+        ]
+      ],
+      "territory_cells": 149
+    },
+    {
+      "id": 7,
+      "name": "超頻驅動",
+      "color": [
+        185,
+        96,
+        229
+      ],
+      "capital": [
+        977,
+        491
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 8,
+      "name": "東肝帝連盟",
+      "color": [
+        82,
+        229,
+        138
+      ],
+      "capital": [
+        175,
+        1005
+      ],
+      "cities": [],
+      "ports": [
+        [
+          124,
+          879
+        ],
+        [
+          121,
+          880
+        ],
+        [
+          594,
+          1049
+        ],
+        [
+          530,
+          1141
+        ],
+        [
+          536,
+          1039
+        ],
+        [
+          349,
+          696
+        ],
+        [
+          871,
+          570
+        ],
+        [
+          1002,
+          124
+        ],
+        [
+          1104,
+          123
+        ],
+        [
+          1194,
+          905
+        ],
+        [
+          679,
+          866
+        ],
+        [
+          724,
+          414
+        ],
+        [
+          471,
+          628
+        ],
+        [
+          737,
+          904
+        ],
+        [
+          1148,
+          889
+        ],
+        [
+          26,
+          871
+        ],
+        [
+          509,
+          924
+        ],
+        [
+          473,
+          745
+        ],
+        [
+          911,
+          795
+        ],
+        [
+          311,
+          635
+        ],
+        [
+          473,
+          645
+        ],
+        [
+          748,
+          774
+        ]
+      ],
+      "territory_cells": 149
+    },
+    {
+      "id": 9,
+      "name": "夜城行者",
+      "color": [
+        229,
+        82,
+        68
+      ],
+      "capital": [
+        76,
+        900
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 95
+    },
+    {
+      "id": 10,
+      "name": "聯合寒冰刺客",
+      "color": [
+        96,
+        123,
+        229
+      ],
+      "capital": [
+        21,
+        971
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 11,
+      "name": "南迷霧幽靈",
+      "color": [
+        155,
+        229,
+        82
+      ],
+      "capital": [
+        923,
+        328
+      ],
+      "cities": [],
+      "ports": [
+        [
+          928,
+          347
+        ],
+        [
+          848,
+          291
+        ],
+        [
+          1072,
+          582
+        ],
+        [
+          822,
+          505
+        ],
+        [
+          993,
+          516
+        ],
+        [
+          1045,
+          544
+        ],
+        [
+          1169,
+          729
+        ],
+        [
+          1137,
+          706
+        ],
+        [
+          656,
+          903
+        ],
+        [
+          656,
+          904
+        ],
+        [
+          971,
+          175
+        ],
+        [
+          253,
+          336
+        ],
+        [
+          1191,
+          896
+        ],
+        [
+          954,
+          184
+        ],
+        [
+          786,
+          751
+        ],
+        [
+          410,
+          117
+        ],
+        [
+          410,
+          116
+        ],
+        [
+          1052,
+          584
+        ],
+        [
+          1198,
+          602
+        ],
+        [
+          962,
+          150
+        ],
+        [
+          899,
+          801
+        ],
+        [
+          862,
+          355
+        ],
+        [
+          411,
+          85
+        ],
+        [
+          576,
+          343
+        ],
+        [
+          267,
+          153
+        ],
+        [
+          245,
+          169
+        ],
+        [
+          596,
+          356
+        ],
+        [
+          625,
+          364
+        ]
+      ],
+      "territory_cells": 149
+    },
+    {
+      "id": 12,
+      "name": "新黑客帝國",
+      "color": [
+        229,
+        68,
+        195
+      ],
+      "capital": [
+        843,
+        280
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 102
+    },
+    {
+      "id": 13,
+      "name": "珍珠奶茶",
+      "color": [
+        96,
+        229,
+        218
+      ],
+      "capital": [
+        865,
+        177
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 14,
+      "name": "狂暴巨獸",
+      "color": [
+        229,
+        174,
+        82
+      ],
+      "capital": [
+        572,
+        934
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 15,
+      "name": "北黑曜石牆",
+      "color": [
+        122,
+        68,
+        229
+      ],
+      "capital": [
+        644,
+        865
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 16,
+      "name": "不朽傳奇",
+      "color": [
+        96,
+        229,
+        102
+      ],
+      "capital": [
+        618,
+        1036
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 149
+    },
+    {
+      "id": 17,
+      "name": "北黑客帝國",
+      "color": [
+        134,
+        185,
+        172
+      ],
+      "capital": [
+        804,
+        232
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 4512
+    },
+    {
+      "id": 18,
+      "name": "南黑曜石牆",
+      "color": [
+        203,
+        185,
+        206
+      ],
+      "capital": [
+        636,
+        934
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 406
+    },
+    {
+      "id": 19,
+      "name": "北迷霧幽靈",
+      "color": [
+        60,
+        170,
+        59
+      ],
+      "capital": [
+        849,
+        266
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 2058
+    },
+    {
+      "id": 20,
+      "name": "後黑客帝國",
+      "color": [
+        134,
+        185,
+        172
+      ],
+      "capital": [
+        807,
+        235
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 330
+    },
+    {
+      "id": 21,
+      "name": "後煉金術士",
+      "color": [
+        134,
+        213,
+        134
+      ],
+      "capital": [
+        445,
+        321
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 10877
+    },
+    {
+      "id": 22,
+      "name": "上煉金術士",
+      "color": [
+        215,
+        154,
+        111
+      ],
+      "capital": [
+        475,
+        432
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 4621
+    },
+    {
+      "id": 23,
+      "name": "西煉金術士",
+      "color": [
+        134,
+        213,
+        134
+      ],
+      "capital": [
+        329,
+        188
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 2299
+    },
+    {
+      "id": 24,
+      "name": "南挫蛋先鋒",
+      "color": [
+        134,
+        93,
+        73
+      ],
+      "capital": [
+        564,
+        524
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 9098
+    },
+    {
+      "id": 25,
+      "name": "北孤高遊俠",
+      "color": [
+        176,
+        170,
+        221
+      ],
+      "capital": [
+        788,
+        654
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 29383
+    },
+    {
+      "id": 26,
+      "name": "下孤高遊俠",
+      "color": [
+        176,
+        170,
+        221
+      ],
+      "capital": [
+        450,
+        582
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 2878
+    },
+    {
+      "id": 27,
+      "name": "東寒冰刺客",
+      "color": [
+        177,
+        64,
+        206
+      ],
+      "capital": [
+        126,
+        896
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 3691
+    },
+    {
+      "id": 28,
+      "name": "新寒冰刺客",
+      "color": [
+        82,
+        181,
+        183
+      ],
+      "capital": [
+        106,
+        925
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 542
+    },
+    {
+      "id": 29,
+      "name": "後挫蛋先鋒",
+      "color": [
+        215,
+        210,
+        50
+      ],
+      "capital": [
+        471,
+        492
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 1181
+    },
+    {
+      "id": 30,
+      "name": "北挫蛋先鋒",
+      "color": [
+        215,
+        210,
+        50
+      ],
+      "capital": [
+        549,
+        469
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 447
+    },
+    {
+      "id": 31,
+      "name": "南孤高遊俠",
+      "color": [
+        81,
+        111,
+        198
+      ],
+      "capital": [
+        678,
+        753
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 4823
+    },
+    {
+      "id": 32,
+      "name": "小寒冰刺客",
+      "color": [
+        177,
+        64,
+        206
+      ],
+      "capital": [
+        147,
+        920
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 5545
+    },
+    {
+      "id": 33,
+      "name": "西肝帝連盟",
+      "color": [
+        163,
+        170,
+        115
+      ],
+      "capital": [
+        61,
+        1036
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 3462
+    },
+    {
+      "id": 34,
+      "name": "大寒冰刺客",
+      "color": [
+        82,
+        181,
+        183
+      ],
+      "capital": [
+        86,
+        1021
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 2059
+    },
+    {
+      "id": 35,
+      "name": "自由寒冰刺客",
+      "color": [
+        82,
+        181,
+        183
+      ],
+      "capital": [
+        106,
+        925
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 1441
+    },
+    {
+      "id": 36,
+      "name": "新生寒冰刺客",
+      "color": [
+        177,
+        64,
+        206
+      ],
+      "capital": [
+        12,
+        1097
+      ],
+      "cities": [],
+      "ports": [],
+      "territory_cells": 2560
+    }
+  ],
+  "files": {
+    "data": "world_map.npz",
+    "preview": "world_map_preview.png"
+  }
+}

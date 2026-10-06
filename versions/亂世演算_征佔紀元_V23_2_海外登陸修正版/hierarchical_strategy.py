@@ -14,14 +14,6 @@ GOALS = ('UNIFY_HOMELAND', 'PREPARE_OVERSEAS_EXPANSION', 'COLONIZE_LANDMASS',
 
 class HierarchicalStrategyMixin:
     def _macro_measure(self,c,lm):
-        snapshot=self._strategic_snapshot_for(c['id'])
-        if snapshot is not None:
-            value=snapshot.get_or_compute(
-                ('macro_measure',int(lm)),lambda:self._macro_measure_uncached(c,lm))
-            return dict(value,rivals=list(value['rivals']))
-        return self._macro_measure_uncached(c,lm)
-
-    def _macro_measure_uncached(self,c,lm):
         idx=self._spatial_indices(c['id'],lm) if lm else np.array([],dtype=int)
         owners=set(int(x) for x in np.unique(self.world.territory[self.world.continent==lm]) if x>0) if lm else set()
         rivals=sorted(x for x in owners if x!=c['id'] and self.country(x)['alive'])
@@ -184,10 +176,7 @@ class HierarchicalStrategyMixin:
     def _macro_state_actions(self,cid,colony_available=False):
         c=self.country(cid);g=self._macro_update(c);lm=g['target_landmass'];home=self._home_continent_id(c)
         m=self._macro_measure(c,lm);site=self._site(c,lm);t=self._theatre(c,site) if site else None
-        snapshot=self._strategic_snapshot_for(cid)
-        hp=(int(snapshot.values['home_population']) if snapshot is not None else
-            int(self.local_population.ravel()[self._spatial_indices(cid,home)].sum()))
-        food_years=c['food']/max(1,hp*cfg.FOOD_CONSUMPTION_PER_PERSON)
+        hp=int(self.local_population.ravel()[self._spatial_indices(cid,home)].sum());food_years=c['food']/max(1,hp*cfg.FOOD_CONSUMPTION_PER_PERSON)
         resting=self.year<int(c.get('recovery_until_year',0));bindings={}
         # No Q floor / ATTACK_BIAS. Q chooses only executable tasks inside the commitment.
         if site and not m['port'] and self._can_pay(c,cfg.PORT_COST):bindings['SECURE_SUPPLY']=f'BUILD_OVERSEAS_PORT:{lm}'

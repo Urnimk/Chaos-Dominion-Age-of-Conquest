@@ -1,4 +1,4 @@
-"""V24 增量模擬核心版。"""
+"""V23_1 地名連結版。"""
 try:
     from map_viewer import main
 except ImportError as exc:
