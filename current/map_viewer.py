@@ -702,7 +702,7 @@ class MapViewer:
     def refresh_panels(self):
         if not self.war: return
         summary = self.war.summary()
-        self.year_var.set(f"🌍 世界第 {summary['year']} 年｜存活 {summary['alive']} 國｜行軍 {summary['campaigns']} 支｜殖民船 {summary.get('colonizing_voyages',0)} 艘｜戰役 {summary['battles']} 場")
+        # self.year_var.set(f"🌍 世界第 {summary['year']} 年｜存活 {summary['alive']} 國｜行軍 {summary['campaigns']} 支｜殖民船 {summary.get('colonizing_voyages',0)} 艘｜戰役 {summary['battles']} 場")
         names = [c["name"] for c in self.war.countries]
         self.country_combo.configure(values=names)
         cid = min(max(1, self.selected_country_id), len(names)); self.selected_country_id = cid
