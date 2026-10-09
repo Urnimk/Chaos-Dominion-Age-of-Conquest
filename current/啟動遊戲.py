@@ -1,4 +1,4 @@
-"""V24.4 國徽首都版。"""
+"""V24.3 一島一名版。"""
 try:
     from map_viewer import main
 except ImportError as exc:

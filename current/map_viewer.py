@@ -20,7 +20,6 @@ from map_renderer import render_environment
 from terrain_rules import terrain_name
 from climate_rules import biome_name
 from war_engine import WarEngine
-from country_emblems import draw_emblem
 from country_generator import BARRACKS, PORT
 
 
@@ -120,7 +119,7 @@ STYLE_CODES = {v: k for k, v in STYLE_LABELS.items()}
 class MapViewer:
     def __init__(self, root):
         self.root = root
-        self.root.title("亂世演算_征佔紀元 V24.4｜國徽首都版")
+        self.root.title("亂世演算_征佔紀元 V24.3｜一島一名版")
         self.root.geometry(WINDOW_SIZE)
         self.root.configure(bg="#161616")
         self.world = self.war = self.full_image = self.tk_image = None
@@ -1299,53 +1298,105 @@ class MapViewer:
         #                 fill="#d9ffec", anchor="w",
         #             )
 
-        self._draw_capital_emblems(left, top, cw, ch, ox, oy)
+        # 建築圖示以原生幾何圖形繪製，並置於島名、航線等圖層上方。
+        icon_size = max(12, min(30, int(cfg.MAP_BUILDING_ICON_SIZE * max(0.75, self.zoom))))
+        half = icon_size / 2
+        if self.war:
+            crop_right = min(self.world.settings.width, left + int(math.ceil(tw / self.zoom)))
+            crop_bottom = min(self.world.settings.height, top + int(math.ceil(th / self.zoom)))
+            buildings = self.world.settlement[top:crop_bottom, left:crop_right]
+            # for code, color in ((PORT, "#25c9e8"), (BARRACKS, "#ef765e")):
+            #     yy, xx = np.where(buildings == code)
+            #     if len(xx) > 2500:
+            #         pick = np.linspace(0, len(xx) - 1, 2500, dtype=int)
+            #         yy, xx = yy[pick], xx[pick]
+            #     for by, bx in zip(yy, xx):
+            #         sx, sy = ox + int(bx)*self.zoom, oy + int(by)*self.zoom
+            #         if code == PORT:
+            #             self.canvas.create_oval(sx-half, sy-half, sx+half, sy+half,
+            #                                     fill="#083b66", outline="#b8f5ff", width=2)
+            #             self.canvas.create_line(sx-half*0.55, sy+half*0.15, sx+half*0.55, sy+half*0.15,
+            #                                     fill=color, width=2)
+            #             self.canvas.create_line(sx-half*0.4, sy+half*0.45, sx+half*0.4, sy+half*0.45,
+            #                                     fill="#b8f5ff", width=1)
+            #             self.canvas.create_polygon(sx, sy-half*0.65, sx+half*0.42, sy+half*0.1,
+            #                                        sx-half*0.42, sy+half*0.1,
+            #                                        fill=color, outline="white", width=1)
+            #         else:
+            #             self.canvas.create_rectangle(sx-half, sy-half, sx+half, sy+half,
+            #                                          fill="#762f32", outline="#ffe0c2", width=2)
+            #             self.canvas.create_line(sx-half*0.4, sy+half*0.4, sx+half*0.4, sy-half*0.4,
+            #                                     fill="#fff0d6", width=3)
+            #             self.canvas.create_line(sx-half*0.4, sy-half*0.4, sx+half*0.4, sy+half*0.4,
+            #                                     fill="#fff0d6", width=3)
 
-    def _draw_capital_emblems(self, left, top, cw, ch, ox, oy):
-        """One national emblem shared by home and overseas capitals."""
-        size = max(18, min(34, int(cfg.MAP_BUILDING_ICON_SIZE * max(0.9, self.zoom))))
-        half = size / 2
-        countries = self.war.countries if self.war else self.world.countries
-        major = self.war._major_landmass_ids() if self.war else set()
-        capitals = []
-        # Overseas first; the home capital is always visible above other markers.
-        for country in countries:
-            if not country.get('alive', True):
-                continue
-            home = tuple(country.get('capital', (-1, -1)))
-            seen = set()
-            sites = country.get('overseas_capitals', []) or ([country['overseas_capital']] if country.get('overseas_capital') else [])
-            for site in sites:
-                anchor = tuple(site.get('anchor', (-1, -1)))
-                if anchor == home or anchor in seen:
+            # 大小島沿用引擎標準；每次繪圖只計算一次。
+            major_islands = self.war._major_landmass_ids()
+            # 殖民或征服取得的每一處海外領地，都須有海外首都標記。
+            for country in self.war.countries:
+                if not country.get("alive", True):
                     continue
-                seen.add(anchor)
-                capitals.append((country, anchor, True))
-        capitals.extend((country, tuple(country.get('capital', (-1, -1))), False)
-                        for country in countries if country.get('alive', True))
-        for country, (x, y), overseas in capitals:
-            x, y = int(x), int(y)
-            if not (0 <= y < self.world.settings.height and 0 <= x < self.world.settings.width):
-                continue
-            if int(self.world.territory[y,x]) != int(country['id']):
-                continue
-            sx, sy = ox + (x-left)*self.zoom, oy + (y-top)*self.zoom
-            if not (-size <= sx <= cw+size and -size <= sy <= ch+size):
-                continue
-            draw_emblem(self.canvas, sx, sy, size, country['id'], overseas)
-            lm = int(self.world.continent[y,x])
-            if not overseas or lm in major:
-                self._draw_capital_name(sx, sy-half*(1.3 if overseas else 1)-5, country['name'])
+                sites = list(country.get("overseas_capitals", []))
+                if not sites and country.get("overseas_capital"):
+                    sites = [country["overseas_capital"]]
+                for overseas in sites:
+                    ax, ay = map(int, overseas.get("anchor", (0, 0)))
+                    if not (0 <= ay < self.world.settings.height and 0 <= ax < self.world.settings.width):
+                        continue
+                    if int(self.world.territory[ay, ax]) != int(country["id"]):
+                        continue
+                    sx, sy = ox + (ax-left)*self.zoom, oy + (ay-top)*self.zoom
+                    if -half <= sx <= cw+half and -half <= sy <= ch+half:
+                        self.canvas.create_oval(sx-half, sy-half, sx+half, sy+half,
+                                                fill="#10555d", outline="#b7f9ff", width=3)
+                        self.canvas.create_text(sx, sy, text="★", fill="#ffffff",
+                                                font=(UI_FONT_FAMILY, max(10, icon_size-4), "bold"))
+                        kind = overseas.get("type", "海外")
+                        # self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}・{kind}首都",
+                        #                         fill="white", anchor="w", font=(UI_FONT_FAMILY, 9, "bold"))
 
-    def _draw_capital_name(self, x, y, name):
-        font = (UI_FONT_FAMILY, UI_COUNTRY_NAME_FONT_SIZE,
-                'bold' if cfg.COUNTRY_NAME_FONT_BOLD else 'normal')
-        outline = max(0, int(cfg.COUNTRY_NAME_OUTLINE_WIDTH))
-        for dx in range(-outline, outline+1):
-            for dy in range(-outline, outline+1):
-                if max(abs(dx),abs(dy)) == outline and (dx or dy):
-                    self.canvas.create_text(x+dx,y+dy,text=name,font=font,fill='#111',anchor='s')
-        self.canvas.create_text(x,y,text=name,font=font,fill='white',anchor='s')
+                        if int(self.world.continent[ay, ax]) in major_islands:
+                            self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}",
+                                                    fill="white", anchor="w", font=(UI_FONT_FAMILY, 12, "bold"))
+
+        # 本土首都圖示最後繪製，確保港口、兵營、島名與航線都不能遮住它。
+        for country in self.world.countries:
+            cid = int(country["id"])
+            cx, cy = map(int, country["capital"])
+            if not (0 <= cy < self.world.settings.height and 0 <= cx < self.world.settings.width):
+                continue
+            if int(self.world.territory[cy, cx]) != cid:
+                continue
+            sx, sy = ox + (cx-left)*self.zoom, oy + (cy-top)*self.zoom
+            if -half <= sx <= cw+half and -half <= sy <= ch+half:
+                self.canvas.create_oval(sx-half, sy-half, sx+half, sy+half,
+                                        fill="#533c0b", outline="#fff1a8", width=3)
+                self.canvas.create_text(sx, sy, text="★", fill="#ffd54f",
+                                        font=(UI_FONT_FAMILY, max(11, icon_size-3), "bold"))
+
+        font = (UI_FONT_FAMILY, UI_COUNTRY_NAME_FONT_SIZE, "bold" if cfg.COUNTRY_NAME_FONT_BOLD else "normal")
+        for country in self.world.countries:
+            cid=int(country["id"]); cx,cy=country["capital"]
+            if self.world.territory[cy,cx] != cid: continue
+            sx,sy=ox+(cx-left)*self.zoom,oy+(cy-top)*self.zoom
+            if -100 <= sx <= cw+100 and -30 <= sy <= ch+30:
+                # Tkinter Canvas.create_text 不支援 stroke_width/stroke_fill。
+                # 以偏移文字模擬黑色外框，再於中央畫白色國名。
+                outline = max(0, int(cfg.COUNTRY_NAME_OUTLINE_WIDTH))
+                if outline:
+                    for dx in range(-outline, outline + 1):
+                        for dy in range(-outline, outline + 1):
+                            if dx == 0 and dy == 0:
+                                continue
+                            if max(abs(dx), abs(dy)) != outline:
+                                continue
+                            self.canvas.create_text(
+                                sx + dx, sy - 12 + dy, text=country["name"],
+                                font=font, fill="#111"
+                            )
+                self.canvas.create_text(
+                    sx, sy - 12, text=country["name"], font=font, fill="white"
+                )
 
     def on_wheel(self, event): self.zoom=max(MAP_MIN_ZOOM,min(MAP_MAX_ZOOM,self.zoom*(MAP_WHEEL_ZOOM_IN if event.delta>0 else MAP_WHEEL_ZOOM_OUT))); self.redraw()
     def on_press(self,event): self.drag_start=(event.x,event.y,self.center_x,self.center_y)

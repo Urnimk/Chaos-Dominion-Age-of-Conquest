@@ -1330,6 +1330,8 @@ class MapViewer:
             #             self.canvas.create_line(sx-half*0.4, sy-half*0.4, sx+half*0.4, sy+half*0.4,
             #                                     fill="#fff0d6", width=3)
 
+            # 大小島沿用引擎標準；每次繪圖只計算一次。
+            major_islands = self.war._major_landmass_ids()
             # 殖民或征服取得的每一處海外領地，都須有海外首都標記。
             for country in self.war.countries:
                 if not country.get("alive", True):
@@ -1353,8 +1355,9 @@ class MapViewer:
                         # self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}・{kind}首都",
                         #                         fill="white", anchor="w", font=(UI_FONT_FAMILY, 9, "bold"))
 
-                        self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}",
-                                                                        fill="white", anchor="w", font=(UI_FONT_FAMILY, 12, "bold"))
+                        if int(self.world.continent[ay, ax]) in major_islands:
+                            self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}",
+                                                    fill="white", anchor="w", font=(UI_FONT_FAMILY, 12, "bold"))
 
         # 本土首都圖示最後繪製，確保港口、兵營、島名與航線都不能遮住它。
         for country in self.world.countries:
