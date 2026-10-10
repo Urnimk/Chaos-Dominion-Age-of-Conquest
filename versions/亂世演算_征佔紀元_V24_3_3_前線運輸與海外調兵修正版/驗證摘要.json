@@ -1,0 +1,37 @@
+{
+  "start": 66492,
+  "end": 66592,
+  "tests_passed": 27,
+  "source_unchanged": true,
+  "baseline": {
+    "returns": 43,
+    "troop_voyages": 13,
+    "battles": 23
+  },
+  "fixed": {
+    "returns": 0,
+    "troop_voyages": 30,
+    "battles": 15,
+    "redeployments": 8
+  },
+  "conservation": [
+    {
+      "returning": false,
+      "source": 19,
+      "destination": 21,
+      "soldiers": 2613,
+      "years": 8,
+      "conservation": true,
+      "home_food_untouched": true
+    },
+    {
+      "returning": true,
+      "source": 19,
+      "destination": 21,
+      "soldiers": 2613,
+      "years": 8,
+      "conservation": true,
+      "home_food_untouched": true
+    }
+  ]
+}

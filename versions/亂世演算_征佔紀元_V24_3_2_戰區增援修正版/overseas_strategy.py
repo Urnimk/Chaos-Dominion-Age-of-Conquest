@@ -268,32 +268,7 @@ class OverseasStrategyMixin:
             self._telemetry(c,'local_recruits',actual)
             if lm!=home:self._telemetry(c,'overseas_local_recruits',actual)
 
-    @staticmethod
-    def _voyage_supports_theatre(c,lm):
-        v=c.get('reinforcement_voyage')
-        return bool(v and not v.get('returning') and int(v.get('continent_id',-1))==int(lm))
-
     def _reinforcement_manifest(self,c,t):
-        """Fund one real voyage from home or a pacified overseas base."""
-        home=self._reinforcement_manifest_from(c,t)
-        candidates=[home] if home else []
-        if not t or not t['enemies'] or c.get('reinforcement_voyage'):return home
-        home_reason=t.get('reinforcement_block_reason','')
-        for site in c.get('overseas_capitals',[]):
-            lm=int(site['continent_id'])
-            if lm==t['lm'] or not self._overseas_landmass_is_pacified(c,lm):continue
-            # A peaceful base must keep its own reserve and fund its own cargo.
-            manifest=self._reinforcement_manifest_from(c,t,site)
-            if manifest:candidates.append(manifest)
-        if not candidates:
-            t['reinforcement_block_reason']=home_reason
-            return None
-        chosen=max(candidates,key=lambda m:(m['amount']>0,m['amount']/max(1,m['years']),
-                                            m['supply']/max(1,m['years'])))
-        t['reinforcement_block_reason']=''
-        return chosen
-
-    def _reinforcement_manifest_from(self,c,t,source_site=None):
         if not t:return None
         t['reinforcement_block_reason']=''
         def blocked(reason):
@@ -303,15 +278,11 @@ class OverseasStrategyMixin:
         if c.get('reinforcement_voyage'):return blocked('已有運輸船隊在途')
         if c['fleet']<1:return blocked('沒有可用艦艇')
         if t['gap']<=0 and t['supply_need']<=0:return None
-        cid=c['id'];home=int(source_site['continent_id']) if source_site else self._home_continent_id(c);hi=self._spatial_indices(cid,home)
+        cid=c['id'];home=self._home_continent_id(c);hi=self._spatial_indices(cid,home)
         hp=int(self.local_population.ravel()[hi].sum());ha=self._home_soldiers(cid,home)
-        reserve_ratio=cfg.OVERSEAS_PEACE_GARRISON_RATIO if source_site else cfg.MIN_GARRISON_RATIO
-        available=max(0,ha-int(math.ceil(hp*reserve_ratio)));dest=t['port']
+        available=max(0,ha-int(hp*cfg.MIN_GARRISON_RATIO));dest=t['port']
         ports=np.argwhere((self.world.territory==cid)&(self.world.continent==home)&(self.world.settlement==PORT))
-        if source_site:
-            port=self._logistics_port(c,source_site)
-            ports=np.array([[port[1],port[0]]]) if port else np.empty((0,2),dtype=int)
-        if not len(ports):return blocked('來源基地沒有可用港口')
+        if not len(ports):return blocked('本島沒有可用港口')
         route=None
         for py,px in sorted(ports.tolist(),key=lambda p:self._wrapped_distance_cells((p[1],p[0]),dest,self.world.settings.width)):
             route=self._sea_route((px,py),dest)
@@ -339,13 +310,7 @@ class OverseasStrategyMixin:
             food=t['supply_need']+people*cfg.FOOD_CONSUMPTION_PER_PERSON*(years+cfg.OVERSEAS_SUPPLY_BUFFER_YEARS)
             return people,food
         # Find a fully funded manifest BEFORE taking people, troops, food or ships.
-        source_food=float(source_site.get('supply_food',0)) if source_site else float(c['food'])
-        if source_site:
-            bonus=min(cfg.MAX_CITY_FOOD_PRODUCTIVITY_BONUS,int(c.get('cities',0))*cfg.CITY_FOOD_PRODUCTIVITY_BONUS)
-            output=float(self.food_yield.ravel()[hi].sum())*cfg.FOOD_PRODUCTION_MULTIPLIER*(1+bonus)
-            source_reserve=max(0.,hp*cfg.FOOD_CONSUMPTION_PER_PERSON-output)*cfg.OVERSEAS_SUPPLY_BUFFER_YEARS
-            source_food=max(0.,source_food-source_reserve)
-        limit_food=min(source_food,c['fleet']*cfg.OVERSEAS_FOOD_PER_SHIP)
+        limit_food=min(c['food'],c['fleet']*cfg.OVERSEAS_FOOD_PER_SHIP)
         low,high=0,max(0,int(amount))
         while low<high:
             mid=(low+high+1)//2;people,food=cargo(mid)
@@ -361,7 +326,7 @@ class OverseasStrategyMixin:
                     '糧食或可用運輸資源不足')
             return blocked(reason)
         if people>hp-ha+amount:return blocked('本島留守人口不足')
-        return dict(px=px,py=py,route=route,distance=distance,years=years,budget=budget,amount=amount,people=people,supply=supply,hp=hp,home=home,dest=dest,source_site=source_site)
+        return dict(px=px,py=py,route=route,distance=distance,years=years,budget=budget,amount=amount,people=people,supply=supply,hp=hp,home=home,dest=dest)
 
     def _reinforce_v22(self,selected_country_ids=None,force=False):
         if not force and self.year%cfg.OVERSEAS_REINFORCEMENT_CHECK_YEARS:return set()
@@ -389,53 +354,31 @@ class OverseasStrategyMixin:
                 self._add_local_soldiers(cid,home,soldiers);continue
             removed=self._remove_population_in_mask(source,people)
             if removed!=people:
-                x,y=px,py;self.local_population[y,x]+=removed;self._add_local_soldiers(cid,home,soldiers);continue
+                x,y=c['capital'];self.local_population[y,x]+=removed;self._add_local_soldiers(cid,home,soldiers);continue
             ships=max(1,math.ceil(soldiers/cfg.OVERSEAS_SOLDIERS_PER_SHIP),
                       math.ceil(people/cfg.OVERSEAS_POPULATION_PER_SHIP),math.ceil(supply/cfg.OVERSEAS_FOOD_PER_SHIP))
-            c['fleet']-=ships
-            source_site=manifest.get('source_site')
-            if source_site:source_site['supply_food']=max(0.,float(source_site.get('supply_food',0))-supply)
-            else:c['food']-=supply
+            c['fleet']-=ships;c['food']-=supply
             c['reinforcement_voyage']={'continent_id':t['lm'],'anchor':list(dest),'origin_port':[px,py],
                  'origin_landmass':home,'soldiers':soldiers,'transported_population':people,'fleet':ships,
                  'years_left':years,'total_years':years,'route':route,'route_distance_km':distance,
                  'launched_year':self.year,'supply_food':supply,'embarked_population':True,
                  'departure_population_budget':budget}
-            self._telemetry(c,'reinforcements_launched')
-            if source_site:self._telemetry(c,'overseas_redeployments_launched')
-            self._sync_army_totals(cid)
+            self._telemetry(c,'reinforcements_launched');self._sync_army_totals(cid)
             cargo = f"{soldiers}名士兵、{people-soldiers}名居民、糧食{supply:,.1f}" if soldiers else f"糧食{supply:,.1f}（純補給）"
-            source_label=f'和平海外基地（島{home}）' if source_site else '本島'
-            self._log(cid,f"{'增援' if soldiers else '補給'}船隊自{source_label}港({px},{py})向指定海外港{dest}運送{cargo}、{ships}艘艦艇，航程{years}年。")
+            self._log(cid,f"{'增援' if soldiers else '補給'}船隊自本島港({px},{py})向指定海外港{dest}運送{cargo}、{ships}艘艦艇，航程{years}年。")
             launched.add(cid)
         return launched
 
     def _return_peacetime_surplus(self,c,site):
         """Ship surplus troops home after pacification; keep the base and reserve."""
         if c.get('reinforcement_voyage') or not self._overseas_landmass_is_pacified(c,int(site['continent_id'])):return False
-        # Do not reserve the national transport slot while any front needs support.
-        for other in c.get('overseas_capitals',[]):
-            t_other=self._theatre(c,other)
-            if t_other['enemies'] and (t_other['gap']>0 or t_other['supply_need']>0):return False
-        if self.year<int(site.get('last_peacetime_return_year',-1000000))+cfg.OVERSEAS_RETURN_COOLDOWN_YEARS:return False
         t=self._theatre(c,site)
         if not t['port'] or t['enemies']:return False
         lm=t['lm'];home=self._home_continent_id(c);idx=self._spatial_indices(c['id'],lm)
         bonus=min(cfg.MAX_CITY_FOOD_PRODUCTIVITY_BONUS,int(c.get('cities',0))*cfg.CITY_FOOD_PRODUCTIVITY_BONUS)
         capacity=int(float(self.food_yield.ravel()[idx].sum())*cfg.FOOD_PRODUCTION_MULTIPLIER*(1+bonus)/cfg.FOOD_CONSUMPTION_PER_PERSON)
-        # A population forecast alone is not an evacuation order. Require a
-        # persistent real food deficit with less than the configured runway.
-        annual_deficit=max(0.,(t['population']-capacity)*cfg.FOOD_CONSUMPTION_PER_PERSON)
-        stock=max(0.,float(site.get('supply_food',0)))
-        shortage=annual_deficit>0 and stock<annual_deficit*cfg.OVERSEAS_RETURN_FOOD_RUNWAY_YEARS
-        if not shortage:
-            site.pop('peacetime_shortage_since_year',None)
-            return False
-        since=site.setdefault('peacetime_shortage_since_year',self.year)
-        if self.year-int(since)<cfg.OVERSEAS_RETURN_SHORTAGE_YEARS:return False
         surplus=min(max(0,t['population']-capacity),max(0,t['army']-t['target']))
-        minimum=max(cfg.OVERSEAS_RETURN_MIN_SOLDIERS,int(math.ceil(t['population']*cfg.OVERSEAS_RETURN_MIN_POP_RATIO)))
-        if surplus<minimum:return False
+        if surplus<=0:return False
         ports=np.argwhere((self.world.territory==c['id'])&(self.world.continent==home)&(self.world.settlement==PORT))
         route=None
         for py,px in ports:
@@ -447,7 +390,7 @@ class OverseasStrategyMixin:
         stock=max(0.,float(site.get('supply_food',0)))
         amount=min(surplus,self._transport_population_capacity(c['fleet']),
                    self._transport_soldier_capacity(c['fleet']),int(min(stock,c['fleet']*cfg.OVERSEAS_FOOD_PER_SHIP)/per_person))
-        if amount<minimum:return False
+        if amount<=0:return False
         food=amount*per_person
         ships=max(1,math.ceil(amount/cfg.OVERSEAS_SOLDIERS_PER_SHIP),
                   math.ceil(amount/cfg.OVERSEAS_POPULATION_PER_SHIP),math.ceil(food/cfg.OVERSEAS_FOOD_PER_SHIP))
@@ -463,8 +406,6 @@ class OverseasStrategyMixin:
             'transported_population':soldiers,'soldiers':soldiers,'fleet':ships,
             'years_left':years,'total_years':years,'launched_year':self.year,
             'route':list(reversed(route)),'supply_food':food}
-        site['last_peacetime_return_year']=self.year
-        site.pop('peacetime_shortage_since_year',None)
         self._sync_army_totals(c['id']);self._telemetry(c,'peacetime_troops_returned',soldiers)
         self._log(c['id'],f"島{lm}已平定，超出當地承載的{soldiers}名駐軍搭船返鄉，保留基地與必要駐防。")
         return True
@@ -512,12 +453,10 @@ class OverseasStrategyMixin:
                 else:
                     self._telemetry(c,'reinforcements_returned')
                     returned_food=max(0.0,float(v.get('supply_food',0)))
-                    source_site=self._site(c,target_lm) if target_lm!=self._home_continent_id(c) else None
-                    if source_site:source_site['supply_food']=float(source_site.get('supply_food',0))+returned_food
-                    else:c['food']+=returned_food
+                    c['food']+=returned_food
                     reason=v.get('return_reason','legacy_unknown')
                     label={'strategic_evacuation':'海外戰區主動撤離','port_lost':'海外指定補給港失效','peacetime_surplus':'平定後超額駐軍返鄉'}.get(reason,'舊存檔返航（未記錄原因）')
-                    self._log(c['id'],f"{label}：{int(v.get('transported_population',0)):,}人（含{int(v['soldiers']):,}名士兵）完成返航，餘糧{returned_food:,.1f}入來源基地倉。")
+                    self._log(c['id'],f"{label}：{int(v.get('transported_population',0)):,}人（含{int(v['soldiers']):,}名士兵）完成返航，餘糧{returned_food:,.1f}入本島倉。")
                     if reason=='port_lost':self._apply_delayed_rl_credit(c,v,-.2,'補給航線中斷')
             c['reinforcement_voyage']=None;self._sync_army_totals(c['id'])
 
@@ -532,7 +471,7 @@ class OverseasStrategyMixin:
         if kind=='REQUEST_REINFORCEMENTS':
             site['reinforcement_requested_year']=self.year
             return cid in self._reinforce_v22({cid},True)
-        if kind=='WAIT_REINFORCEMENTS':return self._voyage_supports_theatre(c,lm)
+        if kind=='WAIT_REINFORCEMENTS':return bool(c.get('reinforcement_voyage'))
         if kind=='REDEPLOY':return cid in self._found_overseas_colonies({cid},True)
         if kind=='RETREAT':return self._evacuate_theatre(c,site)
         if kind in ('DEFEND_CAPITAL','DEFEND_PORT'):

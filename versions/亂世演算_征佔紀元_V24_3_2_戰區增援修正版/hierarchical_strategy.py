@@ -132,7 +132,7 @@ class HierarchicalStrategyMixin:
             o['landmass_id']==lm and o['id'] in m['rivals'] and self._macro_landing_feasible(c,o)
             for o in self.legal_targets(c['id']) if o['mode']=='naval'
         ):reason='TARGET_UNREACHABLE'
-        elif self.year-commit['last_progress_year']>=cfg.MACRO_STALL_YEARS and not travelling and not self._voyage_supports_theatre(c,lm):
+        elif self.year-commit['last_progress_year']>=cfg.MACRO_STALL_YEARS and not travelling and not c.get('reinforcement_voyage'):
             site=self._site(c,lm)
             t=self._theatre(c,site) if site else None
             manifest=self._reinforcement_manifest(c,t) if t else None
@@ -221,7 +221,7 @@ class HierarchicalStrategyMixin:
         if site and incoming:
             bindings['DEFEND_CAPITAL']=f'THEATRE:{lm}:DEFEND_CAPITAL'
             if m['port']:bindings['DEFEND_PORT']=f'THEATRE:{lm}:DEFEND_PORT'
-        if site and not bindings and self._voyage_supports_theatre(c,lm):
+        if site and not bindings and c.get('reinforcement_voyage'):
             bindings['WAIT_FOR_TRANSPORT']=f'THEATRE:{lm}:WAIT_REINFORCEMENTS'
         # Building the first port and funding troop transport are prerequisites.
         if 'SECURE_SUPPLY' in bindings:bindings={'SECURE_SUPPLY':bindings['SECURE_SUPPLY']}
@@ -235,11 +235,8 @@ class HierarchicalStrategyMixin:
         c['strategic_block_reason']=f"中期目標：{labels[g['goal_type']]}｜目標島嶼：{place}｜已持續{self.year-(c.get('strategic_commitment') or {}).get('started_year',self.year)}年"
         if t:
             voyage=c.get('reinforcement_voyage')
-            if self._voyage_supports_theatre(c,lm):
-                detail=f"本戰區援軍／補給途中，剩餘{voyage.get('years_left',0)}年"
-            elif voyage:
-                purpose='返鄉' if voyage.get('returning') else '支援其他戰區'
-                detail=f"船隊正{purpose}（島{voyage.get('continent_id')}），剩餘{voyage.get('years_left',0)}年；本戰區尚無在途援軍"
+            if voyage:
+                detail=f"運輸途中，剩餘{voyage.get('years_left',0)}年"
             elif manifest:
                 detail=f"可派增援{manifest['amount']}兵／糧食{manifest['supply']:,.0f}"
             elif t['gap']>0:
