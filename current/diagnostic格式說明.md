@@ -1,3 +1,9 @@
+# V25_1 補充
+
+續接檔改用 diagnostic_state.json.gz；原 JSON 相容讀取與保留，公開 JSONL/CSV 可照常閱讀。檔案鎖住時，每檔分別處理並等待下次批次重試，匯出 ZIP 使用最新記憶體資料。
+
+CSV 新增 diagnostic_flush_ms、simulation_with_diagnostics_ms、total_recorded_ms；寫入中的快照不會預知自己的完整耗時，下一份快照或匯出才包含它。舊版缺少的逐年 I/O 不補造。詳見本次更新與效能驗證文件。
+
 # V25 診斷格式與操作說明
 
 此版本只新增觀察與匯出。AI、戰爭參數、候選排序、RNG、Q-table schema、存檔欄位，以及 WorldStateCache／StrategicSnapshot 的原運算維持原版。Logger 不查詢新的 AI 方案，不抽取亂數。遊戲版本為 V25；舊存檔的 V24 schema 標記仍沿用，以保持相容。

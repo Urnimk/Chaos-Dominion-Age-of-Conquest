@@ -358,8 +358,7 @@ OVERSEAS_RETURN_FOOD_RUNWAY_YEARS = 5
 # V25 observational diagnostics: master OFF means no logger, buffers or files.
 
 #開啟診斷
-DIAGNOSTIC = False
-
+DIAGNOSTIC = True
 
 # 診斷詳細程度；0=停用、1=只記摘要統計、2=記錄完整 AI 決策與戰線拓樸等詳細資料。
 DIAGNOSTIC_DETAIL_LEVEL = 1

@@ -1,0 +1,23 @@
+{
+  "version": "V25_1",
+  "source": "本次上傳 亂世演算_征佔紀元_V25_診斷與效能分析版(1).rar",
+  "source_sha256": "5f7b6060eaf102727a3911dec04acf3813a50c082afef8a94c0527bcb01cef16",
+  "unit_tests_passed": 53,
+  "years_simulated": 100,
+  "final_year": 77600,
+  "authoritative_fields_compared": 74,
+  "state_differences": [],
+  "state_hash": "7324b143dd895c7eb6713c658b8eace19becdc42cf164c3d2840fba22b8d40aa",
+  "source_saves_unchanged": true,
+  "game_seconds_before": 52.023357003,
+  "game_seconds_after": 51.03356596799995,
+  "game_speed_change_percent": 1.9025897058949415,
+  "diagnostic_flush_seconds_before": 2.511741609999717,
+  "diagnostic_flush_seconds_after": 0.34124155600011363,
+  "legacy_state_bytes": 37660285,
+  "compressed_state_bytes": 1636938,
+  "spacing_16_checks_seconds_before": 1.6412010869998994,
+  "spacing_16_checks_seconds_after": 0.11699060799992367,
+  "spacing_results_equal": true,
+  "timing_scope": "Sequential single-run benchmarks on this environment; component comparisons are not overall speedup estimates."
+}

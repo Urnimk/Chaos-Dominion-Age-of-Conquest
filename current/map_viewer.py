@@ -119,7 +119,7 @@ STYLE_CODES = {v: k for k, v in STYLE_LABELS.items()}
 class MapViewer:
     def __init__(self, root):
         self.root = root
-        self.root.title("亂世演算_征佔紀元 V25｜診斷與效能分析版")
+        self.root.title("亂世演算_征佔紀元 V25_1｜寫檔與建築選址優化版")
         self.root.geometry(WINDOW_SIZE)
         self.root.configure(bg="#161616")
         self.world = self.war = self.full_image = self.tk_image = None

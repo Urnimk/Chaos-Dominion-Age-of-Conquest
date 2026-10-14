@@ -19,6 +19,7 @@ import map_config as cfg
 from climate_rules import LAKE, RIVER
 from terrain_rules import HILL, MOUNTAIN, HIGH_MOUNTAIN, TERRAIN_NAMES
 from country_generator import CAPITAL, CITY, PORT, BARRACKS, OUTPOST
+from building_placement import coastal_neighbors, spacing_allowed
 from rl_brain import CountryBrain, PASS_ACTION, action_kind, STATE_DIMENSIONS
 from overseas_strategy import OverseasStrategyMixin
 from hierarchical_strategy import HierarchicalStrategyMixin
@@ -2874,7 +2875,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         occupied = self.world.settlement > 0
         candidates = np.argwhere(mask & ~occupied)
         sea = self.world.terrain <= 1
-        coast = mask & ndimage.binary_dilation(sea, iterations=1) & ~occupied
+        coast = mask & coastal_neighbors(self, sea) & ~occupied
         port_limit = max(0, int(cfg.PORTS_PER_COUNTRY))
         home = self._home_continent_id(country)
         coast &= self.world.continent == home
@@ -2927,10 +2928,9 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                                 if code == CITY else self.world.settlement == BARRACKS)
                 if np.any(spacing_mask):
                     # Triple-width padding makes horizontal world wrapping count as adjacent.
-                    padded = np.concatenate((spacing_mask, spacing_mask, spacing_mask), axis=1)
-                    distance = ndimage.distance_transform_edt(~padded)[:, self.world.settings.width:2 * self.world.settings.width]
+                    allowed = spacing_allowed(self, code, spacing_mask, min_gap)
                     build_candidates = candidates[
-                        distance[candidates[:, 0], candidates[:, 1]] >= min_gap
+                        allowed[candidates[:, 0], candidates[:, 1]]
                     ]
                     # No legal location for this building must not block later types.
                     if not len(build_candidates):

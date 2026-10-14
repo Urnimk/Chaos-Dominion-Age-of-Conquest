@@ -5,13 +5,15 @@ Timers use exclusive nesting; UI is separate from simulation. JSON null means
 unmeasured/unsupported, never a fabricated win probability or causal estimate.
 """
 from __future__ import annotations
+import gzip
+import diagnostic_io
 import copy, csv, functools, hashlib, inspect, json, math, os, time, uuid, zipfile
 from collections import Counter, defaultdict, deque
 from pathlib import Path
 import numpy as np
 import map_config as cfg
 
-GAME_VERSION='V25'
+GAME_VERSION='V25_1'
 SCHEMA_VERSION=1
 ACTIONS=('ATTACK_HOMELAND','ATTACK_OVERSEAS','ATTACK_FRONT','CUT_OFF','ENCIRCLE_CAPITAL',
          'EXPAND_BEACHHEAD','COLONIZE','REINFORCE_ACTIVE_THEATRE','SECURE_SUPPLY',
@@ -57,6 +59,8 @@ class DiagnosticLogger:
         self.io_ms=0.;self.seen_world_pacified=set();self.target_runs=defaultdict(list)
         self.captured=set();self.pending_baseline={};self.restored=False;self.in_year=False
         self.arrivals={};self.voyage_decisions={}
+        self.next_flush_year=0;self.last_flush_attempt=None;self.last_io_year=None
+        self.active_write_errors={};self.last_flush_errors=[]
 
     def enabled_for(self,category):
         return self.enabled and self.flags.get(category,category in ('macro','major')) and (category!='ai' or self.level>=2)
@@ -531,12 +535,12 @@ class DiagnosticLogger:
         accounted=sum(self.phases.values());self.phases['other']+=max(0.,total-accounted)
         if self.enabled_for('performance'):
             self.performance.append({'year':self.engine.year,'simulation_ms':total,'phases_ms':dict(self.phases),'counts':dict(self.year_counts),
-                'events':dict(self.year_events),'ui_ms':sum(self.ui_phases.values()),'ui_phases_ms':dict(self.ui_phases)})
+                'events':dict(self.year_events),'diagnostic_flush_ms':0.,'ui_ms':sum(self.ui_phases.values()),'ui_phases_ms':dict(self.ui_phases)})
             self.ui_phases=Counter()
             if self.engine.year%max(1,int(getattr(cfg,'PERFORMANCE_SUMMARY_INTERVAL_YEARS',1000)))==0:
                 self.performance_summaries.append(self.performance_summary());self.health_history.append(self.health())
         self.last_year=self.engine.year;self.in_year=False
-        if self.last_flush is None or self.engine.year-self.last_flush>=int(getattr(cfg,'DIAGNOSTIC_FLUSH_INTERVAL_YEARS',20)):self.flush()
+        if self.engine.year>=self.next_flush_year:self.flush(force=False)
 
     def rotate(self):
         year=self.engine.year;ret=int(getattr(cfg,'DIAGNOSTIC_LOG_RETENTION_YEARS',1000));ai=int(getattr(cfg,'AI_DECISION_LOG_RETENTION_YEARS',100))
@@ -612,57 +616,13 @@ class DiagnosticLogger:
           'waterfalls':'see logistics_events.jsonl MANIFEST_EVALUATED and VOYAGE_STARTED/FINISHED', 'front_health':self.topology}
 
     def _write(self,name,value,jsonl=False):
-        path=self.output/name;tmp=path.with_suffix(path.suffix+'.tmp')
-        with tmp.open('w',encoding='utf-8',newline='') as f:
-            if jsonl:
-                for row in value:f.write(json.dumps(plain(row),ensure_ascii=False,allow_nan=False)+'\n')
-            elif isinstance(value,str):f.write(value)
-            else:json.dump(plain(value),f,ensure_ascii=False,indent=2,allow_nan=False)
-        os.replace(tmp,path)
+        return diagnostic_io.write(self,name,value,jsonl)
 
-    def flush(self):
-        if not self.enabled:return None
-        start=time.perf_counter()
-        try:
-            self.output.mkdir(parents=True,exist_ok=True)
-            self.rotate()
-            for name,rows in self.records.items():self._write(name+'.jsonl',rows,True)
-            self._write('diagnostic_state.json',self.state_payload());self._write('game_metadata.json',self.metadata());self._write('stagnation_summary.json',self.last_analysis)
-            self._write('stagnation_intervals.jsonl',self.summaries,True)
-            perf=self.performance_summary();self._write('performance_summary.json',perf)
-            self._write('performance_intervals.jsonl',self.performance_summaries,True)
-            self._write('slow_years.json',perf['slow_years']);self._write('cache_summary.json',self.cache_summary())
-            self._write('logistics_summary.json',self.logistics_summary())
-            rows=list(self.performance);phases=sorted({p for r in rows for p in r['phases_ms']})
-            path=self.output/'performance_recent_1000y.csv';tmp=path.with_suffix('.csv.tmp')
-            with tmp.open('w',encoding='utf-8',newline='') as f:
-                w=csv.DictWriter(f,fieldnames=['year','simulation_ms','ui_ms']+phases+['counts_json','events_json']);w.writeheader()
-                for r in rows:w.writerow({'year':r['year'],'simulation_ms':r['simulation_ms'],'ui_ms':r.get('ui_ms',0),**r['phases_ms'],
-                  'counts_json':json.dumps(r['counts'],ensure_ascii=False),'events_json':json.dumps(r['events'],ensure_ascii=False)})
-            os.replace(tmp,path)
-            text=f'# {GAME_VERSION} 診斷分析包\n\n目前年份：{self.engine.year}；觀察起點：{self.first_year}。\n\n'
-            text+='完整決策保留最近 100 年；其他明細保留最近 1000 年。未實測／模型未提供欄位為 null。\n\n'
-            text+=f'決策紀錄：{len(self.records["ai_decisions"])}；戰役紀錄：{len(self.records["war_outcomes"])}；效能年份：{len(self.performance)}。\n\n'
-            text+='停滯國家：'+', '.join(r['name'] for r in self.last_analysis.get('countries',[]) if r['stagnation_detected'])+'\n\n'
-            text+='請一併提供同年份 saves、遊戲 ZIP、重現步驟；未滿 200／500 年不會臆測國家／世界停滯。\n'
-            if self.errors:text+='\n寫檔錯誤：'+repr(list(self.errors))+'\n'
-            if self.dropped:text+='\n容量上限造成截斷：'+repr(dict(self.dropped))+'\n'
-            self._write('diagnostic_summary.md',text)
-            self.last_flush=self.engine.year
-        except (OSError,ValueError,TypeError) as exc:self.errors.append({'year':self.engine.year,'error':repr(exc)})
-        self.io_ms+=(time.perf_counter()-start)*1000
-        return self.output
+    def flush(self,force=True):
+        return diagnostic_io.flush(self,force)
 
     def export(self,path=None):
-        if not self.enabled:raise RuntimeError('診斷未開啟；請先啟用參數並重新啟動。無法補造過去決策。')
-        if self.flags['stagnation']:self.analyze_stagnation()
-        self.flush()
-        if any('error' in x for x in self.errors):raise RuntimeError('診斷寫檔失敗：'+str(self.errors[-1]))
-        target=Path(path or self.output.parent/'diagnostic_package.zip');target.parent.mkdir(parents=True,exist_ok=True)
-        with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED) as z:
-            for p in sorted(self.output.iterdir()):
-                if p.suffix in ('.json','.jsonl','.csv','.md') and p.name!='diagnostic_state.json':z.write(p,'diagnostics/'+p.name)
-        return target
+        return diagnostic_io.export(self,path)
 
 # Per-method wrappers keep all additional derived observations outside game state.
 PHASES={'_economic_year':'population_economy','_construct_building':'buildings','_expand_all_countries':'territory_expansion',
@@ -879,22 +839,23 @@ DiagnosticLogger.corridor_evidence=_corridor_evidence
 
 def _state_payload(self):
     return {'seed':self.engine.world.settings.seed,'map_size':[self.engine.world.settings.width,self.engine.world.settings.height],
-       'year':self.engine.year,'records':plain(self.records),'history':plain(self.history),'performance':plain(self.performance),
-       'global_history':plain(self.global_history),'summaries':plain(self.summaries),'country_stats':plain(self.country_stats),'island_stats':[[cid,lm,dict(counts)] for (cid,lm),counts in self.island_stats.items()],
-       'durable':plain(self.durable),'pending_baseline':plain(self.pending_baseline),'voyage_decisions':plain(self.voyage_decisions),'observed_gains':plain(self.observed_gains),
-       'campaign_data':plain(self.campaign_data),'last_decision':plain(self.last_decision),'pending_rewards':plain(self.pending_rewards),
+       'year':self.engine.year,'records':self.records,'history':self.history,'performance':self.performance,
+       'global_history':self.global_history,'summaries':self.summaries,'country_stats':self.country_stats,'island_stats':[[cid,lm,dict(counts)] for (cid,lm),counts in self.island_stats.items()],
+       'durable':self.durable,'pending_baseline':self.pending_baseline,'voyage_decisions':self.voyage_decisions,'observed_gains':self.observed_gains,
+       'campaign_data':self.campaign_data,'last_decision':self.last_decision,'pending_rewards':self.pending_rewards,
        'voyage_ids':[[cid,key,vid] for (cid,key),vid in self.voyage_ids.items()],
-       'performance_summaries':plain(self.performance_summaries),'cache':plain(self.cache),'counts':plain(self.counts),
-       'health_history':plain(self.health_history),'first_year':self.first_year,'last_analysis':plain(self.last_analysis),
-       'seen_world_pacified':plain(self.seen_world_pacified),'dropped':plain(self.dropped)}
+       'performance_summaries':self.performance_summaries,'cache':self.cache,'counts':self.counts,
+       'health_history':self.health_history,'first_year':self.first_year,'last_analysis':self.last_analysis,
+       'seen_world_pacified':self.seen_world_pacified,'dropped':self.dropped}
 DiagnosticLogger.state_payload=_state_payload
 
 
 def _restore_history(self):
-    path=self.output/'diagnostic_state.json'
+    compressed=self.output/'diagnostic_state.json.gz'
+    path=compressed if compressed.exists() else self.output/'diagnostic_state.json'
     if not path.exists():return
     try:
-        state=json.loads(path.read_text(encoding='utf-8'))
+        state=json.loads(gzip.decompress(path.read_bytes()) if path.suffix=='.gz' else path.read_text(encoding='utf-8'))
         if state['seed']!=self.engine.world.settings.seed or state['map_size']!=[self.engine.world.settings.width,self.engine.world.settings.height] or state['year']!=self.engine.year:
             self.errors.append({'year':self.engine.year,'warning':'existing diagnostic history does not match loaded save year/seed/map; started new session'})
             return
@@ -913,7 +874,7 @@ def _restore_history(self):
         self.performance_summaries=deque(state['performance_summaries'],maxlen=2000);self.cache=defaultdict(Counter,{k:Counter(v) for k,v in state['cache'].items()})
         self.counts=Counter(state['counts']);self.health_history=deque(state['health_history'],maxlen=20)
         self.first_year=state['first_year'];self.last_analysis=state['last_analysis'];self.seen_world_pacified=set(state['seen_world_pacified']);self.dropped=Counter(state['dropped'])
-        self.last_year=state['year'];self.last_flush=state['year'];self.rotate()
+        self.last_year=state['year'];self.last_flush=state['year'];self.next_flush_year=state['year']+max(1,int(cfg.DIAGNOSTIC_FLUSH_INTERVAL_YEARS));self.rotate()
     except (OSError,ValueError,KeyError,TypeError) as exc:self.errors.append({'year':self.engine.year,'history_restore_error':repr(exc)})
 DiagnosticLogger.restore_history=_restore_history
 
@@ -953,3 +914,6 @@ def _rule_decision(self,c,values,condition):
           note='Original rule branch; random gate outcomes are observed without resampling.')
     self.current=None
 DiagnosticLogger.rule_decision=_rule_decision
+
+
+diagnostic_io.install_metrics(DiagnosticLogger)
