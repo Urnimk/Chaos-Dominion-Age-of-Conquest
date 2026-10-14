@@ -356,23 +356,60 @@ OVERSEAS_RETURN_FOOD_RUNWAY_YEARS = 5
 
 
 # V25 observational diagnostics: master OFF means no logger, buffers or files.
+
+# 診斷系統總開關；False 時不建立 logger、buffer，也不輸出任何診斷檔案。
 ENABLE_DIAGNOSTIC_LOG = False
+
+# AI 決策紀錄開關；控制是否記錄各國 AI 的候選目標、Q 值、最終決策等資訊。
 ENABLE_AI_DECISION_LOG = False
+
+# 戰局停滯診斷開關；控制是否分析國家長期領土、戰略目標或決策停滯原因。
 ENABLE_STAGNATION_LOG = False
+
+# 效能分析紀錄開關；控制是否統計每年各模組耗時、慢速年份及效能占比。
 ENABLE_PERFORMANCE_LOG = False
+
+# 戰爭診斷紀錄開關；控制是否記錄戰爭發起、兵力、損失、領土收益及戰果品質。
 ENABLE_WAR_DIAGNOSTIC_LOG = False
+
+# 海外物流診斷開關；控制是否追蹤港口、艦隊、增援、補給及海外運輸瓶頸。
 ENABLE_LOGISTICS_DIAGNOSTIC_LOG = False
+
+# 快取系統診斷開關；控制是否統計各種 cache 的命中、失效、重建次數與效率。
 ENABLE_CACHE_DIAGNOSTIC_LOG = False
-DIAGNOSTIC_DETAIL_LEVEL = 1  # 0 disabled, 1 aggregates, 2 full traces/topology
+
+# 診斷詳細程度；0=停用、1=只記摘要統計、2=記錄完整 AI 決策與戰線拓樸等詳細資料。
+DIAGNOSTIC_DETAIL_LEVEL = 1
+
+# 每個國家保留最近多少年的完整 AI 決策紀錄，超過年限的舊資料會淘汰。
 AI_DECISION_LOG_RETENTION_YEARS = 100
+
+# 一般診斷詳細紀錄最多保留最近多少年，避免長期模擬造成 LOG 無限增長。
 DIAGNOSTIC_LOG_RETENTION_YEARS = 1000
+
+# 每隔多少模擬年產出一次整體效能摘要報告。
 PERFORMANCE_SUMMARY_INTERVAL_YEARS = 1000
+
+# 每隔多少模擬年執行一次國家與世界戰局停滯分析。
 STAGNATION_ANALYSIS_INTERVAL_YEARS = 100
+
+# 診斷資料在記憶體累積多少模擬年後批次寫入硬碟一次。
 DIAGNOSTIC_FLUSH_INTERVAL_YEARS = 20
+
+# 每期效能摘要最多保留多少個最耗時的模擬年份供深入分析。
 PERFORMANCE_TOP_SLOW_YEARS = 30
+
+# 所有診斷 LOG、JSON、CSV 與摘要報告的預設輸出資料夾。
 DIAGNOSTIC_OUTPUT_DIR = 'diagnostics'
+
+# 每一類診斷資料流最多允許保留多少筆紀錄，避免記憶體與檔案無限制膨脹。
 DIAGNOSTIC_MAX_RECORDS_PER_STREAM = 100000
+
+# 永久保留的重大事件最多允許多少筆，例如國家滅亡、島嶼統一及世界統一等事件。
 DIAGNOSTIC_MAX_MAJOR_EVENTS = 10000
 
+# 每一個診斷資料流檔案允許的最大容量，單位為 MiB，超過後應進行輪替或裁切。
 DIAGNOSTIC_MAX_STREAM_MIB = 64
+
+# 可追蹤的長期有效領土格引用數量上限，用於 durable territory 等戰果持久性分析，避免記憶體過度增加。
 DIAGNOSTIC_MAX_DURABLE_CELL_REFERENCES = 1000000
