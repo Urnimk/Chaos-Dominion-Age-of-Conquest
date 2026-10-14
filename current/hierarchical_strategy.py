@@ -48,44 +48,74 @@ class HierarchicalStrategyMixin:
         self._macro_event(c,'COMMIT',commitment=n,landmass=lm,kind=kind,target=target)
         return commit
 
-    def _macro_candidates(self,c):
+    def _macro_candidates(self, c):
         """Read-only selector score: local force, distance, island size/yield, supply burden."""
-        home=self._home_continent_id(c);choices=[];cool=c.get('macro_target_cooldowns',{})
+        home = self._home_continent_id(c)
+        choices = []
+        cool = c.get('macro_target_cooldowns', {})
         for lm in sorted(self._overseas_landmass_ids(c)):
-            m=self._macro_measure(c,lm)
-            if m['pacified'] or self._overseas_attack_banned(c,lm) or int(cool.get(str(lm),0))>self.year:continue
-            # Do not commit to an enemy-held island unless at least one real
-            # landing objective can be reached and supplied by the current fleet.
-            if not m['cells'] and not any(
-                o['landmass_id']==lm and self._macro_landing_feasible(c,o)
-                for o in self.legal_targets(c['id']) if o['mode']=='naval'
-            ):
+            m = self._macro_measure(c, lm)
+            if m['pacified'] or self._overseas_attack_banned(c, lm) or int(cool.get(str(lm), 0)) > self.year:
+                if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                    diagnostic.observe('legal_filter', locals(), "m['pacified'] or self._overseas_attack_banned(c, lm) or int(cool.get(str(lm), 0)) > self.year")
                 continue
-            enemy=sum(self._home_soldiers(x,lm) for x in m['rivals'])
-            score=5+m['control']+math.log1p(self._landmass_sizes[lm])/10-math.log1p(enemy/max(1,m['army']))
-            choices.append((score,lm,'CONQUER',m['rivals'][0] if m['rivals'] else None))
-        # Finish established islands first; preserves progression/expedition-slot rules.
-        if choices:return sorted(choices,reverse=True)
-        legal=self.legal_targets(c['id']);force=self._home_soldiers(c['id'],home)
+            if not m['cells'] and (not any((o['landmass_id'] == lm and self._macro_landing_feasible(c, o) for o in self.legal_targets(c['id']) if o['mode'] == 'naval'))):
+                if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                    diagnostic.observe('legal_filter', locals(), "not m['cells'] and (not any((o['landmass_id'] == lm and self._macro_landing_feasible(c, o) for o in self.legal_targets(c['id']) if o['mode'] == 'naval')))")
+                continue
+            enemy = sum((self._home_soldiers(x, lm) for x in m['rivals']))
+            score = 5 + m['control'] + math.log1p(self._landmass_sizes[lm]) / 10 - math.log1p(enemy / max(1, m['army']))
+            choices.append((score, lm, 'CONQUER', m['rivals'][0] if m['rivals'] else None))
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                diagnostic.observe('candidate', locals())
+        if choices:
+            _diagnostic_result = sorted(choices, reverse=True)
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                diagnostic.observe('candidate', locals())
+            return _diagnostic_result
+        legal = self.legal_targets(c['id'])
+        force = self._home_soldiers(c['id'], home)
         for o in legal:
-            lm=int(o['landmass_id'])
-            if o['mode']!='naval' or int(cool.get(str(lm),0))>self.year:continue
-            if not self._macro_landing_feasible(c,o):continue
-            local=self._home_soldiers(o['id'],lm);distance=float(o['distance'])
-            value=math.log1p(int(self._landmass_sizes[lm]))/4
-            relative=math.log1p(force/max(200,local));supply=distance*cfg.SUPPLY_PER_SOLDIER_CELL
-            choices.append((value+relative-distance/1000-supply,lm,'CONQUER',o['id']))
-        context=self._colony_context();coords=self._colony_candidates(c,context)
-        for lm in sorted(set(int(x) for x in self.world.continent[coords[:,0],coords[:,1]])) if len(coords) else []:
-            if int(cool.get(str(lm),0))>self.year:continue
-            group=coords[self.world.continent[coords[:,0],coords[:,1]]==lm]
-            y,x=group[np.argmax(self.world.city_value[group[:,0],group[:,1]])]
-            distance=self._wrapped_distance_cells(c['capital'],(int(x),int(y)),self.world.settings.width)
-            budget=self._overseas_population_budget(c,lm)
-            if budget['people']<=0:continue
-            value=math.log1p(budget['capacity'])/5
-            choices.append((value-distance/1000,lm,'COLONIZE',None))
-        return sorted(choices,reverse=True)
+            lm = int(o['landmass_id'])
+            if o['mode'] != 'naval' or int(cool.get(str(lm), 0)) > self.year:
+                if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                    diagnostic.observe('legal_filter', locals(), "o['mode'] != 'naval' or int(cool.get(str(lm), 0)) > self.year")
+                continue
+            if not self._macro_landing_feasible(c, o):
+                if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                    diagnostic.observe('legal_filter', locals(), 'not self._macro_landing_feasible(c, o)')
+                continue
+            local = self._home_soldiers(o['id'], lm)
+            distance = float(o['distance'])
+            value = math.log1p(int(self._landmass_sizes[lm])) / 4
+            relative = math.log1p(force / max(200, local))
+            supply = distance * cfg.SUPPLY_PER_SOLDIER_CELL
+            choices.append((value + relative - distance / 1000 - supply, lm, 'CONQUER', o['id']))
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                diagnostic.observe('candidate', locals())
+        context = self._colony_context()
+        coords = self._colony_candidates(c, context)
+        for lm in sorted(set((int(x) for x in self.world.continent[coords[:, 0], coords[:, 1]]))) if len(coords) else []:
+            if int(cool.get(str(lm), 0)) > self.year:
+                if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                    diagnostic.observe('legal_filter', locals(), 'int(cool.get(str(lm), 0)) > self.year')
+                continue
+            group = coords[self.world.continent[coords[:, 0], coords[:, 1]] == lm]
+            y, x = group[np.argmax(self.world.city_value[group[:, 0], group[:, 1]])]
+            distance = self._wrapped_distance_cells(c['capital'], (int(x), int(y)), self.world.settings.width)
+            budget = self._overseas_population_budget(c, lm)
+            if budget['people'] <= 0:
+                if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                    diagnostic.observe('legal_filter', locals(), "budget['people'] <= 0")
+                continue
+            value = math.log1p(budget['capacity']) / 5
+            choices.append((value - distance / 1000, lm, 'COLONIZE', None))
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                diagnostic.observe('candidate', locals())
+        _diagnostic_result = sorted(choices, reverse=True)
+        if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+            diagnostic.observe('candidate', locals())
+        return _diagnostic_result
 
     def _macro_update(self,c):
         c['world_goal']='WORLD_UNIFICATION';home=self._home_continent_id(c)
@@ -188,95 +218,119 @@ class HierarchicalStrategyMixin:
             'PREPARE_NEXT_EXPEDITION':{'next_commitment_selected':True},
         }[stage]
 
-    def _macro_state_actions(self,cid,colony_available=False):
-        c=self.country(cid);g=self._macro_update(c);lm=g['target_landmass'];home=self._home_continent_id(c)
-        m=self._macro_measure(c,lm);site=self._site(c,lm);t=self._theatre(c,site) if site else None
-        snapshot=self._strategic_snapshot_for(cid)
-        hp=(int(snapshot.values['home_population']) if snapshot is not None else
-            int(self.local_population.ravel()[self._spatial_indices(cid,home)].sum()))
-        food_years=c['food']/max(1,hp*cfg.FOOD_CONSUMPTION_PER_PERSON)
-        resting=self.year<int(c.get('recovery_until_year',0));bindings={}
-        # No Q floor / ATTACK_BIAS. Q chooses only executable tasks inside the commitment.
-        if site and not m['port'] and self._can_pay(c,cfg.PORT_COST):bindings['SECURE_SUPPLY']=f'BUILD_OVERSEAS_PORT:{lm}'
-        manifest=self._reinforcement_manifest(c,t) if t and t['port'] and not c.get('reinforcement_voyage') else None
-        if manifest:bindings['REINFORCE_ACTIVE_THEATRE']='REINFORCE_OVERSEAS'
-        if lm and not resting:
+    def _macro_state_actions(self, cid, colony_available=False):
+        c = self.country(cid)
+        g = self._macro_update(c)
+        lm = g['target_landmass']
+        home = self._home_continent_id(c)
+        m = self._macro_measure(c, lm)
+        site = self._site(c, lm)
+        t = self._theatre(c, site) if site else None
+        snapshot = self._strategic_snapshot_for(cid)
+        hp = int(snapshot.values['home_population']) if snapshot is not None else int(self.local_population.ravel()[self._spatial_indices(cid, home)].sum())
+        food_years = c['food'] / max(1, hp * cfg.FOOD_CONSUMPTION_PER_PERSON)
+        resting = self.year < int(c.get('recovery_until_year', 0))
+        bindings = {}
+        if site and (not m['port']) and self._can_pay(c, cfg.PORT_COST):
+            bindings['SECURE_SUPPLY'] = f'BUILD_OVERSEAS_PORT:{lm}'
+        manifest = self._reinforcement_manifest(c, t) if t and t['port'] and (not c.get('reinforcement_voyage')) else None
+        if manifest:
+            bindings['REINFORCE_ACTIVE_THEATRE'] = 'REINFORCE_OVERSEAS'
+        if lm and (not resting):
             if m['cells']:
-                for kind in ('ATTACK_FRONT','CUT_OFF','ENCIRCLE_CAPITAL'):
-                    targets=self._viable_theatre_targets(c,lm,kind)
+                for kind in ('ATTACK_FRONT', 'CUT_OFF', 'ENCIRCLE_CAPITAL'):
+                    targets = self._viable_theatre_targets(c, lm, kind)
                     if targets:
-                        target=next((o for o in targets if o['id']==g.get('target_country')),targets[0])
-                        if site:bindings[kind]=f'THEATRE:{lm}:{kind}'
-                        else:bindings['ATTACK_HOMELAND']=f"ATTACK:{target['id']}:land"
-                if site and self._can_expand_theatre(c,lm):bindings['EXPAND_BEACHHEAD']=f'THEATRE:{lm}:EXPAND_BEACHHEAD'
-            elif g['goal_type']=='COLONIZE_LANDMASS' and not c.get('colonization_voyage'):
-                coords=self._colony_candidates(c,self._colony_context())
-                if len(coords) and np.any(self.world.continent[coords[:,0],coords[:,1]]==lm):bindings['COLONIZE']='COLONIZE'
+                        target = next((o for o in targets if o['id'] == g.get('target_country')), targets[0])
+                        if site:
+                            bindings[kind] = f'THEATRE:{lm}:{kind}'
+                        else:
+                            bindings['ATTACK_HOMELAND'] = f"ATTACK:{target['id']}:land"
+                if site and self._can_expand_theatre(c, lm):
+                    bindings['EXPAND_BEACHHEAD'] = f'THEATRE:{lm}:EXPAND_BEACHHEAD'
+            elif g['goal_type'] == 'COLONIZE_LANDMASS' and (not c.get('colonization_voyage')):
+                coords = self._colony_candidates(c, self._colony_context())
+                if len(coords) and np.any(self.world.continent[coords[:, 0], coords[:, 1]] == lm):
+                    bindings['COLONIZE'] = 'COLONIZE'
             else:
-                options=[o for o in self.legal_targets(cid) if o['mode']=='naval' and o['landmass_id']==lm]
-                options.sort(key=lambda o:(o['id']!=g.get('target_country'),self._home_soldiers(o['id'],lm)))
+                options = [o for o in self.legal_targets(cid) if o['mode'] == 'naval' and o['landmass_id'] == lm]
+                options.sort(key=lambda o: (o['id'] != g.get('target_country'), self._home_soldiers(o['id'], lm)))
                 for o in options:
-                    if self._macro_landing_feasible(c,o):bindings['ATTACK_OVERSEAS']=f"ATTACK:{o['id']}:naval";break
-        incoming=any(x.defender==cid and x.status=='marching' and int(self.world.continent[x.objective])==lm for x in self.campaigns)
+                    if self._macro_landing_feasible(c, o):
+                        bindings['ATTACK_OVERSEAS'] = f"ATTACK:{o['id']}:naval"
+                        break
+        incoming = any((x.defender == cid and x.status == 'marching' and (int(self.world.continent[x.objective]) == lm) for x in self.campaigns))
         if site and incoming:
-            bindings['DEFEND_CAPITAL']=f'THEATRE:{lm}:DEFEND_CAPITAL'
-            if m['port']:bindings['DEFEND_PORT']=f'THEATRE:{lm}:DEFEND_PORT'
-        if site and not bindings and self._voyage_supports_theatre(c,lm):
-            bindings['WAIT_FOR_TRANSPORT']=f'THEATRE:{lm}:WAIT_REINFORCEMENTS'
-        # Building the first port and funding troop transport are prerequisites.
-        if 'SECURE_SUPPLY' in bindings:bindings={'SECURE_SUPPLY':bindings['SECURE_SUPPLY']}
-        elif manifest and t and t['supply_need']>0:bindings={'REINFORCE_ACTIVE_THEATRE':'REINFORCE_OVERSEAS'}
-        if not bindings or food_years<1 or c.get('war_exhaustion',0)>.5:
-            bindings['REST_AND_REPRODUCE']='REST_AND_REPRODUCE'
-        # If nothing can execute, REST rebuilds food under the existing 3x rule.
-        c['macro_action_bindings']=bindings
-        labels=dict(zip(GOALS,('統一本島','準備海外擴張','殖民目標島嶼','建立海外基地','征服目標島嶼','增援目前戰區','平定目標島嶼','清除目標政權據點','準備下一次遠征')))
-        place=self.landmass_place_name(lm,c)
-        c['strategic_block_reason']=f"中期目標：{labels[g['goal_type']]}｜目標島嶼：{place}｜已持續{self.year-(c.get('strategic_commitment') or {}).get('started_year',self.year)}年"
+            bindings['DEFEND_CAPITAL'] = f'THEATRE:{lm}:DEFEND_CAPITAL'
+            if m['port']:
+                bindings['DEFEND_PORT'] = f'THEATRE:{lm}:DEFEND_PORT'
+        if site and (not bindings) and self._voyage_supports_theatre(c, lm):
+            bindings['WAIT_FOR_TRANSPORT'] = f'THEATRE:{lm}:WAIT_REINFORCEMENTS'
+        if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai') and diagnostic.current is not None:
+            diagnostic.current['pre_prerequisite_bindings'] = dict(bindings)
+        if 'SECURE_SUPPLY' in bindings:
+            bindings = {'SECURE_SUPPLY': bindings['SECURE_SUPPLY']}
+        elif manifest and t and (t['supply_need'] > 0):
+            bindings = {'REINFORCE_ACTIVE_THEATRE': 'REINFORCE_OVERSEAS'}
+        if not bindings or food_years < 1 or c.get('war_exhaustion', 0) > 0.5:
+            bindings['REST_AND_REPRODUCE'] = 'REST_AND_REPRODUCE'
+        c['macro_action_bindings'] = bindings
+        labels = dict(zip(GOALS, ('統一本島', '準備海外擴張', '殖民目標島嶼', '建立海外基地', '征服目標島嶼', '增援目前戰區', '平定目標島嶼', '清除目標政權據點', '準備下一次遠征')))
+        place = self.landmass_place_name(lm, c)
+        c['strategic_block_reason'] = f"中期目標：{labels[g['goal_type']]}｜目標島嶼：{place}｜已持續{self.year - (c.get('strategic_commitment') or {}).get('started_year', self.year)}年"
         if t:
-            voyage=c.get('reinforcement_voyage')
-            if self._voyage_supports_theatre(c,lm):
-                detail=f"本戰區援軍／補給途中，剩餘{voyage.get('years_left',0)}年"
+            voyage = c.get('reinforcement_voyage')
+            if self._voyage_supports_theatre(c, lm):
+                detail = f"本戰區援軍／補給途中，剩餘{voyage.get('years_left', 0)}年"
             elif voyage:
-                purpose='返鄉' if voyage.get('returning') else '支援其他戰區'
-                detail=f"船隊正{purpose}（島{voyage.get('continent_id')}），剩餘{voyage.get('years_left',0)}年；本戰區尚無在途援軍"
+                purpose = '返鄉' if voyage.get('returning') else '支援其他戰區'
+                detail = f"船隊正{purpose}（島{voyage.get('continent_id')}），剩餘{voyage.get('years_left', 0)}年；本戰區尚無在途援軍"
             elif manifest:
-                detail=f"可派增援{manifest['amount']}兵／糧食{manifest['supply']:,.0f}"
-            elif t['gap']>0:
-                detail=f"增援受阻：現有{t['army']}兵／目標{t['target']}兵，{t.get('reinforcement_block_reason') or '等待可用運輸資源'}"
+                detail = f"可派增援{manifest['amount']}兵／糧食{manifest['supply']:,.0f}"
+            elif t['gap'] > 0:
+                detail = f"增援受阻：現有{t['army']}兵／目標{t['target']}兵，{t.get('reinforcement_block_reason') or '等待可用運輸資源'}"
             elif resting:
-                detail=f"恢復中，至第{c.get('recovery_until_year')}年"
+                detail = f"恢復中，至第{c.get('recovery_until_year')}年"
             else:
-                detail='已達戰區兵力目標'
-            c['strategic_block_reason']+='｜'+detail
-        enemy=sum(self._home_soldiers(x,lm) for x in m['rivals'])
-        state=(min(4,int(len(self._spatial_indices(cid,home))/max(1,self._landmass_sizes[home])*5)),
-               min(4,int(self._home_soldiers(cid,home)/max(1,hp)*20)),min(4,int(c.get('war_exhaustion',0)*5)),
-               min(3,sum(x.attacker==cid and x.status=='marching' for x in self.campaigns)),GOALS.index(g['goal_type']),
-               min(4,int(m['control']*5)),min(4,int(enemy/max(1,m['army']))),int(m['base'])+int(m['port']),
-               min(3,int(food_years)),int(bool(c.get('reinforcement_voyage')))+2*int(bool(c.get('colonization_voyage'))),
-               min(3,len(m['rivals'])),min(10,int(c['territory_cells']/max(1,self._landmass_sizes.sum())*10)))
-        return state,list(bindings),{}
+                detail = '已達戰區兵力目標'
+            c['strategic_block_reason'] += '｜' + detail
+        enemy = sum((self._home_soldiers(x, lm) for x in m['rivals']))
+        state = (min(4, int(len(self._spatial_indices(cid, home)) / max(1, self._landmass_sizes[home]) * 5)), min(4, int(self._home_soldiers(cid, home) / max(1, hp) * 20)), min(4, int(c.get('war_exhaustion', 0) * 5)), min(3, sum((x.attacker == cid and x.status == 'marching' for x in self.campaigns))), GOALS.index(g['goal_type']), min(4, int(m['control'] * 5)), min(4, int(enemy / max(1, m['army']))), int(m['base']) + int(m['port']), min(3, int(food_years)), int(bool(c.get('reinforcement_voyage'))) + 2 * int(bool(c.get('colonization_voyage'))), min(3, len(m['rivals'])), min(10, int(c['territory_cells'] / max(1, self._landmass_sizes.sum()) * 10)))
+        _diagnostic_result = (state, list(bindings), {})
+        if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+            diagnostic.observe('actions', locals())
+        return _diagnostic_result
 
-    def _macro_landing_feasible(self,c,o):
-        lm=o['landmass_id'];home=self._home_continent_id(c)
-        # Immigration capacity governs settlers, not the army that sails to fight.
-        # The assault force is still drawn from home residents and limited by both
-        # troop and passenger capacity of the fleet.
-        if (self._transport_soldier_capacity(c['fleet'])<cfg.AI_MIN_ATTACK_SOLDIERS
-                or self._transport_population_capacity(c['fleet'])<cfg.AI_MIN_ATTACK_SOLDIERS):
-            return False
-        idx=self._spatial_indices(c['id'],home);pop=int(self.local_population.ravel()[idx].sum())
-        available=min(max(0,self._home_soldiers(c['id'],home)-int(pop*cfg.MIN_GARRISON_RATIO)),
-                      self._transport_soldier_capacity(c['fleet']),
-                      self._transport_population_capacity(c['fleet']))
-        if available<cfg.AI_MIN_ATTACK_SOLDIERS:return False
-        objective=self._objective(c['id'],o['id'],'naval',lm)
-        if objective is None:return False
-        target=self.country(o['id']);army=self._home_soldiers(target['id'],lm)
-        share=max(self._local_garrison_share(target,objective),float(np.median(cfg.BATTLE_LEARNED_GARRISON_SHARES)))
-        defense=min(army,max(200,int(army*share)))*target['morale']*self._terrain_defense(objective)
-        return available*max(cfg.TACTICAL_ATTACK_FRACTIONS)*c['morale']*(1-cfg.AMPHIBIOUS_ATTACK_PENALTY)>=defense
+    def _macro_landing_feasible(self, c, o):
+        lm = o['landmass_id']
+        home = self._home_continent_id(c)
+        if self._transport_soldier_capacity(c['fleet']) < cfg.AI_MIN_ATTACK_SOLDIERS or self._transport_population_capacity(c['fleet']) < cfg.AI_MIN_ATTACK_SOLDIERS:
+            _diagnostic_result = False
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                diagnostic.observe('landing', locals())
+            return _diagnostic_result
+        idx = self._spatial_indices(c['id'], home)
+        pop = int(self.local_population.ravel()[idx].sum())
+        available = min(max(0, self._home_soldiers(c['id'], home) - int(pop * cfg.MIN_GARRISON_RATIO)), self._transport_soldier_capacity(c['fleet']), self._transport_population_capacity(c['fleet']))
+        if available < cfg.AI_MIN_ATTACK_SOLDIERS:
+            _diagnostic_result = False
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                diagnostic.observe('landing', locals())
+            return _diagnostic_result
+        objective = self._objective(c['id'], o['id'], 'naval', lm)
+        if objective is None:
+            _diagnostic_result = False
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                diagnostic.observe('landing', locals())
+            return _diagnostic_result
+        target = self.country(o['id'])
+        army = self._home_soldiers(target['id'], lm)
+        share = max(self._local_garrison_share(target, objective), float(np.median(cfg.BATTLE_LEARNED_GARRISON_SHARES)))
+        defense = min(army, max(200, int(army * share))) * target['morale'] * self._terrain_defense(objective)
+        _diagnostic_result = available * max(cfg.TACTICAL_ATTACK_FRACTIONS) * c['morale'] * (1 - cfg.AMPHIBIOUS_ATTACK_PENALTY) >= defense
+        if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+            diagnostic.observe('landing', locals())
+        return _diagnostic_result
 
     def _macro_metrics(self,c,metrics):
         g=c.get('macro_goal',{});lm=g.get('target_landmass',0);m=self._macro_measure(c,lm)

@@ -231,10 +231,13 @@ class CountryBrain:
         # Exact same behavior policy is used by expected_value: no hidden novelty policy.
         preferences = values + np.asarray([float(biases.get(a, 0.0)) for a in actions])
         best = np.flatnonzero(np.isclose(preferences, preferences.max(), rtol=1e-9, atol=1e-12))
-        if self.rng.random() < float(np.clip(epsilon, 0.0, 1.0)):
+        diagnostic_explore = self.rng.random() < float(np.clip(epsilon, 0.0, 1.0))
+        if diagnostic_explore:
             index = int(self.rng.integers(len(actions)))
         else:
             index = int(self.rng.choice(best))
+        if (diagnostic := getattr(self, '_diagnostic_sink', None)) is not None:
+            diagnostic.rl_selection(state, actions, values, biases, preferences, epsilon, diagnostic_explore, index, best)
         self.decisions += 1
         return actions[index]
 

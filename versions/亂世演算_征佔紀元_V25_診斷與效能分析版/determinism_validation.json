@@ -1,0 +1,69 @@
+{
+  "game_version": "V25",
+  "source_archive_sha256": "66b0c81657e3ca7eff8ac91ee88f788a76031248b43f81e86c64c34d1def841f",
+  "source_archive_name": "亂世演算_征佔紀元_V24_3_3_前線運輸與海外調兵修正版(3).zip",
+  "start_year": 77500,
+  "end_year": 77600,
+  "years": 100,
+  "unit_tests_passed": 44,
+  "authoritative_field_count": 74,
+  "modes": {
+    "baseline": {
+      "seconds": 44.451527211999974,
+      "overhead_vs_off_percent": -2.2856317429433504,
+      "combined_state_sha256": "7324b143dd895c7eb6713c658b8eace19becdc42cf164c3d2840fba22b8d40aa",
+      "field_differences": [],
+      "source_saves_unchanged": true
+    },
+    "off": {
+      "seconds": 45.49129058999961,
+      "overhead_vs_off_percent": 0.0,
+      "combined_state_sha256": "7324b143dd895c7eb6713c658b8eace19becdc42cf164c3d2840fba22b8d40aa",
+      "field_differences": [],
+      "source_saves_unchanged": true
+    },
+    "light": {
+      "seconds": 44.87158170299972,
+      "overhead_vs_off_percent": -1.3622583113439335,
+      "combined_state_sha256": "7324b143dd895c7eb6713c658b8eace19becdc42cf164c3d2840fba22b8d40aa",
+      "field_differences": [],
+      "source_saves_unchanged": true
+    },
+    "summary": {
+      "seconds": 53.12153779599976,
+      "overhead_vs_off_percent": 16.772984690123337,
+      "combined_state_sha256": "7324b143dd895c7eb6713c658b8eace19becdc42cf164c3d2840fba22b8d40aa",
+      "field_differences": [],
+      "source_saves_unchanged": true
+    },
+    "on": {
+      "seconds": 52.22514404699996,
+      "overhead_vs_off_percent": 14.802511359131799,
+      "combined_state_sha256": "7324b143dd895c7eb6713c658b8eace19becdc42cf164c3d2840fba22b8d40aa",
+      "field_differences": [],
+      "source_saves_unchanged": true
+    }
+  },
+  "timing_protocol": "Sequential headless runs, same original saves, random.seed(world seed); includes periodic diagnostics flush, excludes manual final export.",
+  "determinism_excludes": [
+    "derived engine caches",
+    "diagnostic data",
+    "wall-clock timings",
+    "save-file UUIDs"
+  ],
+  "validated_state_groups": [
+    "territory and all world arrays",
+    "local_population",
+    "local_soldiers",
+    "countries and embedded voyages/Macro Goals",
+    "campaigns",
+    "events",
+    "engine and alliance RNG states",
+    "all brains/Q-values/eligibility/tactical state and per-brain RNG",
+    "global Python RNG"
+  ],
+  "game_rules_unchanged": true,
+  "no_extra_AI_queries": true,
+  "source_saves_unchanged": true,
+  "GUI_validation": "UI module import and existing UI alias tests; no graphical desktop available for interactive clicks."
+}

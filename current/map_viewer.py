@@ -119,7 +119,7 @@ STYLE_CODES = {v: k for k, v in STYLE_LABELS.items()}
 class MapViewer:
     def __init__(self, root):
         self.root = root
-        self.root.title("亂世演算_征佔紀元 V24.3｜一島一名版")
+        self.root.title("亂世演算_征佔紀元 V25｜診斷與效能分析版")
         self.root.geometry(WINDOW_SIZE)
         self.root.configure(bg="#161616")
         self.world = self.war = self.full_image = self.tk_image = None
@@ -195,6 +195,7 @@ class MapViewer:
         self.run_button.pack(side="left", padx=(20, 3))
         ttk.Button(top, text="推進1年", command=lambda: self.advance_war(1)).pack(side="left", padx=3)
         ttk.Button(top, text="推進10年", command=lambda: self.advance_war(10)).pack(side="left")
+        ttk.Button(top, text="匯出診斷包", command=self.export_diagnostics).pack(side="right", padx=3)
         ttk.Button(top, text="儲存戰局", command=self.save_war).pack(side="right", padx=3)
         ttk.Button(top, text="讀取戰局", command=self.load_war).pack(side="right")
 
@@ -527,7 +528,7 @@ class MapViewer:
                 self.war = WarEngine.load(self.world, SAVES_DIR / "war_state")
             except Exception:
                 pass
-        self.full_image = render_environment(world, self.layer_var.get())
+        self.full_image = self._diagnostic_render_environment(world, self.layer_var.get())
         self._last_visual_revision = int(getattr(self.war, "visual_revision", 0))
         self.seed_var.set(str(world.settings.seed))
         self.width_var.set(str(world.settings.width)); self.height_var.set(str(world.settings.height))
@@ -601,7 +602,7 @@ class MapViewer:
         revision = int(getattr(self.war, "visual_revision", 0))
         map_was_redrawn = False
         if now - self._last_map_refresh >= MAP_REFRESH_SECONDS and revision != self._last_visual_revision:
-            self.full_image = render_environment(self.world, self.layer_var.get())
+            self.full_image = self._diagnostic_render_environment(self.world, self.layer_var.get())
             self.redraw()
             self._last_map_refresh = now
             self._last_visual_revision = revision
@@ -645,7 +646,7 @@ class MapViewer:
             self.root.update_idletasks()
 
             if force_refresh:
-                self.full_image = render_environment(
+                self.full_image = self._diagnostic_render_environment(
                     self.world,
                     self.layer_var.get()
                 )
@@ -1089,7 +1090,29 @@ class MapViewer:
         try:
             self._maybe_auto_save(force=True)
         finally:
+            if self.war and getattr(self.war, 'diagnostics', None):
+                self.war.diagnostics.flush()
             self.root.destroy()
+
+    def _diagnostic_render_environment(self, *args, **kwargs):
+        d = getattr(self.war, 'diagnostics', None)
+        if not d or not d.enabled_for('performance'):
+            return render_environment(*args, **kwargs)
+        d.count('environment_raster_renders')
+        d.push_timer('ui:environment_raster_render')
+        try:
+            return render_environment(*args, **kwargs)
+        finally:
+            d.pop_timer()
+
+    def export_diagnostics(self):
+        if not self.war:
+            return
+        try:
+            path = self.war.export_diagnostic_package()
+            messagebox.showinfo("診斷分析包", f"已匯出：{path.resolve()}")
+        except Exception as exc:
+            messagebox.showerror("診斷匯出", str(exc))
 
     def save_war(self):
         try: self.war.save(SAVES_DIR / "war_state"); messagebox.showinfo("完成", "戰局已存入saves資料夾。")
@@ -1098,7 +1121,7 @@ class MapViewer:
     def load_war(self):
         try:
             self.war = WarEngine.load(self.world, SAVES_DIR / "war_state")
-            self.full_image = render_environment(self.world, self.layer_var.get()); self.redraw(); self.refresh_panels()
+            self.full_image = self._diagnostic_render_environment(self.world, self.layer_var.get()); self.redraw(); self.refresh_panels()
         except Exception as exc: messagebox.showerror("讀取失敗", str(exc))
 
     def fit_world(self):
@@ -1168,7 +1191,7 @@ class MapViewer:
     def _layer_changed(self, *_args):
         if not self.world:
             return
-        self.full_image = render_environment(self.world, self.layer_var.get())
+        self.full_image = self._diagnostic_render_environment(self.world, self.layer_var.get())
         self.redraw()
 
     def redraw(self):
@@ -1415,6 +1438,9 @@ class MapViewer:
         region = self.war.geographic_name_at(y, x)
         self.status.configure(text=f"座標({x},{y})｜{region}｜{terrain_name(self.world.terrain[y,x])}｜{biome_name(self.world.biome[y,x])}｜{'無主地' if cid==0 else self.war.country(cid)['name']}")
 
+
+from diagnostic_logger import install_ui
+install_ui(MapViewer)
 
 def main():
     root=tk.Tk(); MapViewer(root); root.mainloop()

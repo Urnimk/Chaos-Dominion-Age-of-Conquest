@@ -95,3 +95,7 @@ class StrategicSnapshot:
         if key not in self.memo:
             self.memo[key] = factory()
         return self.memo[key]
+
+
+from diagnostic_logger import install_cache
+install_cache(WorldStateCache)

@@ -31,6 +31,12 @@ class OverseasStrategyMixin:
             mask=self.world.territory==int(cid)
             if lm is not None: mask &= self.world.continent==lm
             self._indices_cache[key]=(version,np.flatnonzero(mask))
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('cache'):
+                diagnostic.cache['spatial_indices']['miss'] += 1
+                diagnostic.cache['spatial_indices']['rebuild'] += 1
+                diagnostic.count('spatial_index_rebuilds')
+        elif (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('cache'):
+            diagnostic.cache['spatial_indices']['hit'] += 1
         return self._indices_cache[key][1]
 
     def _telemetry(self,c,event,amount=1):
@@ -137,21 +143,29 @@ class OverseasStrategyMixin:
             return None
         return f"近期同島防守戰敗、領土流失{lost:.0%}，駐軍{t['army']:,}／敵軍{t['enemy_army']:,}"
 
-    def _theatre_defenses(self,c,lm,kind='ATTACK_FRONT'):
+    def _theatre_defenses(self, c, lm, kind='ATTACK_FRONT'):
         """Shared objective/defense estimate for attack preflight and logistics."""
-        result=[];previous=getattr(self,'_selected_theatre',None)
+        result = []
+        previous = getattr(self, '_selected_theatre', None)
         try:
-            self._selected_theatre=(c['id'],lm,kind)
+            self._selected_theatre = (c['id'], lm, kind)
             for option in self.legal_targets(c['id']):
-                if option['mode']!='land' or option.get('landmass_id')!=lm:continue
-                objective=self._objective(c['id'],option['id'],'land',lm)
-                if objective is None:continue
-                target=self.country(option['id']);army=self._home_soldiers(target['id'],lm)
-                share=max(self._local_garrison_share(target,objective),float(np.median(cfg.BATTLE_LEARNED_GARRISON_SHARES)))
-                defense=min(army,max(200,int(army*share)))*target['morale']*self._terrain_defense(objective)
-                result.append((defense,option))
-        finally:self._selected_theatre=previous
-        return sorted(result,key=lambda item:item[0])
+                if option['mode'] != 'land' or option.get('landmass_id') != lm:
+                    continue
+                objective = self._objective(c['id'], option['id'], 'land', lm)
+                if objective is None:
+                    continue
+                target = self.country(option['id'])
+                army = self._home_soldiers(target['id'], lm)
+                share = max(self._local_garrison_share(target, objective), float(np.median(cfg.BATTLE_LEARNED_GARRISON_SHARES)))
+                defense = min(army, max(200, int(army * share))) * target['morale'] * self._terrain_defense(objective)
+                result.append((defense, option))
+        finally:
+            self._selected_theatre = previous
+        _diagnostic_result = sorted(result, key=lambda item: item[0])
+        if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+            diagnostic.observe('defenses', locals())
+        return _diagnostic_result
 
     @staticmethod
     def _theatre_committable(available):
@@ -179,16 +193,30 @@ class OverseasStrategyMixin:
             else:low=mid+1
         return low
 
-    def _viable_theatre_targets(self,c,lm,kind='ATTACK_FRONT'):
+    def _viable_theatre_targets(self, c, lm, kind='ATTACK_FRONT'):
         """Read-only offensive preflight against one actual objective."""
-        if self.year < int(c.get('recovery_until_year',0)):return []
-        if sum(x.attacker==c['id'] and x.status=='marching' for x in self.campaigns)>=cfg.AI_MAX_ACTIVE_CAMPAIGNS:return []
-        idx=self._spatial_indices(c['id'],lm)
-        available=max(0,self._home_soldiers(c['id'],lm)-int(self.local_population.ravel()[idx].sum()*cfg.MIN_GARRISON_RATIO))
-        if available<cfg.AI_MIN_ATTACK_SOLDIERS:return []
-        committed=self._theatre_committable(available)
-        return [o for defense,o in self._theatre_defenses(c,lm,kind)
-                if committed*max(.01,c['morale'])>=defense*cfg.AI_OFFENSIVE_SAFETY_RATIO]
+        if self.year < int(c.get('recovery_until_year', 0)):
+            _diagnostic_result = []
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                diagnostic.observe('viable', locals())
+            return _diagnostic_result
+        if sum((x.attacker == c['id'] and x.status == 'marching' for x in self.campaigns)) >= cfg.AI_MAX_ACTIVE_CAMPAIGNS:
+            _diagnostic_result = []
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                diagnostic.observe('viable', locals())
+            return _diagnostic_result
+        idx = self._spatial_indices(c['id'], lm)
+        available = max(0, self._home_soldiers(c['id'], lm) - int(self.local_population.ravel()[idx].sum() * cfg.MIN_GARRISON_RATIO))
+        if available < cfg.AI_MIN_ATTACK_SOLDIERS:
+            _diagnostic_result = []
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                diagnostic.observe('viable', locals())
+            return _diagnostic_result
+        committed = self._theatre_committable(available)
+        _diagnostic_result = [o for defense, o in self._theatre_defenses(c, lm, kind) if committed * max(0.01, c['morale']) >= defense * cfg.AI_OFFENSIVE_SAFETY_RATIO]
+        if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+            diagnostic.observe('viable', locals())
+        return _diagnostic_result
 
     def _can_expand_theatre(self,c,lm):
         owned=(self.world.territory==c['id'])&(self.world.continent==lm)
@@ -293,75 +321,114 @@ class OverseasStrategyMixin:
         t['reinforcement_block_reason']=''
         return chosen
 
-    def _reinforcement_manifest_from(self,c,t,source_site=None):
-        if not t:return None
-        t['reinforcement_block_reason']=''
+    def _reinforcement_manifest_from(self, c, t, source_site=None):
+        if not t:
+            _diagnostic_result = None
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('logistics'):
+                diagnostic.observe('manifest', locals())
+            return _diagnostic_result
+        t['reinforcement_block_reason'] = ''
+    
         def blocked(reason):
-            t['reinforcement_block_reason']=reason
+            t['reinforcement_block_reason'] = reason
             return None
-        if not t['port']:return blocked('補給港不可用')
-        if c.get('reinforcement_voyage'):return blocked('已有運輸船隊在途')
-        if c['fleet']<1:return blocked('沒有可用艦艇')
-        if t['gap']<=0 and t['supply_need']<=0:return None
-        cid=c['id'];home=int(source_site['continent_id']) if source_site else self._home_continent_id(c);hi=self._spatial_indices(cid,home)
-        hp=int(self.local_population.ravel()[hi].sum());ha=self._home_soldiers(cid,home)
-        reserve_ratio=cfg.OVERSEAS_PEACE_GARRISON_RATIO if source_site else cfg.MIN_GARRISON_RATIO
-        available=max(0,ha-int(math.ceil(hp*reserve_ratio)));dest=t['port']
-        ports=np.argwhere((self.world.territory==cid)&(self.world.continent==home)&(self.world.settlement==PORT))
+        if not t['port']:
+            _diagnostic_result = blocked('補給港不可用')
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('logistics'):
+                diagnostic.observe('manifest', locals())
+            return _diagnostic_result
+        if c.get('reinforcement_voyage'):
+            _diagnostic_result = blocked('已有運輸船隊在途')
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('logistics'):
+                diagnostic.observe('manifest', locals())
+            return _diagnostic_result
+        if c['fleet'] < 1:
+            _diagnostic_result = blocked('沒有可用艦艇')
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('logistics'):
+                diagnostic.observe('manifest', locals())
+            return _diagnostic_result
+        if t['gap'] <= 0 and t['supply_need'] <= 0:
+            _diagnostic_result = None
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('logistics'):
+                diagnostic.observe('manifest', locals())
+            return _diagnostic_result
+        cid = c['id']
+        home = int(source_site['continent_id']) if source_site else self._home_continent_id(c)
+        hi = self._spatial_indices(cid, home)
+        hp = int(self.local_population.ravel()[hi].sum())
+        ha = self._home_soldiers(cid, home)
+        reserve_ratio = cfg.OVERSEAS_PEACE_GARRISON_RATIO if source_site else cfg.MIN_GARRISON_RATIO
+        available = max(0, ha - int(math.ceil(hp * reserve_ratio)))
+        dest = t['port']
+        ports = np.argwhere((self.world.territory == cid) & (self.world.continent == home) & (self.world.settlement == PORT))
         if source_site:
-            port=self._logistics_port(c,source_site)
-            ports=np.array([[port[1],port[0]]]) if port else np.empty((0,2),dtype=int)
-        if not len(ports):return blocked('來源基地沒有可用港口')
-        route=None
-        for py,px in sorted(ports.tolist(),key=lambda p:self._wrapped_distance_cells((p[1],p[0]),dest,self.world.settings.width)):
-            route=self._sea_route((px,py),dest)
-            if route:break
-        if not route:return blocked('本島至戰區沒有有效航線')
-        distance=self._route_distance_km(route);years=max(1,math.ceil(distance/cfg.SEA_MARCH_CELLS_PER_YEAR))
-        budget=self._overseas_population_budget(c,t['lm'])
-        wartime=bool(t['enemies'])
-        # A separate, bounded military allowance; never opens civilian migration.
-        # Count troops already marching, so launching an attack cannot free this cap.
-        marching=sum(int(x.soldiers) for x in self.campaigns if x.attacker==cid
-                     and x.status=='marching' and x.mode=='land' and int(x.origin_landmass)==t['lm'])
-        military_cap=max(cfg.AI_MIN_ATTACK_SOLDIERS,
-                         int(budget['capacity']*cfg.OVERSEAS_WARTIME_ARMY_CAPACITY_RATIO))
-        military_room=max(0,military_cap-t['army']-marching) if wartime else 0
-        budget=dict(budget,military_cap=military_cap,military_room=military_room)
-        max_people=min(max(budget['people'],military_room) if wartime else budget['people'],int(hp*(1.-cfg.OVERSEAS_REINFORCEMENT_HOME_MIN_POP_RATIO)),
-                       self._transport_population_capacity(c['fleet']))
-        ratio=cfg.OVERSEAS_REINFORCEMENT_MAX_ISLAND_POP_RATIO
-        amount=min(t['gap'],available,int(ha*.5),self._transport_soldier_capacity(c['fleet']),
-                   military_room if wartime else max(0,int((t['population']+max_people)*ratio)-t['army']))
+            port = self._logistics_port(c, source_site)
+            ports = np.array([[port[1], port[0]]]) if port else np.empty((0, 2), dtype=int)
+        if not len(ports):
+            _diagnostic_result = blocked('來源基地沒有可用港口')
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('logistics'):
+                diagnostic.observe('manifest', locals())
+            return _diagnostic_result
+        route = None
+        for py, px in sorted(ports.tolist(), key=lambda p: self._wrapped_distance_cells((p[1], p[0]), dest, self.world.settings.width)):
+            route = self._sea_route((px, py), dest)
+            if route:
+                break
+        if not route:
+            _diagnostic_result = blocked('本島至戰區沒有有效航線')
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('logistics'):
+                diagnostic.observe('manifest', locals())
+            return _diagnostic_result
+        distance = self._route_distance_km(route)
+        years = max(1, math.ceil(distance / cfg.SEA_MARCH_CELLS_PER_YEAR))
+        budget = self._overseas_population_budget(c, t['lm'])
+        wartime = bool(t['enemies'])
+        marching = sum((int(x.soldiers) for x in self.campaigns if x.attacker == cid and x.status == 'marching' and (x.mode == 'land') and (int(x.origin_landmass) == t['lm'])))
+        military_cap = max(cfg.AI_MIN_ATTACK_SOLDIERS, int(budget['capacity'] * cfg.OVERSEAS_WARTIME_ARMY_CAPACITY_RATIO))
+        military_room = max(0, military_cap - t['army'] - marching) if wartime else 0
+        budget = dict(budget, military_cap=military_cap, military_room=military_room)
+        max_people = min(max(budget['people'], military_room) if wartime else budget['people'], int(hp * (1.0 - cfg.OVERSEAS_REINFORCEMENT_HOME_MIN_POP_RATIO)), self._transport_population_capacity(c['fleet']))
+        ratio = cfg.OVERSEAS_REINFORCEMENT_MAX_ISLAND_POP_RATIO
+        amount = min(t['gap'], available, int(ha * 0.5), self._transport_soldier_capacity(c['fleet']), military_room if wartime else max(0, int((t['population'] + max_people) * ratio) - t['army']))
+    
         def cargo(n):
-            people=(n if wartime else max(n,math.ceil((t['army']+n)/ratio-t['population']))) if n else 0
-            # All passengers eat; include existing island deficit and arriving residents.
-            food=t['supply_need']+people*cfg.FOOD_CONSUMPTION_PER_PERSON*(years+cfg.OVERSEAS_SUPPLY_BUFFER_YEARS)
-            return people,food
-        # Find a fully funded manifest BEFORE taking people, troops, food or ships.
-        source_food=float(source_site.get('supply_food',0)) if source_site else float(c['food'])
+            people = (n if wartime else max(n, math.ceil((t['army'] + n) / ratio - t['population']))) if n else 0
+            food = t['supply_need'] + people * cfg.FOOD_CONSUMPTION_PER_PERSON * (years + cfg.OVERSEAS_SUPPLY_BUFFER_YEARS)
+            return (people, food)
+        source_food = float(source_site.get('supply_food', 0)) if source_site else float(c['food'])
         if source_site:
-            bonus=min(cfg.MAX_CITY_FOOD_PRODUCTIVITY_BONUS,int(c.get('cities',0))*cfg.CITY_FOOD_PRODUCTIVITY_BONUS)
-            output=float(self.food_yield.ravel()[hi].sum())*cfg.FOOD_PRODUCTION_MULTIPLIER*(1+bonus)
-            source_reserve=max(0.,hp*cfg.FOOD_CONSUMPTION_PER_PERSON-output)*cfg.OVERSEAS_SUPPLY_BUFFER_YEARS
-            source_food=max(0.,source_food-source_reserve)
-        limit_food=min(source_food,c['fleet']*cfg.OVERSEAS_FOOD_PER_SHIP)
-        low,high=0,max(0,int(amount))
-        while low<high:
-            mid=(low+high+1)//2;people,food=cargo(mid)
-            if people<=max_people and food<=limit_food:low=mid
-            else:high=mid-1
-        amount=low if wartime or low>=cfg.AI_MIN_ATTACK_SOLDIERS else 0
-        people,supply=cargo(amount)
-        if not amount:supply=min(t['supply_need'],limit_food)
-        if amount<=0 and supply<=1e-6:
-            reason=('本島可出兵不足' if available<=0 or int(ha*.5)<=0 else
-                    '已達戰時駐軍上限（含行軍部隊）' if wartime and military_room<=0 else
-                    '人口／運輸容量不足' if max_people<=0 else
-                    '糧食或可用運輸資源不足')
-            return blocked(reason)
-        if people>hp-ha+amount:return blocked('本島留守人口不足')
-        return dict(px=px,py=py,route=route,distance=distance,years=years,budget=budget,amount=amount,people=people,supply=supply,hp=hp,home=home,dest=dest,source_site=source_site)
+            bonus = min(cfg.MAX_CITY_FOOD_PRODUCTIVITY_BONUS, int(c.get('cities', 0)) * cfg.CITY_FOOD_PRODUCTIVITY_BONUS)
+            output = float(self.food_yield.ravel()[hi].sum()) * cfg.FOOD_PRODUCTION_MULTIPLIER * (1 + bonus)
+            source_reserve = max(0.0, hp * cfg.FOOD_CONSUMPTION_PER_PERSON - output) * cfg.OVERSEAS_SUPPLY_BUFFER_YEARS
+            source_food = max(0.0, source_food - source_reserve)
+        limit_food = min(source_food, c['fleet'] * cfg.OVERSEAS_FOOD_PER_SHIP)
+        low, high = (0, max(0, int(amount)))
+        while low < high:
+            mid = (low + high + 1) // 2
+            people, food = cargo(mid)
+            if people <= max_people and food <= limit_food:
+                low = mid
+            else:
+                high = mid - 1
+        amount = low if wartime or low >= cfg.AI_MIN_ATTACK_SOLDIERS else 0
+        people, supply = cargo(amount)
+        if not amount:
+            supply = min(t['supply_need'], limit_food)
+        if amount <= 0 and supply <= 1e-06:
+            reason = '本島可出兵不足' if available <= 0 or int(ha * 0.5) <= 0 else '已達戰時駐軍上限（含行軍部隊）' if wartime and military_room <= 0 else '人口／運輸容量不足' if max_people <= 0 else '糧食或可用運輸資源不足'
+            _diagnostic_result = blocked(reason)
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('logistics'):
+                diagnostic.observe('manifest', locals())
+            return _diagnostic_result
+        if people > hp - ha + amount:
+            _diagnostic_result = blocked('本島留守人口不足')
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('logistics'):
+                diagnostic.observe('manifest', locals())
+            return _diagnostic_result
+        _diagnostic_result = dict(px=px, py=py, route=route, distance=distance, years=years, budget=budget, amount=amount, people=people, supply=supply, hp=hp, home=home, dest=dest, source_site=source_site)
+        if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('logistics'):
+            diagnostic.observe('manifest', locals())
+        return _diagnostic_result
 
     def _reinforce_v22(self,selected_country_ids=None,force=False):
         if not force and self.year%cfg.OVERSEAS_REINFORCEMENT_CHECK_YEARS:return set()
@@ -519,6 +586,8 @@ class OverseasStrategyMixin:
                     label={'strategic_evacuation':'海外戰區主動撤離','port_lost':'海外指定補給港失效','peacetime_surplus':'平定後超額駐軍返鄉'}.get(reason,'舊存檔返航（未記錄原因）')
                     self._log(c['id'],f"{label}：{int(v.get('transported_population',0)):,}人（含{int(v['soldiers']):,}名士兵）完成返航，餘糧{returned_food:,.1f}入來源基地倉。")
                     if reason=='port_lost':self._apply_delayed_rl_credit(c,v,-.2,'補給航線中斷')
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('logistics'):
+                diagnostic.emit('logistics_events', 'ARRIVAL_SETTLEMENT', c['id'], voyage_id=diagnostic.voyage_ids.get((c['id'], 'reinforcement_voyage')), delivered=bool(len(idx)) and not bool(v.get('returning')), returning=bool(v.get('returning')), actual_arrived_soldiers=int(v['soldiers']), actual_arrived_population=int(v.get('transported_population', 0)), actual_arrived_supply=float(v.get('supply_food', 0)), target_landmass=target_lm, return_reason=v.get('return_reason'))
             c['reinforcement_voyage']=None;self._sync_army_totals(c['id'])
 
     def _theatre_action(self,c,action):

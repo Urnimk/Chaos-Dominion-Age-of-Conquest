@@ -675,7 +675,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         y0, x0 = coords.min(axis=0)
         y1, x1 = coords.max(axis=0) + 1
         local_owned = self.world.territory[y0:y1, x0:x1] == cid
-        labels, count = ndimage.label(
+        labels, count = diagnostic_label(self, 
             local_owned,
             structure=np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]], dtype=np.uint8),
         )
@@ -1030,7 +1030,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                 x0,x1=(0,width) if wrap else (int(xs.min()),int(xs.max())+1)
                 patch=region_owned[y0:y1,x0:x1]
                 if wrap:patch=np.concatenate((patch,patch,patch),axis=1)
-                labels,_=ndimage.label(patch,structure=np.array([[0,1,0],[1,1,1],[0,1,0]],dtype=np.uint8))
+                labels,_=diagnostic_label(self, patch,structure=np.array([[0,1,0],[1,1,1],[0,1,0]],dtype=np.uint8))
                 if wrap:labels=labels[:,width:2*width]
                 keep={int(labels[y-y0,x-x0]) for y,x in anchors if int(labels[y-y0,x-x0])>0}
                 clearing[y0:y1,x0:x1] |= region_owned[y0:y1,x0:x1] & ~np.isin(labels,tuple(keep))
@@ -1451,7 +1451,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         if labels is None or parent is None:
             water = self.world.terrain <= 1
             structure = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]], dtype=np.uint8)
-            labels, count = ndimage.label(water, structure=structure)
+            labels, count = diagnostic_label(self, water, structure=structure)
             parent = np.arange(count + 1, dtype=np.int32)
 
             def root(value):
@@ -1527,6 +1527,8 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         # temporary neighbor list and a Python helper call for every expanded node.
         terrain = self.world.terrain
         diagonal_cost = math.sqrt(2.0)
+        if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('performance'):
+            diagnostic.count('A_star_actual_searches')
         frontier = []
         came_from = {}
         cost_so_far = {}
@@ -1570,6 +1572,8 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                     horizontal = min(horizontal, width - horizontal)
                     estimate = max(0.0, math.hypot(horizontal, ty - ny) - diagonal_cost)
                     heapq.heappush(frontier, (new_cost + estimate, new_cost, neighbor))
+        if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('performance'):
+            diagnostic.count('A_star_expanded_nodes', expansions)
         if end is None:
             return None
 
@@ -2140,7 +2144,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         # 單向航線：(攻方, 守方) -> (航程, 攻方港口, 守方沿海登陸點)。
         self.maritime_links: dict[tuple[int, int], tuple[float, tuple[int, int], tuple[int, int]]] = {}
         if not hasattr(self, "_sea_labels"):
-            self._sea_labels, _ = ndimage.label(self.world.terrain <= 1, structure=np.ones((3, 3), dtype=np.uint8))
+            self._sea_labels, _ = diagnostic_label(self, self.world.terrain <= 1, structure=np.ones((3, 3), dtype=np.uint8))
         countries = [c for c in self.world.countries if self.country(int(c["id"])).get("alive")]
         ports_by_country = {}
         coasts_by_country = {}
@@ -2350,29 +2354,43 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
 
     def _legal_targets_uncached(self, attacker):
         c = self.country(attacker)
-        if not c["alive"]:
-            return []
+        if not c['alive']:
+            _diagnostic_result = []
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                diagnostic.observe('legal_filter', locals())
+            return _diagnostic_result
         result = []
         home = self._home_continent_id(c)
         owned_islands = self._overseas_landmass_ids(c) | {home}
         for target in self.countries:
-            tid = target["id"]
-            if tid == attacker or not target["alive"] or (c["alliance"] > 0 and c["alliance"] == target["alliance"]):
+            tid = target['id']
+            if tid == attacker or not target['alive'] or (c['alliance'] > 0 and c['alliance'] == target['alliance']):
+                if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                    diagnostic.observe('legal_filter', locals(), "tid == attacker or not target['alive'] or (c['alliance'] > 0 and c['alliance'] == target['alliance'])")
                 continue
             points = self.land_contacts.get(tuple(sorted((attacker, tid))), [])
-            shared = sorted({int(self.world.continent[y,x]) for y,x in points} & owned_islands)
+            shared = sorted({int(self.world.continent[y, x]) for y, x in points} & owned_islands)
             for lm in shared:
-                result.append({"id": tid, "mode": "land", "distance": 1., "landmass_id": lm})
-            if c["fleet"] < cfg.OVERSEAS_MIN_FLEET or not self._homeland_is_unified(c):
+                result.append({'id': tid, 'mode': 'land', 'distance': 1.0, 'landmass_id': lm})
+            if c['fleet'] < cfg.OVERSEAS_MIN_FLEET or not self._homeland_is_unified(c):
+                if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                    diagnostic.observe('legal_filter', locals(), "c['fleet'] < cfg.OVERSEAS_MIN_FLEET or not self._homeland_is_unified(c)")
                 continue
             if (attacker, tid) not in self.maritime_links or not self._can_launch_overseas_expedition(c):
+                if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                    diagnostic.observe('legal_filter', locals(), '(attacker, tid) not in self.maritime_links or not self._can_launch_overseas_expedition(c)')
                 continue
-            islands = sorted(set(int(x) for x in np.unique(self.world.continent[self.world.territory == tid])) - owned_islands)
+            islands = sorted(set((int(x) for x in np.unique(self.world.continent[self.world.territory == tid]))) - owned_islands)
             for lm in islands:
-                if lm <= 0 or self._overseas_attack_banned(c, lm) or not self._can_launch_overseas_expedition(c, lm):
+                if lm <= 0 or self._overseas_attack_banned(c, lm) or (not self._can_launch_overseas_expedition(c, lm)):
+                    if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                        diagnostic.observe('legal_filter', locals(), 'lm <= 0 or self._overseas_attack_banned(c, lm) or (not self._can_launch_overseas_expedition(c, lm))')
                     continue
-                result.append({"id": tid, "mode": "naval", "distance": self.maritime_links[(attacker,tid)][0], "landmass_id": lm})
-        return result
+                result.append({'id': tid, 'mode': 'naval', 'distance': self.maritime_links[attacker, tid][0], 'landmass_id': lm})
+        _diagnostic_result = result
+        if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+            diagnostic.observe('legal_filter', locals())
+        return _diagnostic_result
 
     def _country_strength(self, cid: int) -> float:
         c = self.country(cid)
@@ -3179,6 +3197,9 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
             if not due:
                 continue
 
+            diagnostic = getattr(self, 'diagnostics', None)
+            if diagnostic is not None and diagnostic.enabled:
+                diagnostic.begin_decision(country)
             colony_available = bool(len(self._colony_candidates(country, colony_context)))
             self._active_strategic_snapshot = self._make_strategic_snapshot(country)
             try:
@@ -3210,7 +3231,12 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                 if new_plan:
                     self._log(cid, f"AI自行整理出戰術：{new_plan}")
 
-            policy_action = brain.select_action(state, actions, epsilon, action_biases)
+            if diagnostic is not None and diagnostic.enabled_for('ai'):
+                brain._diagnostic_sink = diagnostic
+            try:
+                policy_action = brain.select_action(state, actions, epsilon, action_biases)
+            finally:
+                brain.__dict__.pop('_diagnostic_sink', None)
             action = country['macro_action_bindings'].get(policy_action, 'REST_AND_REPRODUCE')
             visits = country.setdefault("action_visits", {})
             visits[policy_action] = int(visits.get(policy_action, 0)) + 1
@@ -3281,6 +3307,8 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
             )
             country['last_ai_action_success']=bool(success)
             self._log(cid,f"AI決策：{action}；{'已執行' if success else '未能執行'}；{country.get('strategic_block_reason','')}；下次評估{country['next_ai_decision_year']}年。")
+            if diagnostic is not None and diagnostic.enabled:
+                diagnostic.complete_decision(country, state, actions, action_biases, policy_action, action, success, reward)
             brain.pending = {
                 "state": list(state),
                 "action": policy_action,
@@ -3331,53 +3359,66 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
             if self.year % max(1, cfg.COLONY_CHECK_INTERVAL) == 0 else None
         )
         for c in alive:
-            if self.year < int(c.get("recovery_until_year", 0)):
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled:
+                diagnostic.begin_decision(c)
+            if self.year < int(c.get('recovery_until_year', 0)):
+                if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled:
+                    diagnostic.rule_decision(c, locals(), "self.year < int(c.get('recovery_until_year', 0))")
                 continue
             overseas_action = self._priority_overseas_action(c, colony_context)
-            if overseas_action == "COLONIZE":
-                self._found_overseas_colonies(
-                    selected_country_ids={int(c["id"])}, force=True,
-                    deterministic=True, context=colony_context,
-                )
+            if overseas_action == 'COLONIZE':
+                self._found_overseas_colonies(selected_country_ids={int(c['id'])}, force=True, deterministic=True, context=colony_context)
+                if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled:
+                    diagnostic.rule_decision(c, locals(), "overseas_action == 'COLONIZE'")
                 continue
-            if overseas_action and overseas_action.startswith("ATTACK:"):
-                _kind, target_id, mode = overseas_action.split(":", 2)
-                campaign = self.launch_campaign(int(c["id"]), int(target_id), mode)
+            if overseas_action and overseas_action.startswith('ATTACK:'):
+                _kind, target_id, mode = overseas_action.split(':', 2)
+                campaign = self.launch_campaign(int(c['id']), int(target_id), mode)
                 if campaign:
-                    self._dispatch_allied_reinforcements(int(c["id"]), int(target_id), campaign.id)
+                    self._dispatch_allied_reinforcements(int(c['id']), int(target_id), campaign.id)
+                    if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled:
+                        diagnostic.rule_decision(c, locals(), "overseas_action and overseas_action.startswith('ATTACK:') AND campaign")
                     continue
-            population = max(1, int(c.get("population", 0)))
-            soldier_ratio = float(c.get("soldiers", 0)) / population
-            rest_chance = float(cfg.REST_ACTION_BASE_BIAS) + float(c.get("war_exhaustion", 0.0)) * 0.60
+            population = max(1, int(c.get('population', 0)))
+            soldier_ratio = float(c.get('soldiers', 0)) / population
+            rest_chance = float(cfg.REST_ACTION_BASE_BIAS) + float(c.get('war_exhaustion', 0.0)) * 0.6
             rest_chance += max(0.0, 0.12 - soldier_ratio) * 2.0
-            if float(c.get("morale", 1.0)) < 0.85:
+            if float(c.get('morale', 1.0)) < 0.85:
                 rest_chance += 0.12
-            if self.rng.random() < min(0.80, rest_chance):
-                c["recovery_until_year"] = int(self.year + cfg.REST_DURATION_YEARS)
-                self._log(int(c["id"]), f"選擇休養生息{cfg.REST_DURATION_YEARS}年：停止發動新戰爭，集中恢復士氣、兵力與人口。")
+            if self.rng.random() < min(0.8, rest_chance):
+                c['recovery_until_year'] = int(self.year + cfg.REST_DURATION_YEARS)
+                self._log(int(c['id']), f'選擇休養生息{cfg.REST_DURATION_YEARS}年：停止發動新戰爭，集中恢復士氣、兵力與人口。')
+                if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled:
+                    diagnostic.rule_decision(c, locals(), 'self.rng.random() < min(0.8, rest_chance)')
                 continue
             if self.rng.random() > cfg.AI_BASE_WAR_CHANCE:
+                if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled:
+                    diagnostic.rule_decision(c, locals(), 'self.rng.random() > cfg.AI_BASE_WAR_CHANCE')
                 continue
-            options = self.legal_targets(c["id"])
+            options = self.legal_targets(c['id'])
             scored = []
             for option in options:
-                target = self.country(option["id"])
-                ratio = self._country_strength(c["id"]) / max(1.0, self._country_strength(target["id"]))
-                resource_value = (target["food"] + target["timber"] + target["minerals"]) / max(1.0, target["population"])
-                naval_bonus = cfg.AI_NAVAL_TARGET_BONUS if option["mode"] == "naval" else 0.0
-                score = ratio * 2.0 + resource_value * 0.01 - option["distance"] / 900.0 + naval_bonus + self.rng.random() * 0.18
+                target = self.country(option['id'])
+                ratio = self._country_strength(c['id']) / max(1.0, self._country_strength(target['id']))
+                resource_value = (target['food'] + target['timber'] + target['minerals']) / max(1.0, target['population'])
+                naval_bonus = cfg.AI_NAVAL_TARGET_BONUS if option['mode'] == 'naval' else 0.0
+                score = ratio * 2.0 + resource_value * 0.01 - option['distance'] / 900.0 + naval_bonus + self.rng.random() * 0.18
                 if ratio >= cfg.AI_UNIFICATION_MIN_POWER_RATIO:
-                    total_land = max(1, sum(int(x["territory_cells"]) for x in alive))
-                    target_share = int(target["territory_cells"]) / total_land
+                    total_land = max(1, sum((int(x['territory_cells']) for x in alive)))
+                    target_share = int(target['territory_cells']) / total_land
                     score += min(0.8, target_share * float(cfg.AI_UNIFICATION_TARGET_LAND_WEIGHT))
-                    if target["territory_cells"] >= max(int(x["territory_cells"]) for x in alive):
+                    if target['territory_cells'] >= max((int(x['territory_cells']) for x in alive)):
                         score += 0.25
                     scored.append((score, option))
+                    if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
+                        diagnostic.observe('rule_candidate', locals())
             if scored:
                 _score, choice = max(scored, key=lambda x: x[0])
-                campaign = self.launch_campaign(c["id"], choice["id"], choice["mode"])
+                campaign = self.launch_campaign(c['id'], choice['id'], choice['mode'])
                 if campaign:
-                    self._dispatch_allied_reinforcements(c["id"], choice["id"], campaign.id)
+                    self._dispatch_allied_reinforcements(c['id'], choice['id'], campaign.id)
+            if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled:
+                diagnostic.rule_decision(c, locals(), 'RULE_LOOP_COMPLETED')
 
     def _dispatch_allied_reinforcements(self, leader: int, defender: int, campaign_id: int):
         alliance = self.country(leader)["alliance"]
@@ -3409,6 +3450,8 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
             if not attacker["alive"]:
                 campaign.status = "cancelled"
                 continue
+            diagnostic = getattr(self, 'diagnostics', None)
+            diagnostic_food_before = float(attacker['food']) if diagnostic is not None and diagnostic.enabled_for('war') else 0.0
             yearly_supply = campaign.supply / max(1, campaign.years_left)
             if attacker["food"] >= yearly_supply:
                 attacker["food"] -= yearly_supply
@@ -3419,6 +3462,8 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                 campaign.soldiers = survivors
                 attacker["food"] = 0.0
             campaign.years_left -= 1
+            if diagnostic is not None and diagnostic.enabled_for('war') and campaign.id in diagnostic.campaign_data:
+                diagnostic.campaign_data[campaign.id]['food_consumed'] += max(0.0, diagnostic_food_before - float(attacker['food']))
             if campaign.years_left <= 0:
                 arrivals.append(campaign)
         # 同一目標、同一聯軍在同年到達者共同結算，但仍各自走完路程。
@@ -3705,6 +3750,8 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
             self._log(campaign.attacker, f"對{defender['name']}戰役：{outcome}；我軍傷亡約{int(campaign.soldiers * attack_loss_rate):,}。")
         self._log(defender["id"], f"遭受進攻：{outcome}；守軍傷亡{defense_losses:,}。")
         self._refresh_survival()
+        if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('war'):
+            self._diagnostic_battle_locals = dict(attack_losses=attack_losses, defense_losses=defense_losses, attacker_wins=attacker_wins, captured=captured)
 
     def _capture_area(self, winner: int, loser: int, center, soldiers: int,
                       naval_landing: bool = False, initial_overseas_landing: bool = False) -> int:
@@ -4108,3 +4155,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         engine._sync_army_totals()
         engine._build_geography()
         return engine
+
+
+from diagnostic_logger import install_engine, diagnostic_label
+install_engine(WarEngine)
