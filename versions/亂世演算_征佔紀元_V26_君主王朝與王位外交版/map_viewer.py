@@ -224,12 +224,12 @@ class MapViewer:
         # 國家總攬
         country_box = ttk.LabelFrame(self.tab_country_overview, text="🌐 世界各國", style="Panel.TLabelframe", padding=4)
         country_box.pack(fill="both", expand=True, padx=5, pady=5)
-        self.ranking = ttk.Treeview(country_box, columns=("land", "pop", "army", "fleet", "alliance", "record"), show="tree headings", style="Dark.Treeview")
-        for col, title in (("#0","國家"),("land","領土"),("pop","人口"),("army","士兵"),("fleet","艦隊"),("alliance","聯盟"),("record","戰績")):
+        self.ranking = ttk.Treeview(country_box, columns=("land", "pop", "army", "fleet", "king_name", "record"), show="tree headings", style="Dark.Treeview")
+        for col, title in (("#0","國家"),("land","領土"),("pop","人口"),("army","士兵"),("fleet","艦隊"),("king_name","國王"),("record","戰績")):
             self.ranking.heading(col, text=title, command=lambda c=col: self._sort_country_overview(c))
-        self.ranking.column("#0", width=160); self.ranking.column("land", width=65, anchor="e")
+        self.ranking.column("#0", width=120); self.ranking.column("land", width=65, anchor="e")
         self.ranking.column("pop", width=90, anchor="e"); self.ranking.column("army", width=80, anchor="e")
-        self.ranking.column("fleet", width=55, anchor="e"); self.ranking.column("alliance", width=75, anchor="center"); self.ranking.column("record", width=85, anchor="center")
+        self.ranking.column("fleet", width=55, anchor="e"); self.ranking.column("king_name", width=120, anchor="center"); self.ranking.column("record", width=85, anchor="center")
         self.ranking.pack(fill="both", expand=True)
         self.ranking.bind("<<TreeviewSelect>>", self._ranking_changed)
 
@@ -713,7 +713,7 @@ class MapViewer:
         world_ranked = sorted(self.war.countries, key=lambda x: (bool(x.get("alive", True)), self._country_power_score(x)), reverse=True)
         for item in self.ranking.get_children(): self.ranking.delete(item)
         for c in overview_rows:
-            self.ranking.insert("", "end", iid=str(c["id"]), text=c["name"], values=(c["territory_cells"], f"{c['population']:,}", f"{c['soldiers']:,}", c['fleet'], self._alliance_display_name(c["alliance"]), f"{c['wars_won']}勝/{c['wars_lost']}敗"))
+            self.ranking.insert("", "end", iid=str(c["id"]), text=c["name"], values=(c["territory_cells"], f"{c['population']:,}", f"{c['soldiers']:,}", c['fleet'], f"{c.get('king_name','未記錄')}", f"{c['wars_won']}勝/{c['wars_lost']}敗"))
         self._refresh_rank_text(world_ranked, summary)
 
         c = self.war.country(cid)
@@ -728,8 +728,6 @@ class MapViewer:
             ("綜合戰力", f"{power:,}"),
             ("世界年份", (f"已滅亡｜滅亡於第 {c.get('extinction_year', summary['year'])} 年"
                        if not c['alive'] else f"第 {summary['year']} 年")),
-            ("現任國王", (f"第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}"
-                       if c['alive'] else f"末代第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}")),
             ("領土規模", f"{c['territory_cells']:,} 格"),
             ("戰略狀態", "休養生息" if self.war.year < int(c.get("recovery_until_year", 0)) else ("交戰中" if active else "和平")),
             # ("終極戰爭目標", "統一世界" if c.get("war_goal", "UNIFY_WORLD") == "UNIFY_WORLD" else c.get("war_goal", "統一世界")),
@@ -741,12 +739,13 @@ class MapViewer:
             ("本島無主土地", f"可拓荒 {frontier_empty:,}／不可通行 {frontier_blocked:,} 格"),
             # ("殖民地數", f"{len(c.get('colonies', [])):,}／{cfg.COLONY_MAX_PER_COUNTRY}"),
         )
-        basic_rows += self.war.king_system.ui_rows(c)
+        # basic_rows += self.war.king_system.ui_rows(c)
+
         economy_rows = (
             ("人口", f"{c['population']:,} 人｜人口成長加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
             ("士兵", f"{c['soldiers']:,} 人｜徵兵比例加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
             ("艦隊", f"{c['fleet']:,}"),
-            ("殖民船航行", (f"前往{self.war.geographic_name_at(*reversed(c['colonization_voyage']['anchor']))}｜{max(0.0, float(c['colonization_voyage']['route_distance_km'])-float(c['colonization_voyage']['travelled_km'])):,.0f}公里" if c.get("colonization_voyage") else "無")),
+            # ("殖民船航行", (f"前往{self.war.geographic_name_at(*reversed(c['colonization_voyage']['anchor']))}｜{max(0.0, float(c['colonization_voyage']['route_distance_km'])-float(c['colonization_voyage']['travelled_km'])):,.0f}公里" if c.get("colonization_voyage") else "無")),
             ("城市／兵營", f"{c['cities']}／{c['barracks']}"),
             ("拓荒等級／港口", f"{c.get('frontier_level', 0)} 級／{c['ports']}"),
             ("糧食／承載", f"{c['food']:,.0f}／{c.get('food_capacity',0):,} 人"),
@@ -757,12 +756,18 @@ class MapViewer:
             ("戰爭疲乏／士氣", f"{float(c.get('war_exhaustion', 0.0)):.0%}／{float(c.get('morale', 1.0)):.0%}"),
         )
         diplomacy_rows = (
-            ("普通聯盟", alliance_name),
-            ("歷史參戰", f"{c['wars_won'] + c['wars_lost']} 場"),
-            ("戰績", f"勝 {c['wars_won']}／敗 {c['wars_lost']}"),
-            ("勝率", f"{(100*c['wars_won']/max(1,c['wars_won']+c['wars_lost'])):.1f}%"),
+            # ("普通聯盟", alliance_name),
+            # ("歷史參戰", f"{c['wars_won'] + c['wars_lost']} 場"),
+            # ("戰績", f"勝 {c['wars_won']}／敗 {c['wars_lost']}"),
+            # ("勝率", f"{(100*c['wars_won']/max(1,c['wars_won']+c['wars_lost'])):.1f}%"),
             # ("目前行軍", f"{sum(1 for x in self.war.campaigns if x.attacker == cid and x.status == 'marching')} 支"),
+
+            ("現任國王", (f"第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}"
+                       if c['alive'] else f"末代第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}")),
         )
+
+        diplomacy_rows += self.war.king_system.ui_rows(c)
+
         self._set_field_rows(self.country_basic, basic_rows)
         self._refresh_colony_links(c)
         self._set_field_rows(self.country_economy, economy_rows)

@@ -848,9 +848,11 @@ class KingSystem:
         r=self.reign(c);a=r['ambition'];u=self.union_for(c['id']);heir=self.main_heir(c)
         spouse=self.persons.get(p.spouse_id);grudge=max(p.memory.grudges,key=p.memory.grudges.get,default=None)
         rows=[('王朝／年齡',f'{self.dynasties[p.dynasty_id].name}｜{self.year-p.birth_year}歲｜在位{self.year-r["accession_year"]}年'),
-              ('君主人格',LABELS[p.personality]+'｜'+'、'.join(p.secondary_traits)),('君主能力','／'.join(f'{dict(military="軍事",administration="行政",naval="海軍",diplomacy="外交",willpower="意志")[k]}:{v}' for k,v in p.abilities.items())),
-              ('治世志向',f'{a["kind"]}｜承諾{a["commitment"]:.0%}｜進展{a["progress"]:.0%}'),('合法性／攝政',f'{p.legitimacy:.0%}｜'+(f'攝政至{p.regency.until_year}' if p.regency.active else '親政')+('｜親征中' if p.personally_commanding else '')),
-              ('配偶／繼承人',f'{spouse.name if spouse else "無"}／{heir.name if heir else "旁系待議"}'),('持有王位','、'.join(self.engine.country(i)['name'] for i in p.current_titles)),
+              ('君主人格',LABELS[p.personality]+'｜'+'、'.join(p.secondary_traits)),
+            #   ('君主能力','／'.join(f'{dict(military="軍事",administration="行政",naval="海軍",diplomacy="外交",willpower="意志")[k]}:{v}' for k,v in p.abilities.items())),
+            #   ('治世志向',f'{a["kind"]}｜承諾{a["commitment"]:.0%}｜進展{a["progress"]:.0%}'),('合法性／攝政',f'{p.legitimacy:.0%}｜'+(f'攝政至{p.regency.until_year}' if p.regency.active else '親政')+('｜親征中' if p.personally_commanding else '')),
+              ('配偶／繼承人',f'{spouse.name if spouse else "無"}／{heir.name if heir else "旁系待議"}'),
+              ('持有王位','、'.join(self.engine.country(i)['name'] for i in p.current_titles)),
               ('私人宿敵',self.engine.country(int(grudge))['name'] if grudge and int(grudge)<=len(self.engine.countries) else '無')]
         if u:rows.append(('共主邦聯',f'{u.stage}｜'+('Senior' if c['id']==u.senior_partner else 'Junior')+f'｜忠誠{u.union_loyalty.get(str(c["id"]),.75):.0%}｜整合{u.integration_progress:.0%}'))
         claims=[self.claims[i] for i in p.claims if i in self.claims]
