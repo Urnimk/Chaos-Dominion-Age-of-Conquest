@@ -119,7 +119,7 @@ STYLE_CODES = {v: k for k, v in STYLE_LABELS.items()}
 class MapViewer:
     def __init__(self, root):
         self.root = root
-        self.root.title("亂世演算_征佔紀元 V25_1｜寫檔與建築選址優化版")
+        self.root.title("亂世演算_征佔紀元 V26｜君主王朝與王位外交版")
         self.root.geometry(WINDOW_SIZE)
         self.root.configure(bg="#161616")
         self.world = self.war = self.full_image = self.tk_image = None
@@ -741,6 +741,7 @@ class MapViewer:
             ("本島無主土地", f"可拓荒 {frontier_empty:,}／不可通行 {frontier_blocked:,} 格"),
             # ("殖民地數", f"{len(c.get('colonies', [])):,}／{cfg.COLONY_MAX_PER_COUNTRY}"),
         )
+        basic_rows += self.war.king_system.ui_rows(c)
         economy_rows = (
             ("人口", f"{c['population']:,} 人｜人口成長加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
             ("士兵", f"{c['soldiers']:,} 人｜徵兵比例加成 +{float(c.get('food_capacity',0))/100000:.0%}"),

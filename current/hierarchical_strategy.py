@@ -23,13 +23,14 @@ class HierarchicalStrategyMixin:
 
     def _macro_measure_uncached(self,c,lm):
         idx=self._spatial_indices(c['id'],lm) if lm else np.array([],dtype=int)
-        owners=set(int(x) for x in np.unique(self.world.territory[self.world.continent==lm]) if x>0) if lm else set()
-        rivals=sorted(x for x in owners if x!=c['id'] and self.country(x)['alive'])
+        owners=set(self.world_state_cache.landmass_ownership(lm)[2]) if lm else set()
+        realm=self.king_system.realm(c['id']) if hasattr(self,'king_system') else {c['id']}
+        rivals=sorted(x for x in owners if x not in realm and self.country(x)['alive'])
         site=self._site(c,lm) if lm else None
         total=max(1,int(self._landmass_sizes[lm])) if 0<lm<len(self._landmass_sizes) else 1
         return {'cells':len(idx),'control':len(idx)/total,'army':int(self.local_soldiers.ravel()[idx].sum()),
                 'rivals':rivals,'base':bool(site),'port':bool(site and self._logistics_port(c,site)),
-                'pacified':len(idx)/total>=cfg.OVERSEAS_REGION_CONTROL_SHARE_REQUIRED and not rivals}
+                'pacified':(sum(int(self.world_state_cache.landmass_ownership(lm)[1][cid]) for cid in realm if cid<len(self.world_state_cache.landmass_ownership(lm)[1]))/total if lm else 0)>=cfg.OVERSEAS_REGION_CONTROL_SHARE_REQUIRED and not rivals}
 
     def _macro_event(self,c,event,**kw):
         entry={'year':int(self.year),'event':event,**kw}
@@ -69,7 +70,7 @@ class HierarchicalStrategyMixin:
             if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
                 diagnostic.observe('candidate', locals())
         if choices:
-            _diagnostic_result = sorted(choices, reverse=True)
+            _diagnostic_result = self.king_system.rank_targets(c, choices) if hasattr(self,'king_system') else sorted(choices, reverse=True)
             if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
                 diagnostic.observe('candidate', locals())
             return _diagnostic_result
@@ -112,7 +113,7 @@ class HierarchicalStrategyMixin:
             choices.append((value - distance / 1000, lm, 'COLONIZE', None))
             if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
                 diagnostic.observe('candidate', locals())
-        _diagnostic_result = sorted(choices, reverse=True)
+        _diagnostic_result = self.king_system.rank_targets(c, choices) if hasattr(self,'king_system') else sorted(choices, reverse=True)
         if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
             diagnostic.observe('candidate', locals())
         return _diagnostic_result
@@ -181,7 +182,7 @@ class HierarchicalStrategyMixin:
         target=commit.get('target_country')
         if target not in m['rivals'] and m['rivals']:
             # Rival changes only within the committed island, after it leaves that island.
-            target=min(m['rivals'],key=lambda x:self._home_soldiers(x,lm));commit['target_country']=target
+            target=max(m['rivals'],key=lambda x:self.king_system.rival_score(c,x,lm));commit['target_country']=target
         if lm==home:stage='UNIFY_HOMELAND'
         elif not m['base']:stage='COLONIZE_LANDMASS' if commit['kind']=='COLONIZE' or not m['rivals'] else 'ESTABLISH_OVERSEAS_BASE'
         elif not m['port']:stage='ESTABLISH_OVERSEAS_BASE'
@@ -296,7 +297,7 @@ class HierarchicalStrategyMixin:
             c['strategic_block_reason'] += '｜' + detail
         enemy = sum((self._home_soldiers(x, lm) for x in m['rivals']))
         state = (min(4, int(len(self._spatial_indices(cid, home)) / max(1, self._landmass_sizes[home]) * 5)), min(4, int(self._home_soldiers(cid, home) / max(1, hp) * 20)), min(4, int(c.get('war_exhaustion', 0) * 5)), min(3, sum((x.attacker == cid and x.status == 'marching' for x in self.campaigns))), GOALS.index(g['goal_type']), min(4, int(m['control'] * 5)), min(4, int(enemy / max(1, m['army']))), int(m['base']) + int(m['port']), min(3, int(food_years)), int(bool(c.get('reinforcement_voyage'))) + 2 * int(bool(c.get('colonization_voyage'))), min(3, len(m['rivals'])), min(10, int(c['territory_cells'] / max(1, self._landmass_sizes.sum()) * 10)))
-        _diagnostic_result = (state, list(bindings), {})
+        _diagnostic_result = (state, list(bindings), self.king_system.action_biases(c,bindings))
         if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
             diagnostic.observe('actions', locals())
         return _diagnostic_result
@@ -327,7 +328,7 @@ class HierarchicalStrategyMixin:
         army = self._home_soldiers(target['id'], lm)
         share = max(self._local_garrison_share(target, objective), float(np.median(cfg.BATTLE_LEARNED_GARRISON_SHARES)))
         defense = min(army, max(200, int(army * share))) * target['morale'] * self._terrain_defense(objective)
-        _diagnostic_result = available * max(cfg.TACTICAL_ATTACK_FRACTIONS) * c['morale'] * (1 - cfg.AMPHIBIOUS_ATTACK_PENALTY) >= defense
+        _diagnostic_result = available * max(cfg.TACTICAL_ATTACK_FRACTIONS) * c['morale'] * (1 - cfg.AMPHIBIOUS_ATTACK_PENALTY) >= defense * self.king_system.risk_ratio(c)
         if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
             diagnostic.observe('landing', locals())
         return _diagnostic_result

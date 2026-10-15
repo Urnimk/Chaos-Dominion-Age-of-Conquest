@@ -103,9 +103,10 @@ class OverseasStrategyMixin:
     def _theatre_uncached(self,c,site):
         cid=int(c['id']);lm=int(site['continent_id']);idx=self._spatial_indices(cid,lm)
         pop=int(self.local_population.ravel()[idx].sum());army=int(self.local_soldiers.ravel()[idx].sum())
-        owners=np.unique(self.world.territory[self.world.continent==lm])
+        owners=self.world_state_cache.landmass_ownership(lm)[2]
         enemies=[int(x) for x in owners if x>0 and x!=cid and self.country(int(x))['alive']
-                 and not (c['alliance']>0 and self.country(int(x))['alliance']==c['alliance'])]
+                 and not (c['alliance']>0 and self.country(int(x))['alliance']==c['alliance'])
+                 and not (hasattr(self,'king_system') and self.king_system.same_union(cid,int(x)))]
         enemy_army=sum(self._landmass_soldiers(x,lm) for x in enemies)
         port=self._logistics_port(c,site)
         # Leave a real home reserve; overseas target includes offensive capability and enemy pressure.
@@ -179,7 +180,7 @@ class OverseasStrategyMixin:
         if not defenses:return 0
         wanted=(c.get('strategic_commitment') or {}).get('target_country')
         defense=next((d for d,o in defenses if o['id']==wanted),defenses[0][0])
-        required=defense*cfg.AI_OFFENSIVE_SAFETY_RATIO/max(.01,c['morale'])
+        required=defense*cfg.AI_OFFENSIVE_SAFETY_RATIO*(self.king_system.risk_ratio(c) if hasattr(self,'king_system') else 1.)/max(.01,c['morale'])
         def sufficient(total):
             # Each reinforcement soldier is also a newly arrived resident.
             future_pop=pop+max(0,total-army)
@@ -213,7 +214,7 @@ class OverseasStrategyMixin:
                 diagnostic.observe('viable', locals())
             return _diagnostic_result
         committed = self._theatre_committable(available)
-        _diagnostic_result = [o for defense, o in self._theatre_defenses(c, lm, kind) if committed * max(0.01, c['morale']) >= defense * cfg.AI_OFFENSIVE_SAFETY_RATIO]
+        _diagnostic_result = [o for defense, o in self._theatre_defenses(c, lm, kind) if committed * max(0.01, c['morale']) >= defense * cfg.AI_OFFENSIVE_SAFETY_RATIO * (self.king_system.risk_ratio(c) if hasattr(self,'king_system') else 1.)]
         if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
             diagnostic.observe('viable', locals())
         return _diagnostic_result
