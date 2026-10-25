@@ -1,6 +1,7 @@
 """Persistent provincial operations subordinate to the existing island commitment."""
 import numpy as np
 import map_config as cfg
+from combat_feasibility import province_assessment
 
 TITLES={'CONQUER':'奪取省份','CONNECT':'打通走廊','SECURE_BASE':'鞏固登陸省','SECURE_PORT':'取得港口','PACIFY':'清理殘餘勢力','PREPARE_LANDING':'建立海外立足點','DEVELOP':'擴張本島領土'}
 
@@ -16,8 +17,10 @@ def progress(e,c,task):
     owned=owners==c['id'];hostile=np.array([int(v)>0 and int(v)!=c['id'] and not (c['alliance']>0 and e.country(int(v))['alliance']==c['alliance']) for v in np.unique(owners)])
     enemies=[int(v) for v,yes in zip(np.unique(owners),hostile) if yes]
     soldiers=p.totals(pid,'soldiers');enemy=sum(soldiers.get(v,0) for v in enemies);own=soldiers.get(c['id'],0)
+    support=sum(p.totals(n,'soldiers').get(c['id'],0) for n in p.layout.neighbors[pid])
+    support=min(support,e._theatre_committable(max(0,e._home_soldiers(c['id'],p.layout.islands[pid])-int(e.world_state_cache.total('population',c['id'],p.layout.islands[pid])*cfg.MIN_GARRISON_RATIO))))
     important=np.isin(e.world.settlement.ravel()[idx],(1,3))&np.isin(owners,enemies)
-    return dict(owned_cells=int(owned.sum()),control=float(owned.mean()),enemy_army=int(enemy),own_army=int(own),hostile_key_sites=int(important.sum()))
+    return dict(owned_cells=int(owned.sum()),control=float(owned.mean()),enemy_army=int(enemy),own_army=int(own),support_army=int(support),hostile_key_sites=int(important.sum()))
 
 
 def update(e,c,g):
@@ -33,10 +36,12 @@ def update(e,c,g):
         m=progress(e,c,task);task['progress']=m
         if m['owned_cells']>task['best_cells']:
             task['best_cells']=m['owned_cells'];task['last_progress_year']=int(e.year)
-        complete=m['control']>=cfg.PROVINCE_TASK_CONTROL_REQUIRED and m['hostile_key_sites']==0 and m['enemy_army']<=max(0,m['own_army']*cfg.PROVINCE_TASK_ENEMY_RATIO)
+        complete=m['control']>=cfg.PROVINCE_TASK_CONTROL_REQUIRED and m['hostile_key_sites']==0 and m['enemy_army']<=max(0,(m['own_army']+m['support_army'])*cfg.PROVINCE_TASK_ENEMY_RATIO)
         options=[o for o in e.legal_targets(c['id']) if o['mode']=='land' and o['landmass_id']==lm]
         reachable=any(pid in p.frontier(c['id'],o['id'],lm) for o in options)
-        reason='取得戰略控制，關鍵據點無敵軍佔領' if complete else '前線已不可達' if not reachable else '長期未取得土地進展' if e.year-task['last_progress_year']>=cfg.PROVINCE_TASK_STALL_YEARS else None
+        assessment=province_assessment(e,c,task['target_country'],pid,lm) if reachable else {'feasible':False,'reason':'NO_FRONTIER'}
+        task['combat_assessment']=assessment
+        reason='取得戰略控制，關鍵據點無敵軍佔領' if complete else '前線已不可達' if not reachable else '省內無可行攻擊點，重新評估其他前線省份' if not assessment['feasible'] else '長期未取得土地進展' if e.year-task['last_progress_year']>=cfg.PROVINCE_TASK_STALL_YEARS else None
         if reason:
             cooldown[str(pid)]=int(e.year+cfg.PROVINCE_TASK_RETRY_YEARS)
             finish(e,c,task,'COMPLETED' if complete else 'REPLAN',reason);task=None
@@ -46,8 +51,10 @@ def update(e,c,g):
             if o['mode']!='land' or int(o['landmass_id'])!=lm:continue
             for pid,points in p.frontier(c['id'],o['id'],lm).items():
                 if cooldown.get(str(pid),0)>e.year:continue
+                assessment=province_assessment(e,c,o['id'],pid,lm)
+                if not assessment['feasible']:continue
                 check=progress(e,c,{'province_id':pid})
-                if check['control']>=cfg.PROVINCE_TASK_CONTROL_REQUIRED and check['hostile_key_sites']==0 and check['enemy_army']<=check['own_army']*cfg.PROVINCE_TASK_ENEMY_RATIO:continue
+                if check['control']>=cfg.PROVINCE_TASK_CONTROL_REQUIRED and check['hostile_key_sites']==0 and check['enemy_army']<=(check['own_army']+check['support_army'])*cfg.PROVINCE_TASK_ENEMY_RATIO:continue
                 idx=p.layout.indices[pid];owners=e.world.territory.ravel()[idx];control=float(np.mean(owners==c['id']))
                 hostile_sites=int(np.count_nonzero(np.isin(e.world.settlement.ravel()[idx],(1,3))&(owners==o['id'])))
                 army=p.totals(pid,'soldiers');pressure=army.get(o['id'],0)/max(200,sum(p.totals(n,'soldiers').get(c['id'],0) for n in (pid,)+p.layout.neighbors[pid]))

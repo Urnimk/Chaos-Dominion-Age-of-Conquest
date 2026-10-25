@@ -1307,9 +1307,15 @@ class MapViewer(ResponsiveViewerMixin):
                         # self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}・{kind}首都",
                         #                         fill="white", anchor="w", font=(UI_FONT_FAMILY, 9, "bold"))
 
+                        # MAP_VISUAL_STYLE = "PARCHMENT"  # "CLASSIC"：目前原版；"PARCHMENT"：羊皮紙架空地圖。
+                        
                         if int(self.world.continent[ay, ax]) in major_islands:
-                            self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}",
-                                                    fill="white", anchor="w", font=(UI_FONT_FAMILY, 12, "bold"))
+                            if cfg.MAP_VISUAL_STYLE == "CLASSIC":
+                                self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}",
+                                                        fill="white", anchor="w", font=(UI_FONT_FAMILY, 12, "bold"))
+                            if cfg.MAP_VISUAL_STYLE == "PARCHMENT":
+                                self.canvas.create_text(sx+half+4, sy-half, text=f"{country['name']}",
+                                                        fill="black", anchor="w", font=(UI_FONT_FAMILY, 12, "bold"))
 
         # 本土首都圖示最後繪製，確保港口、兵營、島名與航線都不能遮住它。
         for country in self.world.countries:

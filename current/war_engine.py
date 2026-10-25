@@ -2475,7 +2475,8 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
             for y, x in cells:
                 point=(int(y),int(x)); island=int(self.world.continent[point])
                 army=self._home_soldiers(defender,island)
-                score=self._terrain_defense(point)*army*self._local_garrison_share(self.country(defender),point)
+                from combat_feasibility import defense
+                score=defense(self,defender,point)
                 if tactic == "ENCIRCLE_CAPITAL":
                     score *= .4 + self._wrapped_distance_cells((int(x),int(y)),(ex,ey),self.world.settings.width)/300.
                 elif tactic == "RECOVER_PORT":
@@ -2631,23 +2632,11 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
             return None
         tactical_state = self._tactical_region_state(attacker, defender, objective, option["mode"])
         tactical_actions = [f"ATTACK:{int(round(fraction * 100))}" for fraction in cfg.TACTICAL_ATTACK_FRACTIONS]
-        if option["mode"] == "naval" or source_landmass != home_landmass:
-            # An overseas battle must budget troops against the actual destination island,
-            # rather than send a tiny fraction of an already depleted home army.
-            target = self.country(defender)
-            defending_army = self._home_soldiers(defender, target_landmass)
-            share = max(self._local_garrison_share(target, objective),
-                        float(np.median(cfg.BATTLE_LEARNED_GARRISON_SHARES)))
-            defenders = min(defending_army, max(200, int(defending_army * share)))
-            estimated_defense = defenders * target["morale"] * self._terrain_defense(objective)
-            unit_attack = max(.01, a["morale"] * ((1.0-cfg.AMPHIBIOUS_ATTACK_PENALTY) if option["mode"]=="naval" else 1.0))
-            tactical_actions = [action for action in tactical_actions
-                                if min(available,max(cfg.AI_MIN_ATTACK_SOLDIERS,int(available*int(action.split(':')[1])/100))) * unit_attack >= estimated_defense]
-            if not tactical_actions:
-                if self.year-int(a.get("last_landing_deferred_log",-100))>=20:
-                    self._log(attacker, "海外攻勢暫緩：可投入兵力不足以對抗目標島預估守軍；先累積戰區兵力或另選目標。")
-                    a["last_landing_deferred_log"]=self.year
-                return None
+        from combat_feasibility import legal_actions
+        tactical_actions=legal_actions(self,a,defender,objective,available,option['mode'])
+        if not tactical_actions:
+            self._log(attacker,'進攻取消：目前兵力下沒有通過戰力安全檢查的出兵比例。')
+            return None
         tactical_action = self._choose_tactical_action(attacker, tactical_state, tactical_actions)
         fraction = int(tactical_action.split(":", 1)[1]) / 100.0
         soldiers = min(available, max(cfg.AI_MIN_ATTACK_SOLDIERS, int(available * fraction)))

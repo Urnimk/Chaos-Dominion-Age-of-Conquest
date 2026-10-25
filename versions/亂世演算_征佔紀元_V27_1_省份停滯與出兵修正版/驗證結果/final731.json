@@ -1,0 +1,171 @@
+{
+  "seed": 731,
+  "years": 1000,
+  "size": [
+    384,
+    256
+  ],
+  "province_enabled": true,
+  "init_seconds": 0.4800379600001179,
+  "simulation_seconds": 15.93796870899996,
+  "samples": [
+    {
+      "year": 101,
+      "alive": 12,
+      "owned": 3452,
+      "battles": 0
+    },
+    {
+      "year": 201,
+      "alive": 12,
+      "owned": 8031,
+      "battles": 0
+    },
+    {
+      "year": 301,
+      "alive": 12,
+      "owned": 17382,
+      "battles": 13
+    },
+    {
+      "year": 401,
+      "alive": 12,
+      "owned": 26727,
+      "battles": 33
+    },
+    {
+      "year": 501,
+      "alive": 12,
+      "owned": 31361,
+      "battles": 65
+    },
+    {
+      "year": 601,
+      "alive": 9,
+      "owned": 31260,
+      "battles": 92
+    },
+    {
+      "year": 701,
+      "alive": 9,
+      "owned": 32397,
+      "battles": 111
+    },
+    {
+      "year": 801,
+      "alive": 9,
+      "owned": 32157,
+      "battles": 130
+    },
+    {
+      "year": 901,
+      "alive": 9,
+      "owned": 32804,
+      "battles": 151
+    },
+    {
+      "year": 1001,
+      "alive": 9,
+      "owned": 32765,
+      "battles": 176
+    }
+  ],
+  "province_cache": {
+    "hits": 19695,
+    "misses": 2732,
+    "frontier_hits": 2501,
+    "frontier_misses": 809,
+    "last_choices": {
+      "6": {
+        "year": 991,
+        "defender": 2,
+        "landmass_id": 4,
+        "evaluated_provinces": 1,
+        "selected_provinces": [
+          28
+        ],
+        "candidate_cells": 61
+      },
+      "2": {
+        "year": 992,
+        "defender": 6,
+        "landmass_id": 4,
+        "evaluated_provinces": 1,
+        "selected_provinces": [
+          25
+        ],
+        "candidate_cells": 24
+      },
+      "10": {
+        "year": 992,
+        "defender": 3,
+        "landmass_id": 1,
+        "evaluated_provinces": 1,
+        "selected_provinces": [
+          6
+        ],
+        "candidate_cells": 74
+      },
+      "3": {
+        "year": 996,
+        "defender": 4,
+        "landmass_id": 1,
+        "evaluated_provinces": 1,
+        "selected_provinces": [
+          1
+        ],
+        "candidate_cells": 39
+      },
+      "4": {
+        "year": 992,
+        "defender": 1,
+        "landmass_id": 1,
+        "evaluated_provinces": 1,
+        "selected_provinces": [
+          5
+        ],
+        "candidate_cells": 25
+      },
+      "8": {
+        "year": 560,
+        "defender": 3,
+        "landmass_id": 1,
+        "evaluated_provinces": 1,
+        "selected_provinces": [
+          18
+        ],
+        "candidate_cells": 32
+      },
+      "12": {
+        "year": 570,
+        "defender": 6,
+        "landmass_id": 4,
+        "evaluated_provinces": 1,
+        "selected_provinces": [
+          23
+        ],
+        "candidate_cells": 24
+      },
+      "1": {
+        "year": 999,
+        "defender": 7,
+        "landmass_id": 1,
+        "evaluated_provinces": 1,
+        "selected_provinces": [
+          9
+        ],
+        "candidate_cells": 27
+      },
+      "7": {
+        "year": 995,
+        "defender": 1,
+        "landmass_id": 1,
+        "evaluated_provinces": 1,
+        "selected_provinces": [
+          14
+        ],
+        "candidate_cells": 51
+      }
+    }
+  }
+}

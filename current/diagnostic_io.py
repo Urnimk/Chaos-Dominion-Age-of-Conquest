@@ -1,4 +1,4 @@
-"""V27 compact diagnostic snapshots, isolated write failures and retry spacing.
+"""V27_1 compact diagnostic snapshots, isolated write failures and retry spacing.
 Game state/RNG are never modified. Existing JSON/JSONL/CSV event schema remains.
 """
 import csv,gzip,io,json,os,tempfile,time,zipfile
@@ -80,7 +80,7 @@ def documents(d,include_state=True):
     yield 'logistics_summary.json',d.logistics_summary(),False
 
 def summary_text(d):
-    text=f'# V27 診斷分析包\n\n目前年份：{d.engine.year}；觀察起點：{d.first_year}。\n\n'
+    text=f'# V27_1 診斷分析包\n\n目前年份：{d.engine.year}；觀察起點：{d.first_year}。\n\n'
     text+='完整決策最近 100 年；其他明細與效能最近 1000 年。無法觀察的數值為 null。\n\n'
     text+=f'決策紀錄：{len(d.records["ai_decisions"])}；戰役紀錄：{len(d.records["war_outcomes"])}；效能年份：{len(d.performance)}。\n\n'
     text+='停滯國家：'+', '.join(r['name'] for r in d.last_analysis.get('countries',[]) if r['stagnation_detected'])+'\n\n'
