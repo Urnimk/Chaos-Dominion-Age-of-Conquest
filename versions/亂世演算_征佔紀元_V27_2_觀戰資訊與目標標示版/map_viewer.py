@@ -690,8 +690,8 @@ class MapViewer(ResponsiveViewerMixin):
             # ("殖民地數", f"{len(c.get('colonies', [])):,}／{cfg.COLONY_MAX_PER_COUNTRY}"),
         )
         economy_rows = (
-            ("人口", f"{c['population']:,} 人{change(self,c,'population')}｜人口成長加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
-            ("士兵", f"{c['soldiers']:,} 人{change(self,c,'soldiers')}｜徵兵比例加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
+            ("人口", f"{c['population']:,} 人{change(self,c,'population')}"),
+            ("士兵", f"{c['soldiers']:,} 人{change(self,c,'soldiers')}"),
             ("艦隊／港口", f"{c['fleet']:,}／{c['ports']}"),
             # ("殖民船航行", (f"前往{self.war.geographic_name_at(*reversed(c['colonization_voyage']['anchor']))}｜{max(0.0, float(c['colonization_voyage']['route_distance_km'])-float(c['colonization_voyage']['travelled_km'])):,.0f}公里" if c.get("colonization_voyage") else "無")),
             ("城市／兵營", f"{c['cities']}／{c['barracks']}"),
@@ -700,7 +700,7 @@ class MapViewer(ResponsiveViewerMixin):
             # ("糧食淨額／承載", f"{c.get('last_food_balance',0):+,.1f}／{c.get('food_capacity',0):,} 人"),
             ("木材／礦產", f"{c['timber']:,.0f}／{c['minerals']:,.0f}"),
             ("糧食／承載", f"{c['food']:,.0f}／{c.get('food_capacity',0):,} 人"),
-            ("糧食補助", f"+{float(c.get('last_rest_food_bonus',0.0)):,.1f}／年｜安全庫存 {float(c.get('last_home_food_reserve_target',0.0)):,.0f}"),
+            ("糧食補助", f"安全庫存 {float(c.get('last_home_food_reserve_target',0.0)):,.0f}｜人口加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
             ("疲乏／士氣", f"{float(c.get('war_exhaustion', 0.0)):.0%}／{float(c.get('morale', 1.0)):.0%}"),
         )
         self._set_field_rows(self.country_basic, basic_rows)

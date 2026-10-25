@@ -15,7 +15,7 @@ def change(view,c,key):
         samples.append((year,{k:int(c[k]) for k in ('population','soldiers','territory_cells')}))
     while len(samples)>1 and samples[1][0]<=year-100:samples.pop(0)
     age=year-samples[0][0]
-    return '｜建立比較基準' if age==0 else f"｜近{age}年 {int(c[key])-samples[0][1][key]:+,}"
+    return '｜建立比較基準' if age==0 else f"（近{age}年） {int(c[key])-samples[0][1][key]:+,}"
 def overlay(view,left,top,cw,ch,tw,th):
     notebook=getattr(view,'left_notebook',None)
     if notebook is not None and notebook.select()==str(view.tab_country_overview):return
