@@ -3245,6 +3245,13 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         for country in alive:
             cid = int(country["id"])
             brain = self.rl_brains[cid]
+            # Empty provincial plans should not wait an entire macro decision interval.
+            if (not country.get('province_task') and int(country.get('macro_goal',{}).get('target_landmass',0))>0
+                    and country.get('macro_goal',{}).get('goal_type') in ('UNIFY_HOMELAND','CONQUER_LANDMASS','PACIFY_LANDMASS')):
+                review=int(country.get('frontier_review_year',self.year))
+                if self.year>=review:
+                    country['next_ai_decision_year']=min(int(country.get('next_ai_decision_year',self.year)),self.year)
+                    country['frontier_review_year']=int(self.year+3)
             due = self.year >= int(country.get("next_ai_decision_year", self.year))
             if not due:
                 continue

@@ -43,16 +43,19 @@ def update(e,c,g):
         task['combat_assessment']=assessment
         reason='取得戰略控制，關鍵據點無敵軍佔領' if complete else '前線已不可達' if not reachable else '省內無可行攻擊點，重新評估其他前線省份' if not assessment['feasible'] else '長期未取得土地進展' if e.year-task['last_progress_year']>=cfg.PROVINCE_TASK_STALL_YEARS else None
         if reason:
-            cooldown[str(pid)]=int(e.year+cfg.PROVINCE_TASK_RETRY_YEARS)
+            cooldown[str(pid)]=int(e.year+(3 if not complete and not assessment['feasible'] else cfg.PROVINCE_TASK_RETRY_YEARS))
             finish(e,c,task,'COMPLETED' if complete else 'REPLAN',reason);task=None
+    c.pop("frontier_preparation",None)
     if not task:
-        choices={}
+        choices={}; preparations=[]
         for o in e.legal_targets(c['id']):
             if o['mode']!='land' or int(o['landmass_id'])!=lm:continue
             for pid,points in p.frontier(c['id'],o['id'],lm).items():
-                if cooldown.get(str(pid),0)>e.year:continue
                 assessment=province_assessment(e,c,o['id'],pid,lm)
-                if not assessment['feasible']:continue
+                label=e.province_labels[pid-1]
+                if not assessment['feasible'] or cooldown.get(str(pid),0)>e.year:
+                    preparations.append((assessment.get('required',1e30)/max(1,assessment.get('attack',0)),pid,o['id'],assessment,cooldown.get(str(pid),0)))
+                    continue
                 check=progress(e,c,{'province_id':pid})
                 if check['control']>=cfg.PROVINCE_TASK_CONTROL_REQUIRED and check['hostile_key_sites']==0 and check['enemy_army']<=(check['own_army']+check['support_army'])*cfg.PROVINCE_TASK_ENEMY_RATIO:continue
                 idx=p.layout.indices[pid];owners=e.world.territory.ravel()[idx];control=float(np.mean(owners==c['id']))
@@ -62,6 +65,9 @@ def update(e,c,g):
                 score=pressure-.4*hostile_sites-.2*control-.1*min(2,friendly_neighbors)
                 candidate=(score,pid,o['id'],control,hostile_sites,friendly_neighbors)
                 if pid not in choices or candidate<choices[pid]:choices[pid]=candidate
+        if not choices and preparations:
+            _,pid,enemy,a,until=min(preparations,key=lambda x:(x[0],x[1],x[2]))
+            c['frontier_preparation']={'province_id':pid,'name':e.province_labels[pid-1].name,'target_country':enemy,'landmass_id':lm,'attack':a.get('attack',0),'required':a.get('required',0),'cooldown_until':until,'year':int(e.year)}
         if choices:
             _,pid,enemy,control,sites,neighbors=min(choices.values());label=e.province_labels[pid-1]
             kind='SECURE_PORT' if sites else 'CONNECT' if neighbors>=2 else 'PACIFY' if control>=.6 else 'CONQUER'
@@ -86,6 +92,12 @@ def describe(e,c,g,bindings):
         if e.year<int(c.get('recovery_until_year',0)):details.append(f"休養至第{c['recovery_until_year']}年")
         details.append(f"疲乏{c.get('war_exhaustion',0):.0%}")
         reason+='；'+'，'.join(details)
+    preparation=c.get('frontier_preparation')
+    if preparation and not task:
+        c['province_phase']=f"備戰前線：{preparation['name']}"
+        reason=f"前線已選定；預估進攻戰力{preparation['attack']:.0f}／安全門檻{preparation['required']:.0f}"
+        if preparation['cooldown_until']>e.year:reason+=f"；第{preparation['cooldown_until']}年可重選"
+        reason+='；每3年內重新評估，達標後仍依休養與補給條件出兵'
     c['province_block_reason']=reason
     if task:task['block_reason']=reason
     return f"最終：統一世界｜長期：{c['long_term_goal']['name']}｜中期：{TITLES[task['kind']]} {task['name']}（{task['progress']['control']:.0%}）" if task else f"最終：統一世界｜長期：{c['long_term_goal']['name']}｜中期：{c['province_phase']}"
