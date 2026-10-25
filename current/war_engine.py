@@ -1361,6 +1361,17 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
             and owned_sites + len(reserved) < capacity
         )
 
+    def overseas_status_text(self,c):
+        if not self._homeland_is_unified(c):return '本島尚未達80%控制且唯一政權'
+        if c['fleet']<cfg.OVERSEAS_MIN_FLEET:return f"艦隊不足：{c['fleet']}／{cfg.OVERSEAS_MIN_FLEET}艘"
+        if self.year<int(c.get('recovery_until_year',0)):return f"休養至第{c['recovery_until_year']}年"
+        home=self._home_continent_id(c)
+        ports=np.argwhere((self.world.territory==c['id'])&(self.world.continent==home)&(self.world.settlement==PORT))
+        if not len(ports):return '本島缺少出征港口'
+        if not any(self._ocean_coast()[y,x] for y,x in ports):return '本島港口位於封閉水域，等待遷建外海港口'
+        if not self._can_launch_overseas_expedition(c):return '目前海外戰區未平定或擴張名額已用完'
+        return '基本資格達標；仍須檢查登陸航路、兵力及補給'
+
     def _colony_country_eligible(self, country: dict) -> bool:
         retreat = self._homeland_is_critical(country)
         if (not country["alive"] or country.get("ports", 0) <= 0
@@ -1494,6 +1505,29 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                         label = int(parent[label])
                     roots.add(label)
         return roots
+
+    def _ocean_coast(self):
+        cached=getattr(self,'_ocean_coast_mask',None)
+        if cached is not None:return cached
+        self._sea_component_roots([])
+        labels=self._sea_component_labels;parent=self._sea_component_parent
+        roots=np.arange(len(parent))
+        for i in range(1,len(parent)):
+            j=i
+            while parent[j]!=j:j=int(parent[j])
+            roots[i]=j
+        sizes=np.bincount(roots[labels].ravel());sizes[0]=0
+        ocean=roots[labels]==int(np.argmax(sizes))
+        # Same adjacent-water rule as the existing route planner, including wrap.
+        mask=np.zeros_like(ocean)
+        for dy in (-1,0,1):
+            shifted=np.roll(ocean,dy,axis=0)
+            if dy==1:shifted[0]=False
+            if dy==-1:shifted[-1]=False
+            for dx in (-1,0,1):
+                if dx or dy:mask |= np.roll(shifted,dx,axis=1)
+        self._ocean_coast_mask=mask & (self.world.terrain>=2)
+        return self._ocean_coast_mask
 
     def _sea_points_connected(self, origin_port, target_land):
         starts = self._sea_component_roots([origin_port])
@@ -2179,6 +2213,10 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                         targets = targets[sample]
                     best = None
                     for y1, x1 in ports_by_country[source_id]:
+                        starts=self._sea_component_roots([(x1,y1)])
+                        reachable=np.asarray([point for point in targets if starts & self._sea_component_roots([(int(point[1]),int(point[0]))])],dtype=int).reshape(-1,2)
+                        if not len(reachable):continue
+                        port_targets=targets;targets=reachable
                         dy = targets[:, 0] - y1
                         dx = np.minimum(abs(targets[:, 1] - x1), self.world.settings.width - abs(targets[:, 1] - x1))
                         distances = np.hypot(dy, dx)
@@ -2187,6 +2225,7 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
                         if distance <= cfg.NAVAL_OPERATION_RANGE and (best is None or distance < best[0]):
                             y2, x2 = map(int, targets[idx])
                             best = (distance, (y1, x1), (y2, x2))
+                        targets=port_targets
                     if best:
                         self.maritime_links[(source_id, target_id)] = best
         else:
@@ -2500,6 +2539,9 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
             cells = cells[np.array([not self._overseas_attack_banned(self.country(attacker), int(self.world.continent[y,x])) for y,x in cells])]
         ports=np.argwhere((self.world.territory==attacker)&(self.world.settlement==PORT)&(self.world.continent==home))
         if not len(cells) or not len(ports):return None
+        starts=set().union(*(self._sea_component_roots([(int(x),int(y))]) for y,x in ports))
+        cells=np.asarray([p for p in cells if starts & self._sea_component_roots([(int(p[1]),int(p[0]))])],dtype=int).reshape(-1,2)
+        if not len(cells):return None
         if len(cells)>96:cells=cells[np.linspace(0,len(cells)-1,96,dtype=int)]
         scores=[]
         for y,x in cells:
@@ -2519,6 +2561,8 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
             one=np.zeros_like(mask);one[objective]=True
             mask &= self._adjacent_land_mask(one)
         cells=np.argwhere(mask)
+        if mode=='naval':
+            cells=np.asarray([p for p in cells if self._sea_points_connected((int(p[1]),int(p[0])),(objective[1],objective[0]))],dtype=int).reshape(-1,2)
         if not len(cells):return None
         dx=np.minimum(abs(cells[:,1]-objective[1]),self.world.settings.width-abs(cells[:,1]-objective[1]))
         i=int(np.argmin((cells[:,0]-objective[0])**2+dx**2))
@@ -2875,8 +2919,19 @@ class WarEngine(HierarchicalStrategyMixin, OverseasStrategyMixin):
         coast = mask & coastal_neighbors(self, sea) & ~occupied
         port_limit = max(0, int(cfg.PORTS_PER_COUNTRY))
         home = self._home_continent_id(country)
-        coast &= self.world.continent == home
+        coast &= (self.world.continent == home) & self._ocean_coast()
         home_port_count = int(np.count_nonzero(mask & (self.world.continent == home) & (self.world.settlement == PORT)))
+        old_ports=np.argwhere(mask & (self.world.continent==home) & (self.world.settlement==PORT))
+        if (coast.any() and len(old_ports) and not any(self._ocean_coast()[y,x] for y,x in old_ports)
+                and self._homeland_is_unified(country) and self._can_pay(country,cfg.PORT_COST)):
+            coords=np.argwhere(coast);y,x=map(int,coords[int(np.argmax(self.world.city_value[coast]))])
+            oy,ox=map(int,old_ports[0]);self.world.settlement[oy,ox]=0;self.building_owner[oy,ox]=0
+            self.world.settlement[y,x]=PORT;self.building_owner[y,x]=cid
+            listed=self.world.countries[cid-1].setdefault('ports',[])
+            listed[:]=[p for p in listed if list(p)!=[ox,oy]];listed.append([x,y])
+            self._pay(country,cfg.PORT_COST);self.visual_revision+=1;self._build_geography()
+            self._log(cid,f'舊港口無法通往外海，支付港口建設費遷建至({x},{y})；艦隊數量不變。')
+            return
         if (coast.any() and home_port_count < port_limit
                 and (self._homeland_is_unified(country) or bool(country.get("overseas_capitals")))
                 and self._can_pay(country, cfg.PORT_COST)):
