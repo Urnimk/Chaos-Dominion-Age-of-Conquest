@@ -1,0 +1,38 @@
+         431702 function calls (419981 primitive calls) in 1.047 seconds
+
+   Ordered by: internal time
+   List reduced from 311 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       20    0.116    0.006    0.125    0.006 war_engine.py:2132(_build_geography)
+      100    0.102    0.001    0.147    0.001 war_engine.py:3886(_refresh_survival)
+      100    0.071    0.001    0.697    0.007 war_engine.py:2716(_economic_year)
+     1201    0.071    0.000    0.071    0.000 {method 'nonzero' of 'numpy.ndarray' objects}
+     7587    0.061    0.000    0.061    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+       20    0.055    0.003    0.309    0.015 war_engine.py:2960(_expand_all_countries)
+       21    0.045    0.002    0.073    0.003 war_engine.py:469(_refresh_land_totals)
+      180    0.032    0.000    0.089    0.000 war_engine.py:3031(_move_settlers)
+     9560    0.031    0.000    0.054    0.000 overseas_strategy.py:20(_spatial_indices)
+      517    0.029    0.000    0.056    0.000 war_engine.py:2244(_add_local_soldiers)
+       22    0.016    0.001    0.016    0.001 {built-in method scipy.ndimage._nd_image.binary_erosion}
+     9538    0.016    0.000    0.051    0.000 world_state_cache.py:90(total)
+      900    0.016    0.000    0.049    0.000 overseas_strategy.py:237(_local_growth)
+    67735    0.015    0.000    0.015    0.000 {method 'get' of 'dict' objects}
+     1793    0.015    0.000    0.015    0.000 {method 'astype' of 'numpy.ndarray' objects}
+12101/1400    0.014    0.000    1.045    0.001 diagnostic_logger.py:653(wrapped)
+      127    0.014    0.000    0.014    0.000 war_engine.py:549(_homeland_is_unified)
+       21    0.013    0.001    0.030    0.001 war_engine.py:997(_cleanup_overseas_exclaves_uncached)
+    69775    0.013    0.000    0.013    0.000 {built-in method builtins.getattr}
+      140    0.013    0.000    0.016    0.000 war_engine.py:1097(_homeland_is_critical)
+     3989    0.012    0.000    0.016    0.000 world_state_cache.py:122(values_changed)
+        2    0.009    0.004    0.009    0.004 {built-in method scipy.ndimage._nd_image.euclidean_feature_transform}
+      900    0.009    0.000    0.108    0.000 overseas_strategy.py:278(_local_recruits)
+     4508    0.008    0.000    0.009    0.000 war_engine.py:1072(_home_continent_id)
+     2700    0.008    0.000    0.038    0.000 war_engine.py:2212(_sync_army_totals)
+     2700    0.007    0.000    0.027    0.000 war_engine.py:2205(_army_total)
+     5862    0.007    0.000    0.103    0.000 fromnumeric.py:51(_wrapfunc)
+     2239    0.007    0.000    0.017    0.000 fromnumeric.py:41(_wrapit)
+     1992    0.006    0.000    0.006    0.000 _methods.py:98(_clip)
+     1054    0.006    0.000    0.006    0.000 {method 'argsort' of 'numpy.ndarray' objects}
+
+

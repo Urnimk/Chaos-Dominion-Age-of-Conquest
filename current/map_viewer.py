@@ -1,11 +1,10 @@
-"""V6 雙欄 UI：左側四分頁，右上世界版圖，右下排名／即時事件 LOG。"""
+"""V25_2 雙欄 UI：左側四分頁，右上世界版圖，右下排名／即時事件 LOG。"""
 
 from __future__ import annotations
 
 import re
 import random
 import math
-import threading
 import time
 import tkinter as tk
 from tkinter import messagebox, ttk
@@ -17,6 +16,7 @@ from PIL import ImageGrab, ImageTk
 import map_config as cfg
 from map_generator import MapSettings, SAVES_DIR, generate_world, load_world, save_world
 from map_renderer import render_environment
+from cartographic_style import VISUAL_STYLE_LABELS, VISUAL_STYLE_CODES, visual_style, is_parchment
 from terrain_rules import terrain_name
 from climate_rules import biome_name
 from war_engine import WarEngine
@@ -116,10 +116,13 @@ def _capital_landmass_mask(territory, continent, country_id, capital):
 STYLE_CODES = {v: k for k, v in STYLE_LABELS.items()}
 
 
-class MapViewer:
+from responsive_viewer import ResponsiveViewerMixin
+from simulation_runtime import sync_tree_rows
+
+class MapViewer(ResponsiveViewerMixin):
     def __init__(self, root):
         self.root = root
-        self.root.title("亂世演算_征佔紀元 V26｜君主王朝與王位外交版")
+        self.root.title("亂世演算_征佔紀元 V27｜島嶼與省份任務版")
         self.root.geometry(WINDOW_SIZE)
         self.root.configure(bg="#161616")
         self.world = self.war = self.full_image = self.tk_image = None
@@ -131,6 +134,7 @@ class MapViewer:
         self.war_busy = False
         self.running = bool(cfg.AUTO_RUN_ON_START)
         self.show_geographic_names = False
+        self.show_province_names = False
         self.selected_country_id = 1
         self.country_sort_column = "land"
         self.country_sort_reverse = True
@@ -150,6 +154,7 @@ class MapViewer:
         self._last_map_snapshot_year = 0
         self._setup_style()
         self._build_ui()
+        self._init_runtime(globals())
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self.root.after(100, self.load_or_generate)
         self.root.after(SIM_CLOCK_POLL_MS, self._sim_clock_tick)
@@ -224,12 +229,12 @@ class MapViewer:
         # 國家總攬
         country_box = ttk.LabelFrame(self.tab_country_overview, text="🌐 世界各國", style="Panel.TLabelframe", padding=4)
         country_box.pack(fill="both", expand=True, padx=5, pady=5)
-        self.ranking = ttk.Treeview(country_box, columns=("land", "pop", "army", "fleet", "king_name", "record"), show="tree headings", style="Dark.Treeview")
-        for col, title in (("#0","國家"),("land","領土"),("pop","人口"),("army","士兵"),("fleet","艦隊"),("king_name","國王"),("record","戰績")):
+        self.ranking = ttk.Treeview(country_box, columns=("land", "pop", "army", "fleet", "alliance", "record"), show="tree headings", style="Dark.Treeview")
+        for col, title in (("#0","國家"),("land","領土"),("pop","人口"),("army","士兵"),("fleet","艦隊"),("alliance","聯盟"),("record","戰績")):
             self.ranking.heading(col, text=title, command=lambda c=col: self._sort_country_overview(c))
-        self.ranking.column("#0", width=120); self.ranking.column("land", width=65, anchor="e")
+        self.ranking.column("#0", width=160); self.ranking.column("land", width=65, anchor="e")
         self.ranking.column("pop", width=90, anchor="e"); self.ranking.column("army", width=80, anchor="e")
-        self.ranking.column("fleet", width=55, anchor="e"); self.ranking.column("king_name", width=120, anchor="center"); self.ranking.column("record", width=85, anchor="center")
+        self.ranking.column("fleet", width=55, anchor="e"); self.ranking.column("alliance", width=75, anchor="center"); self.ranking.column("record", width=85, anchor="center")
         self.ranking.pack(fill="both", expand=True)
         self.ranking.bind("<<TreeviewSelect>>", self._ranking_changed)
 
@@ -331,13 +336,20 @@ class MapViewer:
         self.right_panes.add(self.right_bottom_host, weight=1)
         map_head = ttk.Frame(map_group, style="Dark.TFrame")
         map_head.pack(fill="x")
-        self.layer_var = tk.StringVar(value="國家與領土")
+        self.layer_var = tk.StringVar(value="省區分界")
         self.layer_var.trace_add("write", self._layer_changed)
-        layers = ("國家與領土", "純領土歸屬", "生態環境", "基礎地形", "農業價值", "木材價值", "礦產價值", "淡水供應", "建城價值", "防禦價值", "移動成本")
+        layers = ("國家與領土", "省區分界", "純領土歸屬", "生態環境", "基礎地形", "農業價值", "木材價值", "礦產價值", "淡水供應", "建城價值", "防禦價值", "移動成本")
         ttk.Combobox(map_head, textvariable=self.layer_var, values=layers, state="readonly", width=12).pack(side="left", padx=3)
+        self.visual_style_var=tk.StringVar(value=VISUAL_STYLE_LABELS[visual_style()])
+        visual_picker=ttk.Combobox(map_head,textvariable=self.visual_style_var,
+            values=list(VISUAL_STYLE_CODES),state='readonly',width=10)
+        visual_picker.pack(side='left',padx=3)
+        self.visual_style_var.trace_add('write',self._visual_style_changed)
         ttk.Button(map_head, text="全圖", command=self.fit_world).pack(side="left", padx=3)
         self.place_name_button = ttk.Button(map_head, text="顯示島名", command=self.toggle_place_names)
         self.place_name_button.pack(side="left", padx=(0,3))
+        self.province_name_button=ttk.Button(map_head,text="顯示省名",command=self.toggle_province_names)
+        self.province_name_button.pack(side="left",padx=(0,3))
         ttk.Label(map_head, text=f"國名字級 {UI_COUNTRY_NAME_FONT_SIZE}", style="Dark.TLabel").pack(side="right", padx=6)
         self.canvas = tk.Canvas(map_group, bg="#0b1725", highlightbackground="#777", highlightthickness=1)
         self.canvas.pack(fill="both", expand=True)
@@ -403,9 +415,7 @@ class MapViewer:
 
     @staticmethod
     def _set_field_rows(tree, rows):
-        tree.delete(*tree.get_children())
-        for row in rows:
-            tree.insert("", "end", values=row)
+        sync_tree_rows(tree,[(str(i),"",row) for i,row in enumerate(rows)])
 
     def _country_query_go_to_map(self, _event=None):
         self.focus_country_on_map(self.selected_country_id)
@@ -417,7 +427,6 @@ class MapViewer:
         """以類別、島名連結、大小、人口、駐兵五欄顯示本島與海外領地。"""
         widget = self.colony_links
         position = widget.yview()[0]
-        widget.delete(*widget.get_children())
         self._territory_points = {}
         sites = list(country.get("overseas_capitals", []))
         if not sites and country.get("overseas_capital"):
@@ -425,12 +434,12 @@ class MapViewer:
         cx, cy = map(int, country.get("capital", self.world.countries[int(country["id"]) - 1]["capital"]))
         home_id = int(self.world.continent[cy, cx]) if 0 <= cy < self.world.settings.height and 0 <= cx < self.world.settings.width else 0
         rows = []
-        owned = self.world.territory == int(country["id"])
-        for continent_id in sorted(int(v) for v in np.unique(self.world.continent[owned]) if int(v) > 0):
-            continent_mask = (self.world.continent == continent_id) & owned
-            area = int(continent_mask.sum())
-            population = int(self.war.local_population[continent_mask].sum())
-            soldiers = int(self.war.local_soldiers[continent_mask].sum())
+        cid=int(country['id'])
+        cache=self.war.world_state_cache
+        for continent_id in sorted(cache.country_landmasses(cid)):
+            area=len(self.war._spatial_indices(cid,continent_id))
+            population=cache.total('population',cid,continent_id)
+            soldiers=cache.total('soldiers',cid,continent_id)
             site = next((s for s in sites if int(s.get("continent_id", -1)) == continent_id), None)
             if continent_id == home_id:
                 anchor = (cx, cy)
@@ -446,11 +455,12 @@ class MapViewer:
                 continue
             name = self.war.geographic_name_at(ay, ax)
             rows.append((kind, name, area, founded, population, soldiers, ax, ay))
-        for index, (kind, name, area, founded, population, soldiers, ax, ay) in enumerate(rows):
-            iid=f"site_{index}"
-            widget.insert("", "end", iid=iid,
-                          values=(kind, "↗ " + name, f"{area:,}", f"{population:,}", f"{soldiers:,}"))
+        presentation_rows=[]
+        for kind,name,area,founded,population,soldiers,ax,ay in rows:
+            iid=f"site_{ax}_{ay}"
+            presentation_rows.append((iid,'',(kind,"↗ "+name,f"{area:,}",f"{population:,}",f"{soldiers:,}")))
             self._territory_points[iid]=(ax,ay,name)
+        sync_tree_rows(widget,presentation_rows)
         widget.yview_moveto(position)
         voyage_lines=[]
         voyage = country.get("colonization_voyage")
@@ -486,22 +496,7 @@ class MapViewer:
         self.status.configure(text=f"已定位海外首都／據點：{name}｜座標({x},{y})")
         return "break"
 
-    def load_or_generate(self):
-        try: self.set_world(load_world())
-        except Exception: self.generate_clicked()
 
-    def generate_clicked(self):
-        if self.war_busy: return
-        try:
-            settings = MapSettings(
-                int(self.width_var.get()), int(self.height_var.get()), int(self.seed_var.get()),
-                STYLE_CODES.get(self.style_var.get(), "BALANCED"),
-            ).validated()
-            self.width_var.set(str(settings.width)); self.height_var.set(str(settings.height))
-        except ValueError:
-            messagebox.showerror("參數錯誤", "Seed、地圖寬度與高度必須是整數。"); return
-        self.war_busy = True; self.status.configure(text="正在生成拓荒世界…")
-        threading.Thread(target=self._generate_worker, args=(settings,), daemon=True).start()
 
     def _terrain_style_changed(self, _event=None):
         if STYLE_CODES.get(self.style_var.get()) == "EARTH_MAP":
@@ -512,29 +507,7 @@ class MapViewer:
                     value = 1200
                 variable.set(str(max(1200, min(2000, value))))
 
-    def _generate_worker(self, settings):
-        try:
-            world = generate_world(settings)
-            save_world(world)
-            self.root.after(0, self.set_world, world)
-        except Exception as exc: self.root.after(0, messagebox.showerror, "生成失敗", str(exc))
-        finally: self.root.after(0, setattr, self, "war_busy", False)
 
-    def set_world(self, world):
-        self.world = world
-        self.war = WarEngine(world, SAVES_DIR / "war_state")
-        if AUTO_LOAD_LAST_SAVE:
-            try:
-                self.war = WarEngine.load(self.world, SAVES_DIR / "war_state")
-            except Exception:
-                pass
-        self.full_image = self._diagnostic_render_environment(world, self.layer_var.get())
-        self._last_visual_revision = int(getattr(self.war, "visual_revision", 0))
-        self.seed_var.set(str(world.settings.seed))
-        self.width_var.set(str(world.settings.width)); self.height_var.set(str(world.settings.height))
-        self.style_var.set(STYLE_LABELS.get(world.world_style, "均衡世界"))
-        self.selected_country_id = 1
-        self.refresh_panels(); self._map_has_been_fitted = False; self.root.after_idle(self.fit_world)
 
     def toggle_run(self):
         self.running = not self.running
@@ -555,7 +528,7 @@ class MapViewer:
 
             # 累積滿一個模擬年便派送，避免長批次令介面久候無回報。
             batch_years = max(1, int(SIM_MAX_BATCH_YEARS))
-            if not self.war_busy and self._sim_year_credit >= batch_years:
+            if not self.war_busy and not self._snapshot_hold and self._sim_year_credit >= batch_years:
                 years = min(int(self._sim_year_credit), batch_years)
                 self._sim_year_credit -= years
                 self.advance_war(years)
@@ -578,41 +551,8 @@ class MapViewer:
 
         self.root.after(SIM_CLOCK_POLL_MS, self._sim_clock_tick)
 
-    def advance_war(self, years):
-        if not self.war or self.war_busy: return
-        self.war_busy = True
-        threading.Thread(target=self._advance_worker, args=(years,), daemon=True).start()
 
-    def _advance_worker(self, years):
-        try:
-            summary = self.war.step(years)
-            self.root.after(0, self._finish_advance, summary, int(years))
-        except Exception as exc:
-            self.root.after(0, messagebox.showerror, "推進失敗", str(exc))
-            self.root.after(0, setattr, self, "war_busy", False)
 
-    def _finish_advance(self, summary, years_completed):
-        """模擬完成後刷新 UI；達到千年里程碑時保存世界地圖快照。"""
-        now = time.perf_counter()
-        self._sim_years_completed_window += int(years_completed)
-
-        self.refresh_panels()
-        self._last_ui_refresh = now
-
-        revision = int(getattr(self.war, "visual_revision", 0))
-        map_was_redrawn = False
-        if now - self._last_map_refresh >= MAP_REFRESH_SECONDS and revision != self._last_visual_revision:
-            self.full_image = self._diagnostic_render_environment(self.world, self.layer_var.get())
-            self.redraw()
-            self._last_map_refresh = now
-            self._last_visual_revision = revision
-            map_was_redrawn = True
-
-        # 在最新 redraw 完成後擷取地圖，包含國名、首都、海外首都等 Canvas overlay。
-        self._maybe_save_map_snapshot(force_refresh=not map_was_redrawn)
-
-        self._maybe_auto_save()
-        self.war_busy = False
 
     def _maybe_save_map_snapshot(self, force_refresh=False):
         """每隔指定模擬年份保存一次右上方世界版圖 Canvas 截圖。
@@ -705,15 +645,13 @@ class MapViewer:
         summary = self.war.summary()
         # self.year_var.set(f"🌍 世界第 {summary['year']} 年｜存活 {summary['alive']} 國｜行軍 {summary['campaigns']} 支｜殖民船 {summary.get('colonizing_voyages',0)} 艘｜戰役 {summary['battles']} 場")
         names = [c["name"] for c in self.war.countries]
-        self.country_combo.configure(values=names)
+        if tuple(self.country_combo["values"])!=tuple(names):self.country_combo.configure(values=names)
         cid = min(max(1, self.selected_country_id), len(names)); self.selected_country_id = cid
         self.country_var.set(names[cid - 1])
 
         overview_rows = self._sorted_countries()
         world_ranked = sorted(self.war.countries, key=lambda x: (bool(x.get("alive", True)), self._country_power_score(x)), reverse=True)
-        for item in self.ranking.get_children(): self.ranking.delete(item)
-        for c in overview_rows:
-            self.ranking.insert("", "end", iid=str(c["id"]), text=c["name"], values=(c["territory_cells"], f"{c['population']:,}", f"{c['soldiers']:,}", c['fleet'], f"{c.get('king_name','未記錄')}", f"{c['wars_won']}勝/{c['wars_lost']}敗"))
+        sync_tree_rows(self.ranking,[(str(c["id"]),c["name"],(c["territory_cells"], f"{c['population']:,}", f"{c['soldiers']:,}", c['fleet'], self._alliance_display_name(c["alliance"]), f"{c['wars_won']}勝/{c['wars_lost']}敗")) for c in overview_rows])
         self._refresh_rank_text(world_ranked, summary)
 
         c = self.war.country(cid)
@@ -722,13 +660,27 @@ class MapViewer:
         alliance_name = self._alliance_display_name(c.get("alliance", 0))
         active = [x for x in self.war.campaigns if x.status == "marching" and (x.attacker == cid or x.defender == cid)]
         frontier_empty, frontier_blocked = self.war.expansion_status(cid)
+        province_choice=self.war.world_state_cache.provinces.last_choice.get(cid)
+        province_text=(f"第{province_choice['year']}年｜評估{province_choice['evaluated_provinces']}省區 → "
+                       + '、'.join(self.war.province_labels[pid-1].name for pid in province_choice['selected_provinces'])
+                       if province_choice else '尚無陸上進攻選區紀錄')
         basic_rows = (
             ("國家狀態", f"{'◉ 存活' if c['alive'] else '✖ 滅亡'}｜{c['name']}"),
             ("目前排名", f"第 {rank_pos} 名／存活 {summary['alive']} 國"),
             ("綜合戰力", f"{power:,}"),
             ("世界年份", (f"已滅亡｜滅亡於第 {c.get('extinction_year', summary['year'])} 年"
                        if not c['alive'] else f"第 {summary['year']} 年")),
+            ("現任國王", (f"第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}"
+                       if c['alive'] else f"末代第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}")),
             ("領土規模", f"{c['territory_cells']:,} 格"),
+            ("最終目標", "統一世界"),
+            ("長期島嶼目標", c.get('long_term_goal',{}).get('name','等待戰略評估')),
+            ("中期省份任務", ((c.get('province_task') or {}).get('name',c.get('province_phase','等待評估')))),
+            ("省份任務進度", f"{(c.get('province_task') or {}).get('progress',{}).get('control',0):.0%}"),
+            ("任務受阻原因", c.get('province_block_reason','尚未評估')),
+            ("短期行動", c.get('short_term_action','等待決策')),
+            ("任務支援", c.get('province_support_status','尚未安排')),
+            ("最近省區選擇", province_text if cfg.PROVINCE_STRATEGY_ENABLED else "已停用，採原細格選目標"),
             ("戰略狀態", "休養生息" if self.war.year < int(c.get("recovery_until_year", 0)) else ("交戰中" if active else "和平")),
             # ("終極戰爭目標", "統一世界" if c.get("war_goal", "UNIFY_WORLD") == "UNIFY_WORLD" else c.get("war_goal", "統一世界")),
             # ("已用出海遠征", f"{self.war._overseas_expeditions_used(c):,}／{cfg.OVERSEAS_EXPEDITION_LIMIT}（含失敗）"),
@@ -739,13 +691,11 @@ class MapViewer:
             ("本島無主土地", f"可拓荒 {frontier_empty:,}／不可通行 {frontier_blocked:,} 格"),
             # ("殖民地數", f"{len(c.get('colonies', [])):,}／{cfg.COLONY_MAX_PER_COUNTRY}"),
         )
-        # basic_rows += self.war.king_system.ui_rows(c)
-
         economy_rows = (
             ("人口", f"{c['population']:,} 人｜人口成長加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
             ("士兵", f"{c['soldiers']:,} 人｜徵兵比例加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
             ("艦隊", f"{c['fleet']:,}"),
-            # ("殖民船航行", (f"前往{self.war.geographic_name_at(*reversed(c['colonization_voyage']['anchor']))}｜{max(0.0, float(c['colonization_voyage']['route_distance_km'])-float(c['colonization_voyage']['travelled_km'])):,.0f}公里" if c.get("colonization_voyage") else "無")),
+            ("殖民船航行", (f"前往{self.war.geographic_name_at(*reversed(c['colonization_voyage']['anchor']))}｜{max(0.0, float(c['colonization_voyage']['route_distance_km'])-float(c['colonization_voyage']['travelled_km'])):,.0f}公里" if c.get("colonization_voyage") else "無")),
             ("城市／兵營", f"{c['cities']}／{c['barracks']}"),
             ("拓荒等級／港口", f"{c.get('frontier_level', 0)} 級／{c['ports']}"),
             ("糧食／承載", f"{c['food']:,.0f}／{c.get('food_capacity',0):,} 人"),
@@ -756,18 +706,12 @@ class MapViewer:
             ("戰爭疲乏／士氣", f"{float(c.get('war_exhaustion', 0.0)):.0%}／{float(c.get('morale', 1.0)):.0%}"),
         )
         diplomacy_rows = (
-            # ("普通聯盟", alliance_name),
-            # ("歷史參戰", f"{c['wars_won'] + c['wars_lost']} 場"),
-            # ("戰績", f"勝 {c['wars_won']}／敗 {c['wars_lost']}"),
-            # ("勝率", f"{(100*c['wars_won']/max(1,c['wars_won']+c['wars_lost'])):.1f}%"),
+            ("普通聯盟", alliance_name),
+            ("歷史參戰", f"{c['wars_won'] + c['wars_lost']} 場"),
+            ("戰績", f"勝 {c['wars_won']}／敗 {c['wars_lost']}"),
+            ("勝率", f"{(100*c['wars_won']/max(1,c['wars_won']+c['wars_lost'])):.1f}%"),
             # ("目前行軍", f"{sum(1 for x in self.war.campaigns if x.attacker == cid and x.status == 'marching')} 支"),
-
-            ("現任國王", (f"第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}"
-                       if c['alive'] else f"末代第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}")),
         )
-
-        diplomacy_rows += self.war.king_system.ui_rows(c)
-
         self._set_field_rows(self.country_basic, basic_rows)
         self._refresh_colony_links(c)
         self._set_field_rows(self.country_economy, economy_rows)
@@ -780,16 +724,13 @@ class MapViewer:
         if current_aid not in groups and groups: current_aid = next(iter(groups))
         self.selected_alliance_id = current_aid
 
-        for item in self.alliance_tree.get_children(): self.alliance_tree.delete(item)
         alliance_rows = []
         for aid, members in groups.items():
             land=sum(x['territory_cells'] for x in members); pop=sum(x['population'] for x in members); army=sum(x['soldiers'] for x in members)
             won=sum(x['wars_won'] for x in members); lost=sum(x['wars_lost'] for x in members)
             alliance_rows.append({"aid": aid, "members": len(members), "land": land, "pop": pop, "army": army, "won": won, "lost": lost})
         alliance_rows = self._sorted_alliances(alliance_rows)
-        for row in alliance_rows:
-            aid=row["aid"]
-            self.alliance_tree.insert("", "end", iid=f"a{aid}", text=self._alliance_display_name(aid), values=(row["members"], f"{row['land']:,}", f"{row['pop']:,}", f"{row['army']:,}", f"{row['won']}勝/{row['lost']}敗"))
+        sync_tree_rows(self.alliance_tree,[(f"a{row['aid']}",self._alliance_display_name(row["aid"]),(row["members"], f"{row['land']:,}", f"{row['pop']:,}", f"{row['army']:,}", f"{row['won']}勝/{row['lost']}敗")) for row in alliance_rows])
         self._set_text(
             self.history_log,
             "\n".join(self.war.history_events[-500:]) or "尚未發生國家分裂、獨立、滅亡或統一事件。",
@@ -1007,6 +948,9 @@ class MapViewer:
         if self.war and any(widget is getattr(self,name,None) for name in ('history_log','country_log','battle_log')):
             country=self.war.country(self.selected_country_id) if widget is getattr(self,'country_log',None) and self.selected_country_id else None
             value=self.war.island_display_text(value)
+        key=(value,getattr(self,"_world_generation",0),self.selected_country_id)
+        if getattr(widget,"_presentation_value",None)==key:return
+        widget._presentation_value=key
         widget.configure(state="normal")
         widget.delete("1.0", "end")
         widget.insert("end", value)
@@ -1073,32 +1017,7 @@ class MapViewer:
         except Exception as exc:
             self.status.configure(text=f"國家定位失敗：{exc}")
 
-    def _maybe_auto_save(self, force=False):
-        """按遊戲年份自動儲存世界與戰局。"""
-        if not AUTO_SAVE_ENABLED or not self.war or not self.world:
-            return
-        try:
-            year = int(self.war.summary().get("year", 0))
-            due = force or self._last_auto_save_year is None or (
-                year - int(self._last_auto_save_year) >= max(1, int(AUTO_SAVE_EVERY_YEARS))
-            )
-            if not due:
-                return
-            SAVES_DIR.mkdir(parents=True, exist_ok=True)
-            save_world(self.world)
-            self.war.save(SAVES_DIR / "war_state")
-            self._last_auto_save_year = year
-            self.status.configure(text=f"已自動存檔｜世界第 {year} 年｜saves/war_state")
-        except Exception as exc:
-            self.status.configure(text=f"自動存檔失敗：{exc}")
 
-    def _on_close(self):
-        try:
-            self._maybe_auto_save(force=True)
-        finally:
-            if self.war and getattr(self.war, 'diagnostics', None):
-                self.war.diagnostics.flush()
-            self.root.destroy()
 
     def _diagnostic_render_environment(self, *args, **kwargs):
         d = getattr(self.war, 'diagnostics', None)
@@ -1111,24 +1030,8 @@ class MapViewer:
         finally:
             d.pop_timer()
 
-    def export_diagnostics(self):
-        if not self.war:
-            return
-        try:
-            path = self.war.export_diagnostic_package()
-            messagebox.showinfo("診斷分析包", f"已匯出：{path.resolve()}")
-        except Exception as exc:
-            messagebox.showerror("診斷匯出", str(exc))
 
-    def save_war(self):
-        try: self.war.save(SAVES_DIR / "war_state"); messagebox.showinfo("完成", "戰局已存入saves資料夾。")
-        except Exception as exc: messagebox.showerror("儲存失敗", str(exc))
 
-    def load_war(self):
-        try:
-            self.war = WarEngine.load(self.world, SAVES_DIR / "war_state")
-            self.full_image = self._diagnostic_render_environment(self.world, self.layer_var.get()); self.redraw(); self.refresh_panels()
-        except Exception as exc: messagebox.showerror("讀取失敗", str(exc))
 
     def fit_world(self):
         """依目前 Canvas 真實尺寸把全世界放到最大；避免啟動時 1x1 尺寸造成地圖縮成小點。"""
@@ -1149,6 +1052,11 @@ class MapViewer:
         """切換地理區域名稱；國名維持顯示，避免玩家失去國家辨識。"""
         self.show_geographic_names = not self.show_geographic_names
         self.place_name_button.configure(text="隱藏島名" if self.show_geographic_names else "顯示島名")
+        self.redraw()
+
+    def toggle_province_names(self):
+        self.show_province_names=not getattr(self,'show_province_names',False)
+        self.province_name_button.configure(text="隱藏省名" if self.show_province_names else "顯示省名")
         self.redraw()
 
     def _on_canvas_configure(self, _event=None):
@@ -1194,13 +1102,8 @@ class MapViewer:
         except (tk.TclError, AttributeError):
             self.root.after(100, self._apply_initial_sashes)
 
-    def _layer_changed(self, *_args):
-        if not self.world:
-            return
-        self.full_image = self._diagnostic_render_environment(self.world, self.layer_var.get())
-        self.redraw()
 
-    def redraw(self):
+    def _redraw_now(self):
         if not self.world or self.full_image is None: return
         cw, ch = max(2, self.canvas.winfo_width()), max(2, self.canvas.winfo_height())
         half_w, half_h = cw / (2*self.zoom), ch / (2*self.zoom)
@@ -1216,6 +1119,9 @@ class MapViewer:
         self._draw_overlays(left, top, cw, ch, tw, th)
 
     def _visible_sea_voyages(self):
+        return getattr(self.war,"_presentation_voyages",[]) if self.war else []
+
+    def _compute_sea_voyages(self):
         """Adapt existing transport records for one shared ship renderer; no simulation mutation."""
         result=[]
         for country in self.war.countries:
@@ -1244,6 +1150,11 @@ class MapViewer:
 
     def _draw_overlays(self, left, top, cw, ch, tw, th):
         ox, oy = (cw-tw)/2, (ch-th)/2
+        displayed=getattr(self,'_displayed_raster_key',None)
+        selected=displayed[2] if displayed and len(displayed)>=5 else self._selected_visual_style()
+        displayed_layer=displayed[1] if displayed and len(displayed)>=5 else self.layer_var.get()
+        parchment=is_parchment(displayed_layer,selected)
+        label_ink,label_halo=('#302c20','#eadcb4') if parchment else ('white','#111')
         if self.war:
             # 大型地理區域以低對比文字標示；縮得太遠時限制數量避免遮住國名。
             visible_regions = [
@@ -1257,8 +1168,22 @@ class MapViewer:
                 if -100 <= sx <= cw+100 and -20 <= sy <= ch+20:
                     self.canvas.create_text(
                         sx, sy, text=region["name"],
-                        font=(UI_FONT_FAMILY, 9, "normal"), fill="#d1d8df"
+                        font=(UI_FONT_FAMILY, 9, "normal"), fill="#665c46" if parchment else "#d1d8df"
                     )
+            if getattr(self,'show_province_names',False):
+                from province_naming import visible_labels
+                reserved=[]
+                for country in self.war.countries:
+                    if not country.get('alive'):continue
+                    anchors=[country.get('capital')]+[s.get('anchor') for s in country.get('overseas_capitals',[])]
+                    for point in anchors:
+                        if not point:continue
+                        px,py=point;sx,sy=ox+(px-left)*self.zoom,oy+(py-top)*self.zoom
+                        half=max(24,len(country['name'])*UI_COUNTRY_NAME_FONT_SIZE*.55)
+                        reserved.append((sx-half,sy-32,sx+half,sy+18))
+                for province,sx,sy in visible_labels(self.war.province_labels,self.zoom,left,top,cw,ch,ox,oy,reserved):
+                    self.canvas.create_text(sx+1,sy+1,text=province.name,font=(UI_FONT_FAMILY,9,'normal'),fill=label_halo,tags='province_name')
+                    self.canvas.create_text(sx,sy,text=province.name,font=(UI_FONT_FAMILY,9,'normal'),fill='#46505e' if parchment else '#d2dbea',tags='province_name')
             for campaign in self.war.campaigns:
                 if campaign.status != "marching" or campaign.mode == "naval": continue
                 y0,x0=campaign.origin; y1,x1=campaign.objective
@@ -1421,10 +1346,10 @@ class MapViewer:
                                 continue
                             self.canvas.create_text(
                                 sx + dx, sy - 12 + dy, text=country["name"],
-                                font=font, fill="#111"
+                                font=font, fill=label_halo
                             )
                 self.canvas.create_text(
-                    sx, sy - 12, text=country["name"], font=font, fill="white"
+                    sx, sy - 12, text=country["name"], font=font, fill=label_ink
                 )
 
     def on_wheel(self, event): self.zoom=max(MAP_MIN_ZOOM,min(MAP_MAX_ZOOM,self.zoom*(MAP_WHEEL_ZOOM_IN if event.delta>0 else MAP_WHEEL_ZOOM_OUT))); self.redraw()
@@ -1442,6 +1367,12 @@ class MapViewer:
         cid=int(self.world.territory[y,x])
         if cid>0: self.selected_country_id=cid; self.refresh_panels(); self.left_notebook.select(self.tab_country_query)
         region = self.war.geographic_name_at(y, x)
+        from province_strategy import layout_for
+        pid=int(layout_for(self.world).ids[y,x])
+        if pid>0:
+            district=self.war.world_state_cache.provinces.summary(pid)
+            region+=f"｜{self.war.province_labels[pid-1].name} P{pid}（{district['cells']}格）｜人口{sum(district['population'].values()):,}／駐軍{sum(district['soldiers'].values()):,}"
+
         self.status.configure(text=f"座標({x},{y})｜{region}｜{terrain_name(self.world.terrain[y,x])}｜{biome_name(self.world.biome[y,x])}｜{'無主地' if cid==0 else self.war.country(cid)['name']}")
 
 

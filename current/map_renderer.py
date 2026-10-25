@@ -8,6 +8,7 @@ from scipy import ndimage
 
 from terrain_rules import TERRAIN_COLORS
 from climate_rules import BIOME_COLORS, LAKE, RIVER
+from cartographic_style import visual_style, is_parchment, render_parchment
 
 
 def _relief_shade(terrain, height):
@@ -50,8 +51,26 @@ def _gradient(values, stops):
     return np.clip(result, 0, 255).astype(np.uint8)
 
 
-def render_environment(world, layer="生態環境", output_path=None):
+def render_environment(world, layer="生態環境", output_path=None, *, visual_style=None):
     """渲染V2圖層：生態、溫度、濕度、降雨或基礎地形。"""
+    if layer == "省區分界":
+        from province_strategy import layout_for
+        image=render_environment(world,"國家與領土",visual_style=visual_style)
+        rgb=np.asarray(image).copy()
+        # Protect the full original raster footprints, not just building centers.
+        markers=ndimage.binary_dilation(world.settlement==1,iterations=3)
+        markers |= ndimage.binary_dilation((world.settlement>=2)&(world.settlement<=4),iterations=2)
+        boundary=layout_for(world).boundary & ~markers
+        rgb[boundary]=(rgb[boundary].astype(np.float32)*.55+np.array([75,65,48])*.45).astype(np.uint8)
+        image=Image.fromarray(rgb)
+        if output_path is not None:
+            path=Path(output_path);path.parent.mkdir(parents=True,exist_ok=True);image.save(path,optimize=True)
+        return image
+    if is_parchment(layer,visual_style):
+        image=render_parchment(world,layer)
+        if output_path is not None:
+            path=Path(output_path);path.parent.mkdir(parents=True,exist_ok=True);image.save(path,optimize=True)
+        return image
     score_layers = {
         "農業價值": (world.agriculture, ((79, 52, 33), (184, 111, 47), (224, 194, 77), (104, 168, 75), (31, 111, 57))),
         "木材價值": (world.timber, ((225, 215, 174), (151, 172, 92), (71, 133, 67), (28, 91, 55), (11, 57, 39))),

@@ -28,9 +28,12 @@ class OverseasStrategyMixin:
         version=(fallback,local)
         cached=getattr(self,'_indices_cache',{}).get(key)
         if cached is None or cached[0]!=version:
-            mask=self.world.territory==int(cid)
-            if lm is not None: mask &= self.world.continent==lm
-            self._indices_cache[key]=(version,np.flatnonzero(mask))
+            if lm is None:
+                indices=np.flatnonzero(self.world.territory==cid)
+            else:
+                base=self.world_state_cache.geographic_indices(lm)
+                indices=base[self.world.territory.ravel()[base]==cid]
+            self._indices_cache[key]=(version,indices)
             if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('cache'):
                 diagnostic.cache['spatial_indices']['miss'] += 1
                 diagnostic.cache['spatial_indices']['rebuild'] += 1
@@ -102,11 +105,10 @@ class OverseasStrategyMixin:
 
     def _theatre_uncached(self,c,site):
         cid=int(c['id']);lm=int(site['continent_id']);idx=self._spatial_indices(cid,lm)
-        pop=int(self.local_population.ravel()[idx].sum());army=int(self.local_soldiers.ravel()[idx].sum())
-        owners=self.world_state_cache.landmass_ownership(lm)[2]
+        pop=self.world_state_cache.total('population',cid,lm);army=self.world_state_cache.total('soldiers',cid,lm)
+        owners=self.world_state_cache.regimes(lm)
         enemies=[int(x) for x in owners if x>0 and x!=cid and self.country(int(x))['alive']
-                 and not (c['alliance']>0 and self.country(int(x))['alliance']==c['alliance'])
-                 and not (hasattr(self,'king_system') and self.king_system.same_union(cid,int(x)))]
+                 and not (c['alliance']>0 and self.country(int(x))['alliance']==c['alliance'])]
         enemy_army=sum(self._landmass_soldiers(x,lm) for x in enemies)
         port=self._logistics_port(c,site)
         # Leave a real home reserve; overseas target includes offensive capability and enemy pressure.
@@ -117,7 +119,7 @@ class OverseasStrategyMixin:
         offensive_target=self._offensive_theatre_target(c,lm,pop,army) if enemies else 0
         target=max(target,offensive_target)
         productivity_bonus=min(cfg.MAX_CITY_FOOD_PRODUCTIVITY_BONUS,int(c.get('cities',0))*cfg.CITY_FOOD_PRODUCTIVITY_BONUS)
-        production=float(self.food_yield.ravel()[idx].sum())*cfg.FOOD_PRODUCTION_MULTIPLIER*(1.0+productivity_bonus)
+        production=self.world_state_cache.total('food',cid,lm)*cfg.FOOD_PRODUCTION_MULTIPLIER*(1.0+productivity_bonus)
         supply_need=max(0.0,(pop*cfg.FOOD_CONSUMPTION_PER_PERSON-production)*cfg.OVERSEAS_SUPPLY_BUFFER_YEARS-float(site.get('supply_food',0))) if production<pop*cfg.FOOD_CONSUMPTION_PER_PERSON else 0.0
         pacified=self._overseas_landmass_is_pacified(c,lm)
         phase=('ESTABLISH_PORT' if not port and not site.get('logistics_port') else
@@ -180,7 +182,7 @@ class OverseasStrategyMixin:
         if not defenses:return 0
         wanted=(c.get('strategic_commitment') or {}).get('target_country')
         defense=next((d for d,o in defenses if o['id']==wanted),defenses[0][0])
-        required=defense*cfg.AI_OFFENSIVE_SAFETY_RATIO*(self.king_system.risk_ratio(c) if hasattr(self,'king_system') else 1.)/max(.01,c['morale'])
+        required=defense*cfg.AI_OFFENSIVE_SAFETY_RATIO/max(.01,c['morale'])
         def sufficient(total):
             # Each reinforcement soldier is also a newly arrived resident.
             future_pop=pop+max(0,total-army)
@@ -214,7 +216,7 @@ class OverseasStrategyMixin:
                 diagnostic.observe('viable', locals())
             return _diagnostic_result
         committed = self._theatre_committable(available)
-        _diagnostic_result = [o for defense, o in self._theatre_defenses(c, lm, kind) if committed * max(0.01, c['morale']) >= defense * cfg.AI_OFFENSIVE_SAFETY_RATIO * (self.king_system.risk_ratio(c) if hasattr(self,'king_system') else 1.)]
+        _diagnostic_result = [o for defense, o in self._theatre_defenses(c, lm, kind) if committed * max(0.01, c['morale']) >= defense * cfg.AI_OFFENSIVE_SAFETY_RATIO]
         if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
             diagnostic.observe('viable', locals())
         return _diagnostic_result
@@ -250,16 +252,16 @@ class OverseasStrategyMixin:
             if lm in seen:continue
             seen.add(lm);idx=self._spatial_indices(cid,lm)
             if not len(idx) or self.world.territory[y,x]!=cid:continue
-            pop=int(self.local_population.ravel()[idx].sum())
+            pop=self.world_state_cache.total('population',cid,lm)
             # Only food already held at this location supports births; cargo at sea is excluded.
             stock=max(0.0,float(c.get('food',0) if lm==home else site.get('supply_food',0)))
             national_stock+=stock
-            room=max(0,int(float(self.food_yield.ravel()[idx].sum())*capacity_factor+stock*stock_factor-pop))
+            room=max(0,int(self.world_state_cache.total('food',cid,lm)*capacity_factor+stock*stock_factor-pop))
             if lm == home:
                 # 本土仍使用國家級成長量；海外則每個陸塊各自獲得發展人口。
                 total=max(0.0,float(growth))+float(fractions.get(str(lm),0.0))
             else:
-                island_capacity=float(self.food_yield.ravel()[idx].sum()) * cfg.FOOD_PRODUCTION_MULTIPLIER * (1.0+productivity_bonus) / max(0.0001,cfg.FOOD_CONSUMPTION_PER_PERSON)
+                island_capacity=self.world_state_cache.total('food',cid,lm) * cfg.FOOD_PRODUCTION_MULTIPLIER * (1.0+productivity_bonus) / max(0.0001,cfg.FOOD_CONSUMPTION_PER_PERSON)
                 bonus=min(float(getattr(cfg,'OVERSEAS_POPULATION_BONUS_CAP',3.0)),
                            max(0.0,island_capacity)/max(1.0,float(cfg.FOOD_CAPACITY_BONUS_PER_PERSON)))
                 total=float(getattr(cfg,'OVERSEAS_ANNUAL_POPULATION_GROWTH',10))*(1.0+bonus)+float(fractions.get(str(lm),0.0))
@@ -270,7 +272,7 @@ class OverseasStrategyMixin:
         amounts=np.array([n for _,_,n in valid],dtype=np.int64)
         actual=0
         for (x,y,_),n in zip(valid,amounts):
-            self.local_population[y,x]+=int(n);actual+=int(n)
+            self.local_population[y,x]+=int(n);self.world_state_cache.values_changed('population',(y, x),flat=False);actual+=int(n)
         self._telemetry(c,'births',actual);return actual
 
     def _local_recruits(self,c,annual_rate):
@@ -283,8 +285,8 @@ class OverseasStrategyMixin:
         fractions=c.setdefault('island_recruit_fractions',{})
         for lm in sorted({home}|self._overseas_landmass_ids(c)):
             idx=self._spatial_indices(cid,lm)
-            pop=int(self.local_population.ravel()[idx].sum())
-            army=int(self.local_soldiers.ravel()[idx].sum())
+            pop=self.world_state_cache.total('population',cid,lm)
+            army=self.world_state_cache.total('soldiers',cid,lm)
             marching=sum(int(x.soldiers) for x in self.campaigns if x.attacker==cid
                          and x.status=='marching' and x.mode=='land' and int(x.origin_landmass)==lm)
             gap=max(0,int(pop*cfg.LOCAL_RECRUIT_TARGET_RATIO)-army-marching)
@@ -293,7 +295,7 @@ class OverseasStrategyMixin:
             amount=max(0.,pop*float(annual_rate))+float(fractions.get(str(lm),0.))
             recruits=min(gap,int(amount));fractions[str(lm)]=amount-int(amount)
             self._add_local_soldiers(cid,lm,recruits)
-            actual=int(self.local_soldiers.ravel()[idx].sum())-army
+            actual=self.world_state_cache.total('soldiers',cid,lm)-army
             self._telemetry(c,'local_recruits',actual)
             if lm!=home:self._telemetry(c,'overseas_local_recruits',actual)
 
@@ -356,7 +358,7 @@ class OverseasStrategyMixin:
         cid = c['id']
         home = int(source_site['continent_id']) if source_site else self._home_continent_id(c)
         hi = self._spatial_indices(cid, home)
-        hp = int(self.local_population.ravel()[hi].sum())
+        hp = self.world_state_cache.total('population',cid,home)
         ha = self._home_soldiers(cid, home)
         reserve_ratio = cfg.OVERSEAS_PEACE_GARRISON_RATIO if source_site else cfg.MIN_GARRISON_RATIO
         available = max(0, ha - int(math.ceil(hp * reserve_ratio)))
@@ -399,7 +401,7 @@ class OverseasStrategyMixin:
         source_food = float(source_site.get('supply_food', 0)) if source_site else float(c['food'])
         if source_site:
             bonus = min(cfg.MAX_CITY_FOOD_PRODUCTIVITY_BONUS, int(c.get('cities', 0)) * cfg.CITY_FOOD_PRODUCTIVITY_BONUS)
-            output = float(self.food_yield.ravel()[hi].sum()) * cfg.FOOD_PRODUCTION_MULTIPLIER * (1 + bonus)
+            output = self.world_state_cache.total('food',cid,home) * cfg.FOOD_PRODUCTION_MULTIPLIER * (1 + bonus)
             source_reserve = max(0.0, hp * cfg.FOOD_CONSUMPTION_PER_PERSON - output) * cfg.OVERSEAS_SUPPLY_BUFFER_YEARS
             source_food = max(0.0, source_food - source_reserve)
         limit_food = min(source_food, c['fleet'] * cfg.OVERSEAS_FOOD_PER_SHIP)
@@ -439,7 +441,7 @@ class OverseasStrategyMixin:
             if selected_country_ids is not None and cid not in selected_country_ids:continue
             if not c['alive'] or c.get('reinforcement_voyage') or c['fleet']<1:continue
             home=self._home_continent_id(c);hi=self._spatial_indices(cid,home)
-            hp=int(self.local_population.ravel()[hi].sum());ha=self._home_soldiers(cid,home)
+            hp=self.world_state_cache.total('population',cid,home);ha=self._home_soldiers(cid,home)
             available=max(0,ha-int(hp*cfg.MIN_GARRISON_RATIO))
             ts=[self._theatre(c,s) for s in c.get('overseas_capitals',[])]
             ts=[t for t in ts if t['port'] and (t['gap']>0 or t['supply_need']>0)]
@@ -457,7 +459,7 @@ class OverseasStrategyMixin:
                 self._add_local_soldiers(cid,home,soldiers);continue
             removed=self._remove_population_in_mask(source,people)
             if removed!=people:
-                x,y=px,py;self.local_population[y,x]+=removed;self._add_local_soldiers(cid,home,soldiers);continue
+                x,y=px,py;self.local_population[y,x]+=removed;self.world_state_cache.values_changed('population',(y, x),flat=False);self._add_local_soldiers(cid,home,soldiers);continue
             ships=max(1,math.ceil(soldiers/cfg.OVERSEAS_SOLDIERS_PER_SHIP),
                       math.ceil(people/cfg.OVERSEAS_POPULATION_PER_SHIP),math.ceil(supply/cfg.OVERSEAS_FOOD_PER_SHIP))
             c['fleet']-=ships
@@ -490,7 +492,7 @@ class OverseasStrategyMixin:
         if not t['port'] or t['enemies']:return False
         lm=t['lm'];home=self._home_continent_id(c);idx=self._spatial_indices(c['id'],lm)
         bonus=min(cfg.MAX_CITY_FOOD_PRODUCTIVITY_BONUS,int(c.get('cities',0))*cfg.CITY_FOOD_PRODUCTIVITY_BONUS)
-        capacity=int(float(self.food_yield.ravel()[idx].sum())*cfg.FOOD_PRODUCTION_MULTIPLIER*(1+bonus)/cfg.FOOD_CONSUMPTION_PER_PERSON)
+        capacity=int(self.world_state_cache.total('food',c['id'],lm)*cfg.FOOD_PRODUCTION_MULTIPLIER*(1+bonus)/cfg.FOOD_CONSUMPTION_PER_PERSON)
         # A population forecast alone is not an evacuation order. Require a
         # persistent real food deficit with less than the configured runway.
         annual_deficit=max(0.,(t['population']-capacity)*cfg.FOOD_CONSUMPTION_PER_PERSON)
@@ -522,7 +524,7 @@ class OverseasStrategyMixin:
         soldiers=self._take_local_soldiers(c['id'],lm,amount)
         removed=self._remove_population_in_mask((self.world.territory==c['id'])&(self.world.continent==lm),soldiers)
         if removed!=soldiers:
-            x,y=site['anchor'];self.local_population[y,x]+=removed
+            x,y=site['anchor'];self.local_population[y,x]+=removed;self.world_state_cache.values_changed('population',(y, x),flat=False)
             self._add_local_soldiers(c['id'],lm,soldiers);return False
         site['supply_food']=max(0.,stock-food);c['fleet']-=ships
         c['reinforcement_voyage']={'continent_id':lm,'anchor':list(t['port']),
@@ -565,7 +567,7 @@ class OverseasStrategyMixin:
             if len(idx):
                 x,y=map(int,point)
                 if self.world.territory[y,x]!=c['id']:y,x=np.unravel_index(int(idx[0]),self.world.territory.shape)
-                if v.get('embarked_population'):self.local_population[y,x]+=int(v.get('transported_population',0))
+                if v.get('embarked_population'):self.local_population[y,x]+=int(v.get('transported_population',0));self.world_state_cache.values_changed('population',(y, x),flat=False)
                 self._add_local_soldiers(c['id'],target_lm,int(v['soldiers']),near=(y,x));c['fleet']+=int(v.get('fleet',0))
                 if not v.get('returning'):
                     site['supply_food']=float(site.get('supply_food',0))+float(v.get('supply_food',0))
@@ -614,7 +616,7 @@ class OverseasStrategyMixin:
             if self.world.territory[y,x]!=cid:self._add_local_soldiers(cid,lm,moved);return False
             # Local residents cap troop concentration. Remaining soldiers stay on the island.
             room=max(0,int(self.local_population[y,x]-self.local_soldiers[y,x]));placed=min(room,moved)
-            self.local_soldiers[y,x]+=placed;self._add_local_soldiers(cid,lm,moved-placed)
+            self.local_soldiers[y,x]+=placed;self.world_state_cache.values_changed('soldiers',(y, x),flat=False);self._add_local_soldiers(cid,lm,moved-placed)
             site['defensive_focus']=kind;site['defensive_until']=self.year+cfg.OVERSEAS_DEFENSE_DURATION
             return moved>0
         if kind=='EXPAND_BEACHHEAD':
@@ -674,7 +676,7 @@ class OverseasStrategyMixin:
             if route:break
         if not route:return False
         idx=self._spatial_indices(c['id'],lm)
-        people=int(self.local_population.ravel()[idx].sum())
+        people=self.world_state_cache.total('population',c['id'],lm)
         army=self._home_soldiers(c['id'],lm)
         distance=self._route_distance_km(route)
         years=max(1,math.ceil(distance/cfg.SEA_MARCH_CELLS_PER_YEAR))
@@ -700,7 +702,7 @@ class OverseasStrategyMixin:
         mask=(self.world.territory==c['id'])&(self.world.continent==lm)
         cells=int(mask.sum())
         self.world.territory[mask]=0;self.world.settlement[mask]=0;self.building_owner[mask]=0
-        self.local_population[mask]=0;self.local_soldiers[mask]=0
+        self.local_population[mask]=0;self.world_state_cache.values_changed('population',mask,flat=False);self.local_soldiers[mask]=0;self.world_state_cache.values_changed('soldiers',mask,flat=False)
         c['overseas_capitals']=[s for s in c['overseas_capitals'] if int(s['continent_id'])!=lm]
         c['overseas_capital']=c['overseas_capitals'][0] if c['overseas_capitals'] else None
         c['colonies']=[s for s in c['colonies'] if int(s.get('continent_id',-1))!=lm]
@@ -734,7 +736,7 @@ class OverseasStrategyMixin:
             for site in c.get('overseas_capitals',[]):
                 lm=int(site['continent_id']);idx=self._spatial_indices(c['id'],lm)
                 if not len(idx):continue
-                pop=int(self.local_population.ravel()[idx].sum());army=int(self.local_soldiers.ravel()[idx].sum())
+                pop=self.world_state_cache.total('population',c['id'],lm);army=self.world_state_cache.total('soldiers',c['id'],lm)
                 # Economic production/consumption was already posted exactly once by _economic_year.
                 if float(site.get('food_shortfall_this_year',0))>0:
                     site['unsupplied_years']=int(site.get('unsupplied_years',0))+1

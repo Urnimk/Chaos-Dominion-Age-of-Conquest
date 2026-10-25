@@ -1,0 +1,23 @@
+test_embark_disembark_and_population_move_invalidate (test_region_cache.RegionCacheTests.test_embark_disembark_and_population_move_invalidate) ... ok
+test_prime_every_year_and_assert_all_fields_for_300_years (test_region_cache.RegionCacheTests.test_prime_every_year_and_assert_all_fields_for_300_years) ... ok
+test_queries_do_not_consume_rng_and_spatial_order_is_identical (test_region_cache.RegionCacheTests.test_queries_do_not_consume_rng_and_spatial_order_is_identical) ... ok
+test_save_reload_then_continue_100_years (test_region_cache.RegionCacheTests.test_save_reload_then_continue_100_years) ... ok
+test_scalar_change_keeps_unrelated_country_and_static_food (test_region_cache.RegionCacheTests.test_scalar_change_keeps_unrelated_country_and_static_food) ... ok
+test_territory_change_and_new_country_pad_counts (test_region_cache.RegionCacheTests.test_territory_change_and_new_country_pad_counts) ... ok
+test_auto_save_failure_backoff_does_not_block_manual_retry (test_responsive_viewer.ViewerTests.test_auto_save_failure_backoff_does_not_block_manual_retry) ... ok
+test_milestone_capture_runs_after_redraw_and_releases_hold (test_responsive_viewer.ViewerTests.test_milestone_capture_runs_after_redraw_and_releases_hold) ... ok
+test_no_new_simulation_job_while_milestone_is_being_presented (test_responsive_viewer.ViewerTests.test_no_new_simulation_job_while_milestone_is_being_presented) ... ok
+test_repeated_load_requests_are_coalesced (test_responsive_viewer.ViewerTests.test_repeated_load_requests_are_coalesced) ... ok
+test_territory_list_uses_exact_snapshot_totals_without_rebuilding (test_responsive_viewer.ViewerTests.test_territory_list_uses_exact_snapshot_totals_without_rebuilding) ... ok
+test_wheel_drag_panels_and_close_respond_during_long_batch (test_responsive_viewer.ViewerTests.test_wheel_drag_panels_and_close_respond_during_long_batch) ... ok
+test_frozen_view_is_independent_and_reuses_unchanged_map_arrays (test_simulation_runtime.RuntimeTests.test_frozen_view_is_independent_and_reuses_unchanged_map_arrays) ... ok
+test_queued_save_is_after_complete_year_and_worker_recovers_from_error (test_simulation_runtime.RuntimeTests.test_queued_save_is_after_complete_year_and_worker_recovers_from_error) ... ok
+test_raster_requests_are_coalesced_and_stale_result_is_rejected (test_simulation_runtime.RuntimeTests.test_raster_requests_are_coalesced_and_stale_result_is_rejected) ... ok
+test_ui_metrics_are_forwarded_without_sharing_diagnostic_timer_stack (test_simulation_runtime.RuntimeTests.test_ui_metrics_are_forwarded_without_sharing_diagnostic_timer_stack) ... ok
+test_worker_batch_matches_direct_engine_including_q_and_rng (test_simulation_runtime.RuntimeTests.test_worker_batch_matches_direct_engine_including_q_and_rng) ... ok
+test_unchanged_rows_do_not_rebuild_and_sort_uses_existing_ids (test_simulation_runtime.TreeTests.test_unchanged_rows_do_not_rebuild_and_sort_uses_existing_ids) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 3.015s
+
+OK

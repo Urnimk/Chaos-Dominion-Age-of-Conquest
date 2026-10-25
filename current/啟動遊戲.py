@@ -1,4 +1,4 @@
-"""V26 君主王朝與王位外交版。"""
+"""V27 不規則省界版。"""
 try:
     from map_viewer import main
 except ImportError as exc:

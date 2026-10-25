@@ -23,14 +23,13 @@ class HierarchicalStrategyMixin:
 
     def _macro_measure_uncached(self,c,lm):
         idx=self._spatial_indices(c['id'],lm) if lm else np.array([],dtype=int)
-        owners=set(self.world_state_cache.landmass_ownership(lm)[2]) if lm else set()
-        realm=self.king_system.realm(c['id']) if hasattr(self,'king_system') else {c['id']}
-        rivals=sorted(x for x in owners if x not in realm and self.country(x)['alive'])
+        owners=set(x for x in self.world_state_cache.regimes(lm) if x>0) if lm else set()
+        rivals=sorted(x for x in owners if x!=c['id'] and self.country(x)['alive'])
         site=self._site(c,lm) if lm else None
         total=max(1,int(self._landmass_sizes[lm])) if 0<lm<len(self._landmass_sizes) else 1
-        return {'cells':len(idx),'control':len(idx)/total,'army':int(self.local_soldiers.ravel()[idx].sum()),
+        return {'cells':len(idx),'control':len(idx)/total,'army':self.world_state_cache.total('soldiers',c['id'],lm) if lm else 0,
                 'rivals':rivals,'base':bool(site),'port':bool(site and self._logistics_port(c,site)),
-                'pacified':(sum(int(self.world_state_cache.landmass_ownership(lm)[1][cid]) for cid in realm if cid<len(self.world_state_cache.landmass_ownership(lm)[1]))/total if lm else 0)>=cfg.OVERSEAS_REGION_CONTROL_SHARE_REQUIRED and not rivals}
+                'pacified':len(idx)/total>=cfg.OVERSEAS_REGION_CONTROL_SHARE_REQUIRED and not rivals}
 
     def _macro_event(self,c,event,**kw):
         entry={'year':int(self.year),'event':event,**kw}
@@ -70,7 +69,7 @@ class HierarchicalStrategyMixin:
             if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
                 diagnostic.observe('candidate', locals())
         if choices:
-            _diagnostic_result = self.king_system.rank_targets(c, choices) if hasattr(self,'king_system') else sorted(choices, reverse=True)
+            _diagnostic_result = sorted(choices, reverse=True)
             if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
                 diagnostic.observe('candidate', locals())
             return _diagnostic_result
@@ -113,7 +112,7 @@ class HierarchicalStrategyMixin:
             choices.append((value - distance / 1000, lm, 'COLONIZE', None))
             if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
                 diagnostic.observe('candidate', locals())
-        _diagnostic_result = self.king_system.rank_targets(c, choices) if hasattr(self,'king_system') else sorted(choices, reverse=True)
+        _diagnostic_result = sorted(choices, reverse=True)
         if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
             diagnostic.observe('candidate', locals())
         return _diagnostic_result
@@ -149,7 +148,7 @@ class HierarchicalStrategyMixin:
         lm=commit['target_landmass'];m=self._macro_measure(c,lm)
         progress=(m['control']>commit['best_control']+1e-6 or len(m['rivals'])<commit['fewest_rivals']
                   or (m['base'] and not commit['had_base']) or (m['port'] and not commit['had_port'])
-                  or m['army']>commit['best_army']+cfg.AI_MIN_ATTACK_SOLDIERS)
+                 )
         if progress:commit['last_progress_year']=self.year
         commit['best_control']=max(commit['best_control'],m['control']);commit['best_army']=max(commit['best_army'],m['army'])
         commit['fewest_rivals']=min(commit['fewest_rivals'],len(m['rivals']))
@@ -182,7 +181,7 @@ class HierarchicalStrategyMixin:
         target=commit.get('target_country')
         if target not in m['rivals'] and m['rivals']:
             # Rival changes only within the committed island, after it leaves that island.
-            target=max(m['rivals'],key=lambda x:self.king_system.rival_score(c,x,lm));commit['target_country']=target
+            target=min(m['rivals'],key=lambda x:self._home_soldiers(x,lm));commit['target_country']=target
         if lm==home:stage='UNIFY_HOMELAND'
         elif not m['base']:stage='COLONIZE_LANDMASS' if commit['kind']=='COLONIZE' or not m['rivals'] else 'ESTABLISH_OVERSEAS_BASE'
         elif not m['port']:stage='ESTABLISH_OVERSEAS_BASE'
@@ -222,6 +221,8 @@ class HierarchicalStrategyMixin:
     def _macro_state_actions(self, cid, colony_available=False):
         c = self.country(cid)
         g = self._macro_update(c)
+        from province_tasks import update,describe
+        update(self,c,g)
         lm = g['target_landmass']
         home = self._home_continent_id(c)
         m = self._macro_measure(c, lm)
@@ -230,6 +231,10 @@ class HierarchicalStrategyMixin:
         snapshot = self._strategic_snapshot_for(cid)
         hp = int(snapshot.values['home_population']) if snapshot is not None else int(self.local_population.ravel()[self._spatial_indices(cid, home)].sum())
         food_years = c['food'] / max(1, hp * cfg.FOOD_CONSUMPTION_PER_PERSON)
+        if (self.year < int(c.get('recovery_until_year',0)) and food_years>=cfg.PROVINCE_REST_RESUME_FOOD_YEARS
+                and c.get('war_exhaustion',0)<=.25 and m['army']>=cfg.AI_MIN_ATTACK_SOLDIERS+int(self.world_state_cache.total('population',cid,lm)*cfg.MIN_GARRISON_RATIO)):
+            c['recovery_until_year']=int(self.year)
+            self._log(cid,'休養結束：糧食、疲乏與當地可用兵力已達恢復條件。')
         resting = self.year < int(c.get('recovery_until_year', 0))
         bindings = {}
         if site and (not m['port']) and self._can_pay(c, cfg.PORT_COST):
@@ -271,14 +276,22 @@ class HierarchicalStrategyMixin:
             diagnostic.current['pre_prerequisite_bindings'] = dict(bindings)
         if 'SECURE_SUPPLY' in bindings:
             bindings = {'SECURE_SUPPLY': bindings['SECURE_SUPPLY']}
-        elif manifest and t and (t['supply_need'] > 0):
+        elif manifest and t and (t['supply_need'] > 0) and not any(k in bindings for k in ('ATTACK_FRONT','CUT_OFF','ENCIRCLE_CAPITAL','ATTACK_HOMELAND')):
             bindings = {'REINFORCE_ACTIVE_THEATRE': 'REINFORCE_OVERSEAS'}
         if not bindings or food_years < 1 or c.get('war_exhaustion', 0) > 0.5:
             bindings['REST_AND_REPRODUCE'] = 'REST_AND_REPRODUCE'
         c['macro_action_bindings'] = bindings
+        task_description=describe(self,c,g,bindings)
+        diagnostic=getattr(self,'diagnostics',None)
+        if diagnostic is not None and diagnostic.enabled_for('ai') and diagnostic.current is not None:
+            import copy
+            diagnostic.current['goal_hierarchy']={'ultimate':'UNIFY_WORLD','island':dict(c['long_term_goal']),
+                'province_task':copy.deepcopy(c.get('province_task')),'block_reason':c['province_block_reason'],
+                'support':c['province_support_status']}
+
         labels = dict(zip(GOALS, ('統一本島', '準備海外擴張', '殖民目標島嶼', '建立海外基地', '征服目標島嶼', '增援目前戰區', '平定目標島嶼', '清除目標政權據點', '準備下一次遠征')))
         place = self.landmass_place_name(lm, c)
-        c['strategic_block_reason'] = f"中期目標：{labels[g['goal_type']]}｜目標島嶼：{place}｜已持續{self.year - (c.get('strategic_commitment') or {}).get('started_year', self.year)}年"
+        c['strategic_block_reason'] = f"島嶼戰略階段：{labels[g['goal_type']]}｜目標島嶼：{place}｜已持續{self.year - (c.get('strategic_commitment') or {}).get('started_year', self.year)}年"
         if t:
             voyage = c.get('reinforcement_voyage')
             if self._voyage_supports_theatre(c, lm):
@@ -296,8 +309,9 @@ class HierarchicalStrategyMixin:
                 detail = '已達戰區兵力目標'
             c['strategic_block_reason'] += '｜' + detail
         enemy = sum((self._home_soldiers(x, lm) for x in m['rivals']))
+        c['strategic_block_reason']=task_description+'｜'+c['province_block_reason']+'｜'+c['strategic_block_reason']
         state = (min(4, int(len(self._spatial_indices(cid, home)) / max(1, self._landmass_sizes[home]) * 5)), min(4, int(self._home_soldiers(cid, home) / max(1, hp) * 20)), min(4, int(c.get('war_exhaustion', 0) * 5)), min(3, sum((x.attacker == cid and x.status == 'marching' for x in self.campaigns))), GOALS.index(g['goal_type']), min(4, int(m['control'] * 5)), min(4, int(enemy / max(1, m['army']))), int(m['base']) + int(m['port']), min(3, int(food_years)), int(bool(c.get('reinforcement_voyage'))) + 2 * int(bool(c.get('colonization_voyage'))), min(3, len(m['rivals'])), min(10, int(c['territory_cells'] / max(1, self._landmass_sizes.sum()) * 10)))
-        _diagnostic_result = (state, list(bindings), self.king_system.action_biases(c,bindings))
+        _diagnostic_result = (state, list(bindings), {})
         if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
             diagnostic.observe('actions', locals())
         return _diagnostic_result
@@ -311,7 +325,7 @@ class HierarchicalStrategyMixin:
                 diagnostic.observe('landing', locals())
             return _diagnostic_result
         idx = self._spatial_indices(c['id'], home)
-        pop = int(self.local_population.ravel()[idx].sum())
+        pop = self.world_state_cache.total('population',c['id'],home)
         available = min(max(0, self._home_soldiers(c['id'], home) - int(pop * cfg.MIN_GARRISON_RATIO)), self._transport_soldier_capacity(c['fleet']), self._transport_population_capacity(c['fleet']))
         if available < cfg.AI_MIN_ATTACK_SOLDIERS:
             _diagnostic_result = False
@@ -328,7 +342,7 @@ class HierarchicalStrategyMixin:
         army = self._home_soldiers(target['id'], lm)
         share = max(self._local_garrison_share(target, objective), float(np.median(cfg.BATTLE_LEARNED_GARRISON_SHARES)))
         defense = min(army, max(200, int(army * share))) * target['morale'] * self._terrain_defense(objective)
-        _diagnostic_result = available * max(cfg.TACTICAL_ATTACK_FRACTIONS) * c['morale'] * (1 - cfg.AMPHIBIOUS_ATTACK_PENALTY) >= defense * self.king_system.risk_ratio(c)
+        _diagnostic_result = available * max(cfg.TACTICAL_ATTACK_FRACTIONS) * c['morale'] * (1 - cfg.AMPHIBIOUS_ATTACK_PENALTY) >= defense
         if (diagnostic := getattr(self, 'diagnostics', None)) is not None and diagnostic.enabled_for('ai'):
             diagnostic.observe('landing', locals())
         return _diagnostic_result

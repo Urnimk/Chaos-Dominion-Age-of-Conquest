@@ -1,0 +1,37 @@
+{
+  "mode": "after",
+  "io": {
+    "flush_seconds": 0.34124155600011363,
+    "original_checkpoint_bytes": 37660285,
+    "written_checkpoint_bytes": 1636938,
+    "files": {
+      "stagnation_events.jsonl": 122977,
+      "game_metadata.json": 10446,
+      "cache_summary.json": 539,
+      "war_outcomes.jsonl": 1821481,
+      "diagnostic_state.json": 37660285,
+      "ai_decisions.jsonl": 0,
+      "performance_intervals.jsonl": 41712,
+      "performance_summary.json": 43099,
+      "major_events.jsonl": 197,
+      "stagnation_intervals.jsonl": 354891,
+      "diagnostic_summary.md": 410,
+      "macro_events.jsonl": 824320,
+      "logistics_summary.json": 2820,
+      "territory_events.jsonl": 672421,
+      "performance_recent_1000y.csv": 466241,
+      "diagnostic_state.json.gz": 1636938,
+      "stagnation_summary.json": 36134,
+      "logistics_events.jsonl": 0,
+      "slow_years.json": 39113
+    },
+    "errors": []
+  },
+  "placement_seconds": 0.11699060799992367,
+  "placement_checks": 16,
+  "final_placement_equal": true,
+  "mask_shape": [
+    1200,
+    1200
+  ]
+}

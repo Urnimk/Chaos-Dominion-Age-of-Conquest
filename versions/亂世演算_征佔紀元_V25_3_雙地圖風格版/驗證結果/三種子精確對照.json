@@ -1,0 +1,68 @@
+[
+  {
+    "seed": 2026,
+    "years": 1000,
+    "fields": {
+      "territory": true,
+      "population": true,
+      "soldiers": true,
+      "countries": true,
+      "campaigns": true,
+      "brains": true,
+      "rng": true,
+      "python_rng": true,
+      "events": true,
+      "disconnected_since": true,
+      "settlement": true,
+      "border": true,
+      "building_owner": true,
+      "world_countries": true,
+      "alliance_names": true,
+      "history_events": true
+    }
+  },
+  {
+    "seed": 731,
+    "years": 1000,
+    "fields": {
+      "territory": true,
+      "population": true,
+      "soldiers": true,
+      "countries": true,
+      "campaigns": true,
+      "brains": true,
+      "rng": true,
+      "python_rng": true,
+      "events": true,
+      "disconnected_since": true,
+      "settlement": true,
+      "border": true,
+      "building_owner": true,
+      "world_countries": true,
+      "alliance_names": true,
+      "history_events": true
+    }
+  },
+  {
+    "seed": 991,
+    "years": 1000,
+    "fields": {
+      "territory": true,
+      "population": true,
+      "soldiers": true,
+      "countries": true,
+      "campaigns": true,
+      "brains": true,
+      "rng": true,
+      "python_rng": true,
+      "events": true,
+      "disconnected_since": true,
+      "settlement": true,
+      "border": true,
+      "building_owner": true,
+      "world_countries": true,
+      "alliance_names": true,
+      "history_events": true
+    }
+  }
+]

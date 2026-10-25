@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import map_config as cfg
 
-GAME_VERSION='V26'
+GAME_VERSION='V27'
 SCHEMA_VERSION=1
 ACTIONS=('ATTACK_HOMELAND','ATTACK_OVERSEAS','ATTACK_FRONT','CUT_OFF','ENCIRCLE_CAPITAL',
          'EXPAND_BEACHHEAD','COLONIZE','REINFORCE_ACTIVE_THEATRE','SECURE_SUPPLY',
@@ -794,7 +794,7 @@ def install_cache(cls):
 
 
 def install_ui(cls):
-    for name,phase in {'refresh_panels':'ranking_log_panels','redraw':'map_canvas_render','_maybe_auto_save':'autosave','_maybe_save_map_snapshot':'map_snapshot'}.items():
+    for name,phase in {'refresh_panels':'ranking_log_panels',('_redraw_now' if hasattr(cls,'_redraw_now') else 'redraw'):'map_canvas_render','_maybe_auto_save':'autosave','_maybe_save_map_snapshot':'map_snapshot'}.items():
         if not hasattr(cls,name):continue
         original=getattr(cls,name)
         def build(original,phase):
