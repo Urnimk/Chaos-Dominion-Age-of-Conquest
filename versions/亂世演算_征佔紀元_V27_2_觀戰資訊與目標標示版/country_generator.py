@@ -50,6 +50,7 @@ class CountryLayers:
 
 
 def _country_names(n):
+    import random
     """生成基本國家名稱列表"""
     custom_names = [  # 預設自訂特色名稱清單
         "挫蛋先鋒", "奶霜聯盟", "嗜血狂鯊", "霹靂暗雷", "地獄烈焰", "閃電戰狼", "虛擬幻影",
@@ -75,56 +76,68 @@ def _country_names(n):
         "火鍋戰隊", "咖啡因癮", "睡意襲來", "滿血復活", "絕地翻盤", "全村希望"
     ]
 
-    prefixes = [  # 隨機生成名稱用的前綴字庫
-        "阿斯", "貝洛", "塞勒", "多倫", "埃爾", "芬蘭", "格林", "海倫", "伊斯", "克倫",
-        "拉斐", "馬爾", "諾斯", "奧林", "佩拉", "昆斯", "雷克", "索倫", "泰坦", "烏拉",
-        "瓦爾", "溫斯", "薩克", "約克", "齊格", "阿爾", "博爾", "卡斯", "德拉", "福爾",
-        "安地", "波斯", "迦太", "德魯", "伊特", "腓尼", "赫梯", "印加", "美索", "諾曼",
-        "帕提", "斯巴", "特洛", "烏加", "梵蒂", "拜占", "瑪雅", "塞爾", "維京", "蘇美"
+    if n <= 0:
+        return []
+
+    country_suffixes = [
+        # 君主與封建
+        "王國", "帝國", "皇國", "公國", "侯國",
+        "伯國", "汗國", "藩國", "封國", "領邦",
+
+        # 聯合與自治
+        "聯邦", "邦聯", "聯盟", "同盟", "合邦",
+        "民國", "城邦", "邦國", "自治", "共和",
+
+        # 宗教與軍事
+        "教國", "神國", "聖國", "教廷", "聖域",
+        "軍國", "幕府", "都護", "軍鎮", "騎領",
+
+        # 海洋與商業
+        "海國", "島國", "港邦", "商邦", "海盟",
+        "商盟", "港盟", "群島", "海邦", "商國",
+
+        # 部族與邊疆
+        "部落", "部族", "族邦", "族盟", "部盟",
+        "邊國", "邊邦", "山國", "雪國", "林國",
+
+        # 奇幻風格
+        "龍國", "魔國", "靈國", "星國", "天國",
+        "冥國", "龍庭", "王庭", "聖庭", "仙國",
     ]
-    suffixes = [  # 隨機生成名稱用的後綴字庫
-        "蒂娜", "斯塔", "利亞", "尼西亞", "高地", "群島", "大路", "特區", "男爵領", "侯國",
-        "公國", "聯邦", "帝國", "王國", "聖域", "自治領", "郡", "省", "堡", "關",
-        "海峽", "半島", "平線", "谷地", "荒原",
-        "之森", "之峰", "之海", "之嶺", "灣", "峽谷", "綠洲", "高原", "沼澤", "苔原",
-        "丘陵", "雪原", "沃野", "裂谷", "凍土", "河口", "斷崖", "暗礁", "沙洲", "火山",
-        "山脈", "盆地", "溪谷", "峭壁", "海灣"
+
+    # 只取原名稱前兩字，並去除重複前綴。
+    name_prefixes = list(dict.fromkeys(
+        name[:2] for name in custom_names if name
+    ))
+
+    # 第一國固定保留「挫蛋」。
+    first_name = "挫蛋帝國"
+    names = [first_name]
+
+    # 優先讓各國使用不同前綴。
+    remaining_prefixes = [
+        prefix for prefix in name_prefixes
+        if prefix != "挫蛋"
     ]
+    random.shuffle(remaining_prefixes)
 
-    # 先使用自訂名稱；不足時再用前綴＋後綴穩定補足。
-    names = []
-    # for name in custom_names:
-    #     if len(names) >= n:
-    #         break
-    #     if name not in names:
-    #         names.append(name)
-
-    import random
-
-    seek = {"挫蛋先鋒"}
-    names.append("挫蛋先鋒")
-
-    while(1):
+    for prefix in remaining_prefixes:
         if len(names) >= n:
-            break
-        temp = random.choice(custom_names)
-        if temp not in seek:
-            seek.add(temp)
-            names.append(temp)
-        else:
-            continue
+            return names
 
-        
-    index = 0
-    while len(names) < n:
-        prefix = prefixes[index % len(prefixes)]
-        suffix = suffixes[(index // len(prefixes) + index) % len(suffixes)]
-        candidate = f"{prefix}{suffix}"
-        if candidate not in names:
-            names.append(candidate)
-        index += 1
+        names.append(
+            prefix + random.choice(country_suffixes)
+        )
 
-    return names
+    # 國家數超過前綴數量時，再使用不同國體補足。
+    candidates = [
+        prefix + suffix
+        for prefix in name_prefixes
+        for suffix in country_suffixes
+        if prefix + suffix not in names
+    ]
+    random.shuffle(candidates)
+    names.extend(candidates[:max(0, n - len(names))])
 
 
 def _colors(count):
