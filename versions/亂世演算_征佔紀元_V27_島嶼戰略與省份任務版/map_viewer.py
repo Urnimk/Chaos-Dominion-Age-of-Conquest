@@ -278,12 +278,12 @@ class MapViewer(ResponsiveViewerMixin):
         basic_upper = ttk.Frame(basic_box, style="Dark.TFrame")
         basic_upper.pack(fill="x")
         self.country_basic = self._field_table(
-            basic_upper, ("項目", "內容"), height=9, widths=(160, 220)
+            basic_upper, ("項目", "內容"), height=9, widths=(100, 300)
         )
         economy_box = ttk.LabelFrame(dashboard, text="👥 人口・建築・資源", style="Panel.TLabelframe", padding=5)
         economy_box.grid(row=0, column=1, sticky="nsew", padx=(4,0), pady=(0,4))
         self.country_economy = self._field_table(
-            economy_box, ("項目", "內容"), height=9, widths=(130, 250)
+            economy_box, ("項目", "內容"), height=9, widths=(110, 290)
         )
 
         # 領地清單置於上方兩張資訊表下方，橫跨整個左側欄；維持參考圖中的矮版資訊列。
@@ -682,26 +682,26 @@ class MapViewer(ResponsiveViewerMixin):
             # ("戰略狀態", "休養生息" if self.war.year < int(c.get("recovery_until_year", 0)) else ("交戰中" if active else "和平")),
             # ("終極戰爭目標", "統一世界" if c.get("war_goal", "UNIFY_WORLD") == "UNIFY_WORLD" else c.get("war_goal", "統一世界")),
             # ("已用出海遠征", f"{self.war._overseas_expeditions_used(c):,}／{cfg.OVERSEAS_EXPEDITION_LIMIT}（含失敗）"),
-            ("海外首都／出海名額", f"{self.war._overseas_site_count(c):,} 處／{self.war._overseas_expansion_capacity(c):,} 格"),
-            ("本島出海資格", ("危局：僅准緊急後撤" if self.war._homeland_is_critical(c) and not self.war._homeland_is_unified(c)
+            ("海外首都", f"{self.war._overseas_site_count(c):,} ／{self.war._overseas_expansion_capacity(c):,} 處"),
+            ("出海資格", ("危局：僅准緊急後撤" if self.war._homeland_is_critical(c) and not self.war._homeland_is_unified(c)
                               else "已達標（>80%、唯一政權）" if self.war._homeland_is_unified(c)
                               else "未達標：一般出海禁止")),
-            ("本島無主土地", f"可拓荒 {frontier_empty:,}／不可通行 {frontier_blocked:,} 格"),
+            ("無主土地", f"可拓荒 {frontier_empty:,}／不可通行 {frontier_blocked:,} 格"),
             # ("殖民地數", f"{len(c.get('colonies', [])):,}／{cfg.COLONY_MAX_PER_COUNTRY}"),
         )
         economy_rows = (
             ("人口", f"{c['population']:,} 人｜人口成長加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
             ("士兵", f"{c['soldiers']:,} 人｜徵兵比例加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
-            ("艦隊", f"{c['fleet']:,}"),
-            ("殖民船航行", (f"前往{self.war.geographic_name_at(*reversed(c['colonization_voyage']['anchor']))}｜{max(0.0, float(c['colonization_voyage']['route_distance_km'])-float(c['colonization_voyage']['travelled_km'])):,.0f}公里" if c.get("colonization_voyage") else "無")),
+            ("艦隊／港口", f"{c['fleet']:,}／{c['ports']}"),
+            # ("殖民船航行", (f"前往{self.war.geographic_name_at(*reversed(c['colonization_voyage']['anchor']))}｜{max(0.0, float(c['colonization_voyage']['route_distance_km'])-float(c['colonization_voyage']['travelled_km'])):,.0f}公里" if c.get("colonization_voyage") else "無")),
             ("城市／兵營", f"{c['cities']}／{c['barracks']}"),
-            ("拓荒等級／港口", f"{c.get('frontier_level', 0)} 級／{c['ports']}"),
-            ("糧食／承載", f"{c['food']:,.0f}／{c.get('food_capacity',0):,} 人"),
-            ("休養糧食補助", f"+{float(c.get('last_rest_food_bonus',0.0)):,.1f}／年｜安全庫存 {float(c.get('last_home_food_reserve_target',0.0)):,.0f}"),
+            ("拓荒等級", f"{c.get('frontier_level', 0)} 級"),
             # ("年度產糧／消耗", f"{c.get('last_food_production',0):,.1f}／{c.get('last_food_consumption',0):,.1f}"),
             # ("糧食淨額／承載", f"{c.get('last_food_balance',0):+,.1f}／{c.get('food_capacity',0):,} 人"),
             ("木材／礦產", f"{c['timber']:,.0f}／{c['minerals']:,.0f}"),
-            ("戰爭疲乏／士氣", f"{float(c.get('war_exhaustion', 0.0)):.0%}／{float(c.get('morale', 1.0)):.0%}"),
+            ("糧食／承載", f"{c['food']:,.0f}／{c.get('food_capacity',0):,} 人"),
+            ("糧食補助", f"+{float(c.get('last_rest_food_bonus',0.0)):,.1f}／年｜安全庫存 {float(c.get('last_home_food_reserve_target',0.0)):,.0f}"),
+            ("疲乏／士氣", f"{float(c.get('war_exhaustion', 0.0)):.0%}／{float(c.get('morale', 1.0)):.0%}"),
         )
         diplomacy_rows = (
             ("普通聯盟", alliance_name),
