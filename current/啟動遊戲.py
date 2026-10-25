@@ -1,4 +1,4 @@
-"""V27_1 不規則省界版。"""
+"""V27_3 不規則省界版。"""
 try:
     from map_viewer import main
 except ImportError as exc:

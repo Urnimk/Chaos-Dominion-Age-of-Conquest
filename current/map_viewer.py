@@ -1,6 +1,7 @@
 """V25_2 雙欄 UI：左側四分頁，右上世界版圖，右下排名／即時事件 LOG。"""
 
 from __future__ import annotations
+from spectator import readable, change, overlay
 
 import re
 import random
@@ -122,7 +123,7 @@ from simulation_runtime import sync_tree_rows
 class MapViewer(ResponsiveViewerMixin):
     def __init__(self, root):
         self.root = root
-        self.root.title("亂世演算_征佔紀元 V27｜島嶼與省份任務版")
+        self.root.title("亂世演算_征佔紀元 V27_3｜全局檢視與國家戰爭資訊版")
         self.root.geometry(WINDOW_SIZE)
         self.root.configure(bg="#161616")
         self.world = self.war = self.full_image = self.tk_image = None
@@ -216,6 +217,7 @@ class MapViewer(ResponsiveViewerMixin):
         # ===== 左半：四個標籤 =====
         self.left_notebook = ttk.Notebook(left)
         self.left_notebook.pack(fill="both", expand=True)
+        self.left_notebook.bind("<<NotebookTabChanged>>", self._on_country_tab_changed)
 
         self.tab_country_overview = ttk.Frame(self.left_notebook, style="Dark.TFrame")
         self.tab_alliance_overview = ttk.Frame(self.left_notebook, style="Dark.TFrame")
@@ -312,12 +314,8 @@ class MapViewer(ResponsiveViewerMixin):
         self.colony_voyages = ttk.Label(colony_box, text="", style="Dark.TLabel", wraplength=580)
         self.colony_voyages.pack(fill="x")
 
-        dip_box = ttk.LabelFrame(dashboard, text="🏆 外交・戰績", style="Panel.TLabelframe", padding=5)
-        dip_box.grid(row=2, column=0, sticky="nsew", padx=(0,4), pady=4)
-        self.country_diplomacy = self._field_table(dip_box, ("項目", "內容"), height=7)
-
-        own_box = ttk.LabelFrame(dashboard, text="📜 近期國家／戰爭事件", style="Panel.TLabelframe", padding=4)
-        own_box.grid(row=2, column=1, sticky="nsew", padx=(4,0), pady=4)
+        own_box = ttk.LabelFrame(dashboard, text="📜 國家／戰爭資訊", style="Panel.TLabelframe", padding=4)
+        own_box.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=4)
         self.country_log = self._log_widget(own_box)
 
         self.detail = None
@@ -649,6 +647,8 @@ class MapViewer(ResponsiveViewerMixin):
         cid = min(max(1, self.selected_country_id), len(names)); self.selected_country_id = cid
         self.country_var.set(names[cid - 1])
 
+        for observed in self.war.countries:
+            change(self,observed,'population')
         overview_rows = self._sorted_countries()
         world_ranked = sorted(self.war.countries, key=lambda x: (bool(x.get("alive", True)), self._country_power_score(x)), reverse=True)
         sync_tree_rows(self.ranking,[(str(c["id"]),c["name"],(c["territory_cells"], f"{c['population']:,}", f"{c['soldiers']:,}", c['fleet'], self._alliance_display_name(c["alliance"]), f"{c['wars_won']}勝/{c['wars_lost']}敗")) for c in overview_rows])
@@ -670,13 +670,13 @@ class MapViewer(ResponsiveViewerMixin):
             ("綜合戰力", f"{power:,}"),
             ("現任國王", (f"第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}"
                        if c['alive'] else f"末代第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}")),
-            ("領土規模", f"{c['territory_cells']:,} 格"),
+            ("領土規模", f"{c['territory_cells']:,} 格" + change(self,c,"territory_cells")),
             # ("最終目標", "統一世界"),
             ("中期/長期", f"{((c.get('province_task') or {}).get('name',c.get('province_phase','等待評估')))}({(c.get('province_task') or {}).get('progress',{}).get('control',0):.0%})/{c.get('long_term_goal',{}).get('name','等待戰略評估')}"),
             # ("省份任務", ((c.get('province_task') or {}).get('name',c.get('province_phase','等待評估')))),
             # ("省份任務進度", f"{(c.get('province_task') or {}).get('progress',{}).get('control',0):.0%}"),
             # ("任務受阻原因", c.get('province_block_reason','尚未評估')),
-            # ("短期行動", c.get('short_term_action','等待決策')),
+            # ("短期行動", readable(c.get('short_term_action','等待決策'))),
             # ("任務支援", c.get('province_support_status','尚未安排')),
             # ("最近省區選擇", province_text if cfg.PROVINCE_STRATEGY_ENABLED else "已停用，採原細格選目標"),
             # ("戰略狀態", "休養生息" if self.war.year < int(c.get("recovery_until_year", 0)) else ("交戰中" if active else "和平")),
@@ -690,8 +690,8 @@ class MapViewer(ResponsiveViewerMixin):
             # ("殖民地數", f"{len(c.get('colonies', [])):,}／{cfg.COLONY_MAX_PER_COUNTRY}"),
         )
         economy_rows = (
-            ("人口", f"{c['population']:,} 人｜人口成長加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
-            ("士兵", f"{c['soldiers']:,} 人｜徵兵比例加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
+            ("人口", f"{c['population']:,} 人{change(self,c,'population')}｜人口成長加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
+            ("士兵", f"{c['soldiers']:,} 人{change(self,c,'soldiers')}｜徵兵比例加成 +{float(c.get('food_capacity',0))/100000:.0%}"),
             ("艦隊／港口", f"{c['fleet']:,}／{c['ports']}"),
             # ("殖民船航行", (f"前往{self.war.geographic_name_at(*reversed(c['colonization_voyage']['anchor']))}｜{max(0.0, float(c['colonization_voyage']['route_distance_km'])-float(c['colonization_voyage']['travelled_km'])):,.0f}公里" if c.get("colonization_voyage") else "無")),
             ("城市／兵營", f"{c['cities']}／{c['barracks']}"),
@@ -703,17 +703,9 @@ class MapViewer(ResponsiveViewerMixin):
             ("糧食補助", f"+{float(c.get('last_rest_food_bonus',0.0)):,.1f}／年｜安全庫存 {float(c.get('last_home_food_reserve_target',0.0)):,.0f}"),
             ("疲乏／士氣", f"{float(c.get('war_exhaustion', 0.0)):.0%}／{float(c.get('morale', 1.0)):.0%}"),
         )
-        diplomacy_rows = (
-            ("普通聯盟", alliance_name),
-            ("歷史參戰", f"{c['wars_won'] + c['wars_lost']} 場"),
-            ("戰績", f"勝 {c['wars_won']}／敗 {c['wars_lost']}"),
-            ("勝率", f"{(100*c['wars_won']/max(1,c['wars_won']+c['wars_lost'])):.1f}%"),
-            # ("目前行軍", f"{sum(1 for x in self.war.campaigns if x.attacker == cid and x.status == 'marching')} 支"),
-        )
         self._set_field_rows(self.country_basic, basic_rows)
         self._refresh_colony_links(c)
         self._set_field_rows(self.country_economy, economy_rows)
-        self._set_field_rows(self.country_diplomacy, diplomacy_rows)
         self._set_text(self.country_log, "\n".join(self.war.country_events.get(cid, [])[-120:]) or "尚無國家事件。")
         self._set_text(self.battle_log, "\n".join(self.war.events[-180:]) or "目前尚無世界事件。")
 
@@ -945,7 +937,7 @@ class MapViewer(ResponsiveViewerMixin):
         # Old save logs retain their original data; translate island IDs for display.
         if self.war and any(widget is getattr(self,name,None) for name in ('history_log','country_log','battle_log')):
             country=self.war.country(self.selected_country_id) if widget is getattr(self,'country_log',None) and self.selected_country_id else None
-            value=self.war.island_display_text(value)
+            value=readable(self.war.island_display_text(value))
         key=(value,getattr(self,"_world_generation",0),self.selected_country_id)
         if getattr(widget,"_presentation_value",None)==key:return
         widget._presentation_value=key
@@ -1146,6 +1138,11 @@ class MapViewer(ResponsiveViewerMixin):
             result.append((self.war.country(campaign.attacker),{'route':route,'position':self.war._route_position(route,self.war._route_distance_km(route)*progress),'display_kind':'海外征戰'}))
         return result
 
+    def _on_country_tab_changed(self, event=None):
+        # Keep the selected country for returning to its details; only hide overlays.
+        if hasattr(self, 'canvas'):
+            self.redraw()
+
     def _draw_overlays(self, left, top, cw, ch, tw, th):
         ox, oy = (cw-tw)/2, (ch-th)/2
         displayed=getattr(self,'_displayed_raster_key',None)
@@ -1154,6 +1151,7 @@ class MapViewer(ResponsiveViewerMixin):
         parchment=is_parchment(displayed_layer,selected)
         label_ink,label_halo=('#302c20','#eadcb4') if parchment else ('white','#111')
         if self.war:
+            overlay(self,left,top,cw,ch,tw,th)
             # 大型地理區域以低對比文字標示；縮得太遠時限制數量避免遮住國名。
             visible_regions = [
                 region for region in self.war.geographic_regions
