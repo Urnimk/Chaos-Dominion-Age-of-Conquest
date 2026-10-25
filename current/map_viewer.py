@@ -665,23 +665,21 @@ class MapViewer(ResponsiveViewerMixin):
                        + '、'.join(self.war.province_labels[pid-1].name for pid in province_choice['selected_provinces'])
                        if province_choice else '尚無陸上進攻選區紀錄')
         basic_rows = (
-            ("國家狀態", f"{'◉ 存活' if c['alive'] else '✖ 滅亡'}｜{c['name']}"),
+            ("國家狀態", f"{'◉ 存活' if c['alive'] else f"✖ 滅亡(第 {c.get('extinction_year', summary['year'])} 年)"}｜{c['name']}"),
             ("目前排名", f"第 {rank_pos} 名／存活 {summary['alive']} 國"),
             ("綜合戰力", f"{power:,}"),
-            ("世界年份", (f"已滅亡｜滅亡於第 {c.get('extinction_year', summary['year'])} 年"
-                       if not c['alive'] else f"第 {summary['year']} 年")),
             ("現任國王", (f"第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}"
                        if c['alive'] else f"末代第 {c.get('king_number',1)} 任｜{c.get('king_name','未記錄')}")),
             ("領土規模", f"{c['territory_cells']:,} 格"),
-            ("最終目標", "統一世界"),
-            ("長期島嶼目標", c.get('long_term_goal',{}).get('name','等待戰略評估')),
-            ("中期省份任務", ((c.get('province_task') or {}).get('name',c.get('province_phase','等待評估')))),
-            ("省份任務進度", f"{(c.get('province_task') or {}).get('progress',{}).get('control',0):.0%}"),
-            ("任務受阻原因", c.get('province_block_reason','尚未評估')),
-            ("短期行動", c.get('short_term_action','等待決策')),
-            ("任務支援", c.get('province_support_status','尚未安排')),
-            ("最近省區選擇", province_text if cfg.PROVINCE_STRATEGY_ENABLED else "已停用，採原細格選目標"),
-            ("戰略狀態", "休養生息" if self.war.year < int(c.get("recovery_until_year", 0)) else ("交戰中" if active else "和平")),
+            # ("最終目標", "統一世界"),
+            ("中期/長期", f"{((c.get('province_task') or {}).get('name',c.get('province_phase','等待評估')))}({(c.get('province_task') or {}).get('progress',{}).get('control',0):.0%})/{c.get('long_term_goal',{}).get('name','等待戰略評估')}"),
+            # ("省份任務", ((c.get('province_task') or {}).get('name',c.get('province_phase','等待評估')))),
+            # ("省份任務進度", f"{(c.get('province_task') or {}).get('progress',{}).get('control',0):.0%}"),
+            # ("任務受阻原因", c.get('province_block_reason','尚未評估')),
+            # ("短期行動", c.get('short_term_action','等待決策')),
+            # ("任務支援", c.get('province_support_status','尚未安排')),
+            # ("最近省區選擇", province_text if cfg.PROVINCE_STRATEGY_ENABLED else "已停用，採原細格選目標"),
+            # ("戰略狀態", "休養生息" if self.war.year < int(c.get("recovery_until_year", 0)) else ("交戰中" if active else "和平")),
             # ("終極戰爭目標", "統一世界" if c.get("war_goal", "UNIFY_WORLD") == "UNIFY_WORLD" else c.get("war_goal", "統一世界")),
             # ("已用出海遠征", f"{self.war._overseas_expeditions_used(c):,}／{cfg.OVERSEAS_EXPEDITION_LIMIT}（含失敗）"),
             ("海外首都／出海名額", f"{self.war._overseas_site_count(c):,} 處／{self.war._overseas_expansion_capacity(c):,} 格"),
